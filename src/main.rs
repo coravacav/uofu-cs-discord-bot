@@ -1,19 +1,19 @@
 mod text_detection;
+mod types;
 
 use poise::serenity_prelude as serenity;
-use crate::text_detection::event_handler;
-use crate::text_detection::Data;
+use poise::Event;
 
-// User data, which is stored and accessible in all command invocations
-type Error = Box<dyn std::error::Error + Send + Sync>;
-type Context<'a> = poise::Context<'a, Data, Error>;
+use types::Data;
+use types::Error;
+
 
 #[tokio::main]
 async fn main() {
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![],
-            event_handler: |ctx, event, framework, data| { Box::pin(event_handler(&ctx, &event, framework, &text_detection::Data {})) },
+            event_handler: |ctx, event, framework, data| { Box::pin(event_handler(&ctx, &event, framework, &Data {})) },
             ..Default::default()
         })
         .token(std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN"))
@@ -25,4 +25,18 @@ async fn main() {
             })
         });
     framework.run().await.unwrap();
+}
+
+async fn event_handler(
+    ctx: &serenity::Context,
+    event: &Event<'_>,
+    _framework: poise::FrameworkContext<'_, Data, Error>,
+    data: &Data,
+) -> Result<(), Error> {
+    match event {
+        Event::Message { new_message } => {
+            text_detection::text_detection(ctx, event, _framework, data, new_message).await
+        }
+        _ => { Ok(()) }
+    }
 }

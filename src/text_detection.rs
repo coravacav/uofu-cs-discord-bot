@@ -1,24 +1,23 @@
+use crate::types;
 use poise::serenity_prelude as serenity;
 use poise::Event;
-pub struct Data {} // User data, which is stored and accessible in all command invocations
-type Error = Box<dyn std::error::Error + Send + Sync>;
-type Context<'a> = poise::Context<'a, Data, Error>;
+use serenity::Message;
 
-pub async fn event_handler(
-        ctx: &serenity::Context,
-        event: &Event<'_>,
-        _framework: poise::FrameworkContext<'_, Data, Error>,
-        data: &Data,
+use types::Data;
+use types::Error;
+
+pub async fn text_detection(
+    ctx: &serenity::Context,
+    event: &Event<'_>,
+    _framework: poise::FrameworkContext<'_, Data, Error>,
+    data: &Data,
+    message: &Message,
 ) -> Result<(), Error> {
-        match event {
-                Event::Message { new_message } => {
-                        if new_message.content.to_lowercase().contains("rust") && !new_message.author.bot {
-                                new_message
-                                        .reply(ctx, format!("RUST MENTIONED :crab: :crab: :crab:"))
-                                        .await?;
-                        }
-                }
-                _ => {}
-        }
-        Ok(())
+    if message.content.to_lowercase().contains("rust") && !message.author.bot {
+        message
+            .reply(ctx, format!("RUST MENTIONED :crab: :crab: :crab:"))
+            .await?;
+    }
+
+    return Ok(());
 }
