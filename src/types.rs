@@ -1,5 +1,5 @@
+use chrono::{DateTime, Duration, Utc};
 use std::sync::Mutex;
-use chrono::{Duration, Utc, DateTime};
 pub struct Data {
     pub last_rust_response: Mutex<DateTime<Utc>>,
     pub text_detect_cooldown: Mutex<Duration>,

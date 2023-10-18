@@ -1,5 +1,5 @@
-use chrono::Utc;
 use crate::types;
+use chrono::Utc;
 use poise::serenity_prelude as serenity;
 use poise::Event;
 use serenity::Message;
@@ -17,17 +17,21 @@ pub async fn text_detection(
 ) -> Result<(), Error> {
     if message.content.to_lowercase().contains("rust") && !message.author.bot {
         {
-            let mut last_rust_response = data.last_rust_response.lock().expect("Could not lock mutex");
-            let cooldown = data.text_detect_cooldown.lock().expect("Could not lock mutex");
+            let mut last_rust_response = data
+                .last_rust_response
+                .lock()
+                .expect("Could not lock mutex");
+            let cooldown = data
+                .text_detect_cooldown
+                .lock()
+                .expect("Could not lock mutex");
             if *last_rust_response + *cooldown > message.timestamp.with_timezone(&Utc) {
                 return Ok(());
             }
 
             *last_rust_response = message.timestamp.with_timezone(&Utc);
         }
-        message
-            .reply(ctx, rust_response())
-            .await?;
+        message.reply(ctx, rust_response()).await?;
     }
 
     return Ok(());
