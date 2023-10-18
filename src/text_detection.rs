@@ -38,11 +38,23 @@ pub async fn text_detection(
                 .channel_id
                 .send_message(ctx, |m| {
                     m.reference_message(message);
+                    m.allowed_mentions(|am| {
+                        am.replied_user(false);
+                        am
+                    });
                     m.content("TKINTER MENTIONED");
                     m.files(file);
                     return m;
                 })
                 .await?;
+        }
+    } else if message.content.to_lowercase().contains("arch") && !message.author.bot {
+        if cooldown_checker(
+            &data.last_arch_response,
+            &data.text_detect_cooldown,
+            message.timestamp.with_timezone(&Utc),
+        ) {
+            message.reply(ctx, "i use arch btw").await?;
         }
     }
 

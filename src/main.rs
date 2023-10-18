@@ -9,6 +9,9 @@ use std::sync::Mutex;
 
 use types::{Context, Data, Error};
 
+/// In minutes
+const DEFAULT_TEXT_DETECT_COOLDOWN: i64 = 5;
+
 #[tokio::main]
 async fn main() {
     let framework = poise::Framework::builder()
@@ -31,7 +34,10 @@ async fn main() {
                     last_tkinter_response: Mutex::new(
                         DateTime::<Utc>::from_timestamp(0, 0).unwrap(),
                     ),
-                    text_detect_cooldown: Mutex::new(Duration::minutes(5)),
+                    last_arch_response: Mutex::new(DateTime::<Utc>::from_timestamp(0, 0).unwrap()),
+                    text_detect_cooldown: Mutex::new(Duration::minutes(
+                        DEFAULT_TEXT_DETECT_COOLDOWN,
+                    )),
                 })
             })
         });
