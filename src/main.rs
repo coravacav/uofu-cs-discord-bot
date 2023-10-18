@@ -17,7 +17,11 @@ const DEFAULT_TEXT_DETECT_COOLDOWN: i64 = 5;
 async fn main() {
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![register(), change_text_detect_cooldown()],
+            commands: vec![
+                register(),
+                commands::change_text_detect_cooldown(),
+                commands::create_class_category(),
+            ],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(&ctx, &event, framework, data))
             },
@@ -49,23 +53,6 @@ async fn main() {
 #[poise::command(prefix_command)]
 pub async fn register(ctx: Context<'_>) -> Result<(), Error> {
     register_application_commands_buttons(ctx).await?;
-    Ok(())
-}
-
-#[poise::command(prefix_command, slash_command)]
-pub async fn change_text_detect_cooldown(
-    ctx: Context<'_>,
-    #[description = "The cooldown in minutes"] cooldown: i64,
-) -> Result<(), Error> {
-    {
-        let mut text_detect_cooldown = ctx
-            .data()
-            .text_detect_cooldown
-            .lock()
-            .expect("Could not lock mutex");
-        *text_detect_cooldown = Duration::minutes(cooldown);
-    }
-    ctx.say("Done!").await?;
     Ok(())
 }
 
