@@ -19,4 +19,4 @@ Cargo.lock
 /target
 
 # .idea folder
-/.idea
+.idea/
