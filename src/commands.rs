@@ -1,13 +1,10 @@
 use crate::types;
-use chrono::{DateTime, Duration, Utc};
+use chrono::Duration;
 use poise::serenity_prelude as serenity;
-use poise::serenity_prelude::GuildChannel;
-use poise::Event;
+use poise::serenity_prelude::{PermissionOverwrite, PermissionOverwriteType, Permissions};
 use serenity::ChannelType;
-use serenity::Message;
-use std::sync::Mutex;
 
-use types::{Context, Data, Error};
+use types::{Context, Error};
 
 use rand::prelude::*;
 
@@ -37,38 +34,51 @@ pub async fn create_class_category(
     let channels = ctx.guild().unwrap().channels(ctx).await?;
 
     let number_string = number.to_string();
-    for (id, channel) in channels {
+    for (_id, channel) in channels {
         if channel.name.contains(&number_string) {
             ctx.say("Category already seems to exist!").await?;
             return Ok(());
         }
     }
 
-    let resources = guild
-        .create_channel(ctx, |c| {
-            c.name(format!("{}-resources", number_string))
-                .kind(ChannelType::Text)
-        })
+    let role = guild
+        .create_role(ctx, |r| r.hoist(true).name(format!("CS {}", number_string)))
         .await
         .unwrap();
-    let general = guild
-        .create_channel(ctx, |c| {
-            c.name(format!("{}-general", number_string))
-                .kind(ChannelType::Text)
-        })
-        .await
-        .unwrap();
-    let assignment_disc = guild
-        .create_channel(ctx, |c| {
-            c.name(format!("{}-assignment-discussion", number_string))
-                .kind(ChannelType::Text)
-        })
-        .await
-        .unwrap();
+
     let category = guild
         .create_channel(ctx, |c| {
             c.name(format!("CS {}", number_string))
                 .kind(ChannelType::Category)
+                .permissions(vec![PermissionOverwrite {
+                    allow: Permissions::VIEW_CHANNEL,
+                    deny: Permissions::empty(),
+                    kind: PermissionOverwriteType::Role(role.id),
+                }])
+        })
+        .await
+        .unwrap();
+    guild
+        .create_channel(ctx, |c| {
+            c.name(format!("{}-resources", number_string))
+                .kind(ChannelType::Text)
+                .category(category.id)
+        })
+        .await
+        .unwrap();
+    guild
+        .create_channel(ctx, |c| {
+            c.name(format!("{}-general", number_string))
+                .kind(ChannelType::Text)
+                .category(category.id)
+        })
+        .await
+        .unwrap();
+    guild
+        .create_channel(ctx, |c| {
+            c.name(format!("{}-assignment-discussion", number_string))
+                .kind(ChannelType::Text)
+                .category(category.id)
         })
         .await
         .unwrap();
