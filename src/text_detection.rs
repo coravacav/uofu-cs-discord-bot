@@ -1,8 +1,9 @@
 use crate::types;
-use chrono::Utc;
+use chrono::{DateTime, Duration, Utc};
 use poise::serenity_prelude as serenity;
 use poise::Event;
 use serenity::Message;
+use std::sync::Mutex;
 
 use types::{Data, Error};
 
@@ -16,54 +17,54 @@ pub async fn text_detection(
     message: &Message,
 ) -> Result<(), Error> {
     if message.content.to_lowercase().contains("rust") && !message.author.bot {
-        {
-            let mut last_rust_response = data
-                .last_rust_response
-                .lock()
-                .expect("Could not lock mutex");
-            let cooldown = data
-                .text_detect_cooldown
-                .lock()
-                .expect("Could not lock mutex");
-            if *last_rust_response + *cooldown > message.timestamp.with_timezone(&Utc) {
-                return Ok(());
-            }
-
-            *last_rust_response = message.timestamp.with_timezone(&Utc);
+        if cooldown_checker(
+            &data.last_rust_response,
+            &data.text_detect_cooldown,
+            message.timestamp.with_timezone(&Utc),
+        ) {
+            message.reply(ctx, rust_response()).await?;
         }
-        message.reply(ctx, rust_response()).await?;
     } else if message.content.to_lowercase().contains("tkinter") && !message.author.bot {
-        {
-            let mut last_tkinter_response = data
-                .last_tkinter_response
-                .lock()
-                .expect("Could not lock mutex");
-            let cooldown = data
-                .text_detect_cooldown
-                .lock()
-                .expect("Could not lock mutex");
-            if *last_tkinter_response + *cooldown > message.timestamp.with_timezone(&Utc) {
-                return Ok(());
-            }
-
-            *last_tkinter_response = message.timestamp.with_timezone(&Utc);
+        if cooldown_checker(
+            &data.last_tkinter_response,
+            &data.text_detect_cooldown,
+            message.timestamp.with_timezone(&Utc),
+        ) {
+            let file = [(
+                &tokio::fs::File::open("./assets/tkinter.png").await?,
+                "./assets/tkinter.png",
+            )];
+            message
+                .channel_id
+                .send_message(ctx, |m| {
+                    m.reference_message(message);
+                    m.content("TKINTER MENTIONED");
+                    m.files(file);
+                    return m;
+                })
+                .await?;
         }
-        let file = [(
-            &tokio::fs::File::open("./assets/tkinter.png").await?,
-            "./assets/tkinter.png",
-        )];
-        message
-            .channel_id
-            .send_message(ctx, |m| {
-                m.reference_message(message);
-                m.content("TKINTER MENTIONED");
-                m.files(file);
-                return m;
-            })
-            .await?;
     }
 
-    return Ok(());
+    Ok(())
+}
+
+/// Checks if the cooldown is met. If yes, it is, returns true and resets the cooldown. If not,
+/// returns false and does nothing.
+fn cooldown_checker(
+    last_message: &Mutex<DateTime<Utc>>,
+    cooldown: &Mutex<Duration>,
+    timestamp: DateTime<Utc>,
+) -> bool {
+    let mut last_message = last_message.lock().expect("Could not lock mutex");
+    let cooldown = cooldown.lock().expect("Could not lock mutex");
+    if *last_message + *cooldown > timestamp {
+        return false;
+    }
+
+    *last_message = timestamp;
+
+    true
 }
 
 fn rust_response<'a>() -> &'a str {
