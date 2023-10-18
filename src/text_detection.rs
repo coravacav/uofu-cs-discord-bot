@@ -32,6 +32,35 @@ pub async fn text_detection(
             *last_rust_response = message.timestamp.with_timezone(&Utc);
         }
         message.reply(ctx, rust_response()).await?;
+    } else if message.content.to_lowercase().contains("tkinter") && !message.author.bot {
+        {
+            let mut last_tkinter_response = data
+                .last_tkinter_response
+                .lock()
+                .expect("Could not lock mutex");
+            let cooldown = data
+                .text_detect_cooldown
+                .lock()
+                .expect("Could not lock mutex");
+            if *last_tkinter_response + *cooldown > message.timestamp.with_timezone(&Utc) {
+                return Ok(());
+            }
+
+            *last_tkinter_response = message.timestamp.with_timezone(&Utc);
+        }
+        let file = [(
+            &tokio::fs::File::open("./assets/tkinter.png").await?,
+            "./assets/tkinter.png",
+        )];
+        message
+            .channel_id
+            .send_message(ctx, |m| {
+                m.reference_message(message);
+                m.content("TKINTER MENTIONED");
+                m.files(file);
+                return m;
+            })
+            .await?;
     }
 
     return Ok(());

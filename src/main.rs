@@ -28,6 +28,9 @@ async fn main() {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 Ok(Data {
                     last_rust_response: Mutex::new(DateTime::<Utc>::from_timestamp(0, 0).unwrap()),
+                    last_tkinter_response: Mutex::new(
+                        DateTime::<Utc>::from_timestamp(0, 0).unwrap(),
+                    ),
                     text_detect_cooldown: Mutex::new(Duration::minutes(5)),
                 })
             })
