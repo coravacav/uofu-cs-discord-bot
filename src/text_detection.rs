@@ -6,6 +6,8 @@ use serenity::Message;
 use types::Data;
 use types::Error;
 
+use rand::prelude::*;
+
 pub async fn text_detection(
     ctx: &serenity::Context,
     event: &Event<'_>,
@@ -15,9 +17,19 @@ pub async fn text_detection(
 ) -> Result<(), Error> {
     if message.content.to_lowercase().contains("rust") && !message.author.bot {
         message
-            .reply(ctx, format!("RUST MENTIONED :crab: :crab: :crab:"))
+            .reply(ctx, rust_response())
             .await?;
     }
 
     return Ok(());
+}
+
+fn rust_response<'a>() -> &'a str {
+    let i = random::<u8>() % 4;
+    match i {
+        1 => "RUST MENTIONED :crab: :crab: :crab:",
+        2 => "<@237717840818470913>",
+        3 => "Rust is simply the best programming language. Nothing else can compare. I am naming my kids Rust and Ferris.",
+        _ => "Rust? Oh, you mean the game?"
+    }
 }

@@ -3,16 +3,17 @@ mod types;
 
 use poise::serenity_prelude as serenity;
 use poise::Event;
+use poise::builtins::register_application_commands_buttons;
 
 use types::Data;
 use types::Error;
-
+use types::Context;
 
 #[tokio::main]
 async fn main() {
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![],
+            commands: vec![register()],
             event_handler: |ctx, event, framework, data| { Box::pin(event_handler(&ctx, &event, framework, &Data {})) },
             ..Default::default()
         })
@@ -24,7 +25,14 @@ async fn main() {
                 Ok(Data {})
             })
         });
+
     framework.run().await.unwrap();
+}
+
+#[poise::command(prefix_command)]
+pub async fn register (ctx: Context<'_>) -> Result<(), Error> {
+    register_application_commands_buttons(ctx).await?;
+    Ok(())
 }
 
 async fn event_handler(
