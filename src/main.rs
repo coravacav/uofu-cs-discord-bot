@@ -1,3 +1,4 @@
+mod commands;
 mod text_detection;
 mod types;
 
