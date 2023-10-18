@@ -38,11 +38,12 @@ pub async fn text_detection(
 }
 
 fn rust_response<'a>() -> &'a str {
-    let i = random::<u8>() % 4;
+    let i = random::<u8>() % 5;
     match i {
         1 => "RUST MENTIONED :crab: :crab: :crab:",
-        2 => "<@237717840818470913>",
+        2 => "<@216767618923757568>",
         3 => "Rust is simply the best programming language. Nothing else can compare. I am naming my kids Rust and Ferris.",
+        4 => concat!("Launch the Polaris,\n", "the end doesn't scare us\n", "When will this cease?\n", "The warheads will all rust in peace!"),
         _ => "Rust? Oh, you mean the game?"
     }
 }
