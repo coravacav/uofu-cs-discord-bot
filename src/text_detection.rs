@@ -38,6 +38,9 @@ pub fn register_detectors(data: &mut Data) {
     data.register("1984", r"1984", |_message, _ctx| {
         Text("https://tenor.com/view/1984-gif-19260546")
     });
+    data.register("cs major", r"cs\s*major", |_message, _ctx| {
+        Text("I don't get the way you guys think. I want MONEY. 6 figures out of college. 200k a year entry level. I'm in this for MONEY. I don't care about whether I'm \"fulfilled\" I want MONEY. Whatever gets me the most MONEY. What technology gets me PAID THE BEST. All I care about in this major is MONEY. That's why I'm in college, I don't wanna laugh and play with y'all. I don't wanna be buddy buddy with y'all. I'm here for MONEY.")
+    })
 }
 
 pub async fn text_detection(
