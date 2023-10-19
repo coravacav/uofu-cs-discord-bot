@@ -1,5 +1,4 @@
-use crate::config::Config;
-use crate::types::MessageAttachment::{Image, Text, TextPlusImage};
+use crate::config::{Config, MessageResponse};
 
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -11,48 +10,36 @@ use regex::Regex;
 
 pub struct Data {
     last_responses: HashMap<String, Mutex<DateTime<Utc>>>,
-    response_functions: HashMap<String, MessageReply>,
-    search_patterns: HashMap<String, Regex>,
     pub config: Config,
 }
 
 impl Data {
     pub fn init(config: Config) -> Data {
+        let last_responses = config.lock_responses().iter()
+            .map(|response| {
+                (response.get_name(), Mutex::new(DateTime::<Utc>::from_timestamp(0, 0).unwrap()))
+            }).collect();
         Data {
-            last_responses: HashMap::new(),
-            response_functions: HashMap::new(),
-            search_patterns: HashMap::new(),
+            last_responses,
             config,
         }
     }
 
     /// Register a new response type for messages matching a regular expression pattern
-    pub fn register(&mut self, name: &str, pattern: &str, action: MessageReply) {
-        self.search_patterns
-            .insert(name.to_string(), Regex::new(pattern).unwrap());
+    pub fn register(&mut self, response: MessageResponse) {
         self.last_responses.insert(
-            name.to_string(),
+            response.get_name(),
             Mutex::new(DateTime::<Utc>::from_timestamp(0, 0).unwrap()),
         );
-        self.response_functions.insert(name.to_string(), action);
-    }
-
-    fn get_response_types(&self) -> Vec<String> {
-        self.search_patterns
-            .keys()
-            .cloned()
-            .collect::<Vec<String>>()
+        self.config.add_response(response);
     }
 
     /// If the message contents match any pattern, return the name of the response type.
     /// Otherwise, return None
     pub fn check_should_respond(&self, message: &Message) -> Option<String> {
-        self.get_response_types().into_iter().find(|name| {
-            self.search_patterns
-                .get(name)
-                .unwrap()
-                .is_match(&message.content)
-        })
+        self.config.lock_responses().iter().find(|response| {
+            response.get_pattern().is_match(&message.content)
+        }).map(|response| response.get_name())
     }
 
     pub fn last_response(&self, name: &String) -> &Mutex<DateTime<Utc>> {
@@ -65,41 +52,41 @@ impl Data {
         message: &Message,
         ctx: &serenity::Context,
     ) -> Result<(), Error> {
-        let action = self.response_functions.get(name).unwrap();
-        match action(message, ctx) {
-            Text(text) => message.reply(ctx, text).await?,
-            Image(path) => {
-                message
-                    .channel_id
-                    .send_message(ctx, |m| {
-                        m.reference_message(message);
-                        m.allowed_mentions(|am| {
-                            am.replied_user(false);
-                            am
-                        });
-                        m.add_file(path);
+        let action = self.config.get_response(name.to_string());
+        match action {
+            MessageResponse::Text{content, ..} => {
+                message.reply(ctx, content).await?;
+            },
+            MessageResponse::RandomText{content, ..} => {
+                let pick_index = rand::random::<usize>() % content.len();
+                message.reply(ctx, content[pick_index].clone()).await?;
+            },
+            MessageResponse::Image{path, ..} => {
+                message.channel_id.send_message(ctx, |m| {
+                    m.reference_message(message);
+                    m.allowed_mentions(|am| {
+                        am.replied_user(false);
+                        am
+                    });
+                    m.add_file(path.as_str());
 
-                        m
-                    })
-                    .await?
-            }
-            TextPlusImage(text, path) => {
-                message
-                    .channel_id
-                    .send_message(ctx, |m| {
-                        m.reference_message(message);
-                        m.allowed_mentions(|am| {
-                            am.replied_user(false);
-                            am
-                        });
-                        m.content(text);
-                        m.add_file(path);
+                    m
+                }).await?;
+            },
+            MessageResponse::TextAndImage{content, path, ..} => {
+                message.channel_id.send_message(ctx, |m| {
+                    m.reference_message(message);
+                    m.allowed_mentions(|am| {
+                        am.replied_user(false);
+                        am
+                    });
+                    m.content(content);
+                    m.add_file(path.as_str());
 
-                        m
-                    })
-                    .await?
+                    m
+                }).await?;
             }
-        };
+        }
         Ok(())
     }
 }
@@ -107,9 +94,3 @@ impl Data {
 // User data, which is stored and accessible in all command invocations
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 pub type Context<'a> = poise::Context<'a, Data, Error>;
-pub enum MessageAttachment {
-    Text(&'static str),
-    Image(&'static str),
-    TextPlusImage(&'static str, &'static str),
-}
-type MessageReply = fn(&Message, &serenity::Context) -> MessageAttachment;

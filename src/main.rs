@@ -13,8 +13,8 @@ use poise::Event;
 #[tokio::main]
 async fn main() {
     let config = Config::fetch();
+    config.save();
     let mut data = Data::init(config);
-    text_detection::register_detectors(&mut data);
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![
