@@ -39,7 +39,7 @@ impl Config {
         };
         config.update_cooldown(text_detect_cooldown);
 
-        return config;
+        config
     }
 
     /// Updates config.toml with the new cooldown, and updates the cooldown as well
@@ -63,11 +63,12 @@ impl Config {
             .text_detect_cooldown
             .lock()
             .expect("Could not lock mutex");
-        return text_detect_cooldown;
+
+        text_detect_cooldown
     }
 
     pub fn get_token(&self) -> String {
-        return self.discord_token.clone();
+        self.discord_token.clone()
     }
 }
 

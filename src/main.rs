@@ -23,7 +23,7 @@ async fn main() {
                 commands::create_class_category(),
             ],
             event_handler: |ctx, event, framework, data| {
-                Box::pin(event_handler(&ctx, &event, framework, data))
+                Box::pin(event_handler(ctx, event, framework, data))
             },
             ..Default::default()
         })

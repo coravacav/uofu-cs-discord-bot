@@ -47,17 +47,14 @@ pub async fn text_detection(
     data: &Data,
     message: &Message,
 ) -> Result<(), Error> {
-    match data.check_should_respond(message) {
-        Some(name) => {
-            if cooldown_checker(
-                data.last_response(&name),
-                data.config.lock_cooldown(),
-                message.timestamp.with_timezone(&Utc),
-            ) {
-                data.run_action(&name, message, ctx).await?;
-            }
+    if let Some(name) = data.check_should_respond(message) {
+        if cooldown_checker(
+            data.last_response(&name),
+            data.config.lock_cooldown(),
+            message.timestamp.with_timezone(&Utc),
+        ) {
+            data.run_action(&name, message, ctx).await?;
         }
-        None => {}
     }
 
     Ok(())

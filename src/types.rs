@@ -40,24 +40,19 @@ impl Data {
     fn get_response_types(&self) -> Vec<String> {
         self.search_patterns
             .keys()
-            .map(|x| x.clone())
+            .cloned()
             .collect::<Vec<String>>()
     }
 
     /// If the message contents match any pattern, return the name of the response type.
     /// Otherwise, return None
     pub fn check_should_respond(&self, message: &Message) -> Option<String> {
-        for name in self.get_response_types() {
-            if self
-                .search_patterns
-                .get(&name)
+        self.get_response_types().into_iter().find(|name| {
+            self.search_patterns
+                .get(name)
                 .unwrap()
                 .is_match(&message.content)
-            {
-                return Some(name);
-            }
-        }
-        return None;
+        })
     }
 
     pub fn last_response(&self, name: &String) -> &Mutex<DateTime<Utc>> {
@@ -83,7 +78,8 @@ impl Data {
                             am
                         });
                         m.add_file(path);
-                        return m;
+
+                        m
                     })
                     .await?
             }
@@ -98,7 +94,8 @@ impl Data {
                         });
                         m.content(text);
                         m.add_file(path);
-                        return m;
+
+                        m
                     })
                     .await?
             }
