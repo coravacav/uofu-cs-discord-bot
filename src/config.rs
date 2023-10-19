@@ -34,13 +34,11 @@ impl Config {
             None => std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN"),
         };
 
-        let config = Config {
+        Config {
             text_detect_cooldown: Mutex::new(text_detect_cooldown),
             discord_token,
             responses: Mutex::new(config_builder.responses),
-        };
-
-        config
+        }
     }
 
     /// Updates config.toml with the new cooldown, and updates the cooldown as well

@@ -14,7 +14,7 @@ use poise::Event;
 async fn main() {
     let config = Config::fetch();
     config.save();
-    let mut data = Data::init(config);
+    let data = Data::init(config);
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![

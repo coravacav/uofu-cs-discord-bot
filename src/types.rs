@@ -6,7 +6,6 @@ use std::sync::Mutex;
 use chrono::{DateTime, Utc};
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::Message;
-use regex::Regex;
 
 pub struct Data {
     last_responses: HashMap<String, Mutex<DateTime<Utc>>>,
