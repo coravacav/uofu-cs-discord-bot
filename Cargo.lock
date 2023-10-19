@@ -1535,6 +1535,7 @@ dependencies = [
  "chrono",
  "poise",
  "rand",
+ "regex",
  "serde",
  "tokio",
  "toml",

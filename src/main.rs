@@ -15,6 +15,8 @@ use config::Config;
 #[tokio::main]
 async fn main() {
     let config = Config::fetch();
+    let mut data = Data::init(config);
+    text_detection::register_detectors(&mut data);
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![
@@ -27,23 +29,14 @@ async fn main() {
             },
             ..Default::default()
         })
-        .token(config.get_token())
+        .token(data.config.get_token())
         .intents(
             serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT,
         )
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                Ok(Data {
-                    last_rust_response: Mutex::new(DateTime::<Utc>::from_timestamp(0, 0).unwrap()),
-                    last_tkinter_response: Mutex::new(
-                        DateTime::<Utc>::from_timestamp(0, 0).unwrap(),
-                    ),
-                    last_arch_response: Mutex::new(DateTime::<Utc>::from_timestamp(0, 0).unwrap()),
-                    last_goop_response: Mutex::new(DateTime::<Utc>::from_timestamp(0, 0).unwrap()),
-                    last_1984_response: Mutex::new(DateTime::<Utc>::from_timestamp(0, 0).unwrap()),
-                    config
-                })
+                Ok(data)
             })
         });
 
