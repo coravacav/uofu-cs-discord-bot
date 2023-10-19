@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-use std::fs;
 use crate::types;
 use chrono::{DateTime, Duration, Utc};
 use poise::serenity_prelude as serenity;
@@ -7,16 +5,16 @@ use poise::Event;
 use serenity::Message;
 use std::sync::{Mutex, MutexGuard};
 
-use types::{Data, Error, MessageAttachment};
+use types::{Data, Error};
 
 use rand::prelude::*;
-use crate::types::MessageAttachment::{Image, Text, TextPlusImage};
+use crate::types::MessageAttachment::*;
 
 pub fn register_detectors(data: &mut Data) {
     data.register(
         "rust",
         r"rust",
-        |message, ctx| {
+        |_message, _ctx| {
             let i = random::<u8>() % 5;
             Text(match i {
                 1 => "RUST MENTIONED :crab: :crab: :crab:",
@@ -30,34 +28,21 @@ pub fn register_detectors(data: &mut Data) {
     data.register(
         "tkinter",
         r"tkinter",
-        |message, ctx| {
-            //let file = fs::read("./assets/tkinter.png").expect("Could not open file");
-            let _ = message
-                .channel_id
-                .send_message(ctx, |m| {
-                    m.reference_message(message);
-                    m.allowed_mentions(|am| {
-                        am.replied_user(false);
-                        am
-                    });
-                    m.content("TKINTER MENTIONED");
-                    m.add_file("./assets/tkinter.png");
-                    return m;
-                });
+        |_message, _ctx| {
             TextPlusImage("TKINTER MENTIONED","./assets/tkinter.png")
         }
     );
     data.register(
         "arch",
         r"arch",
-        |message, ctx| {
+        |_message, _ctx| {
             Text("I use Arch btw")
         }
     );
     data.register(
         "goop",
         r"goop",
-        |message, ctx| {
+        |_message, _ctx| {
             let i = random::<bool>();
             Text(if i {
                 "https://tenor.com/view/gunge-gunged-slime-slimed-dunk-gif-21115557"
@@ -69,7 +54,7 @@ pub fn register_detectors(data: &mut Data) {
     data.register(
         "1984",
         r"1984",
-        |message, ctx| {
+        |_message, _ctx| {
             Text("https://tenor.com/view/1984-gif-19260546")
         }
     );
