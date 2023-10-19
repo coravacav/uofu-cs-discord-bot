@@ -20,3 +20,6 @@ target/
 
 # .idea folder
 .idea/
+
+# configuration file
+config.toml

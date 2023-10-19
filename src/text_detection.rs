@@ -3,7 +3,7 @@ use chrono::{DateTime, Duration, Utc};
 use poise::serenity_prelude as serenity;
 use poise::Event;
 use serenity::Message;
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
 
 use types::{Data, Error};
 
@@ -19,7 +19,7 @@ pub async fn text_detection(
     if message.content.to_lowercase().contains("rust") && !message.author.bot {
         if cooldown_checker(
             &data.last_rust_response,
-            &data.text_detect_cooldown,
+            data.config.lock_cooldown(),
             message.timestamp.with_timezone(&Utc),
         ) {
             message.reply(ctx, rust_response()).await?;
@@ -27,7 +27,7 @@ pub async fn text_detection(
     } else if message.content.to_lowercase().contains("tkinter") && !message.author.bot {
         if cooldown_checker(
             &data.last_tkinter_response,
-            &data.text_detect_cooldown,
+            data.config.lock_cooldown(),
             message.timestamp.with_timezone(&Utc),
         ) {
             let file = [(
@@ -51,7 +51,7 @@ pub async fn text_detection(
     } else if message.content.to_lowercase().contains("arch") && !message.author.bot {
         if cooldown_checker(
             &data.last_arch_response,
-            &data.text_detect_cooldown,
+            data.config.lock_cooldown(),
             message.timestamp.with_timezone(&Utc),
         ) {
             message.reply(ctx, "i use arch btw").await?;
@@ -63,6 +63,14 @@ pub async fn text_detection(
             message.timestamp.with_timezone(&Utc),
         ) {
             message.reply(ctx, goop_response()).await?;
+    } else if message.content.to_lowercase().contains("1984") && !message.author.bot {
+        if cooldown_checker(
+            &data.last_1984_response,
+            data.config.lock_cooldown(),
+            message.timestamp.with_timezone(&Utc)
+        ) {
+            // literally 1984
+            message.reply(ctx, "https://tenor.com/view/1984-gif-19260546").await?;
         }
     }
 
@@ -73,11 +81,10 @@ pub async fn text_detection(
 /// returns false and does nothing.
 fn cooldown_checker(
     last_message: &Mutex<DateTime<Utc>>,
-    cooldown: &Mutex<Duration>,
+    cooldown: MutexGuard<Duration>,
     timestamp: DateTime<Utc>,
 ) -> bool {
     let mut last_message = last_message.lock().expect("Could not lock mutex");
-    let cooldown = cooldown.lock().expect("Could not lock mutex");
     if *last_message + *cooldown > timestamp {
         return false;
     }
