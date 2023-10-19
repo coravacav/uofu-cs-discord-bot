@@ -14,12 +14,7 @@ pub async fn change_text_detect_cooldown(
     #[description = "The cooldown in minutes"] cooldown: i64,
 ) -> Result<(), Error> {
     {
-        let mut text_detect_cooldown = ctx
-            .data()
-            .text_detect_cooldown
-            .lock()
-            .expect("Could not lock mutex");
-        *text_detect_cooldown = Duration::minutes(cooldown);
+        ctx.data().config.update_cooldown(Duration::minutes(cooldown));
     }
     ctx.say("Done!").await?;
     Ok(())
