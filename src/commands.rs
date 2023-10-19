@@ -1,12 +1,8 @@
-use crate::types;
+use crate::types::{Context, Error};
+
 use chrono::Duration;
 use poise::serenity_prelude as serenity;
 use serenity::{ChannelType, PermissionOverwrite, PermissionOverwriteType, Permissions};
-use std::ops::Index;
-
-use types::{Context, Error};
-
-use rand::prelude::*;
 
 #[poise::command(slash_command)]
 pub async fn change_text_detect_cooldown(
@@ -14,7 +10,9 @@ pub async fn change_text_detect_cooldown(
     #[description = "The cooldown in minutes"] cooldown: i64,
 ) -> Result<(), Error> {
     {
-        ctx.data().config.update_cooldown(Duration::minutes(cooldown));
+        ctx.data()
+            .config
+            .update_cooldown(Duration::minutes(cooldown));
     }
     ctx.say("Done!").await?;
     Ok(())

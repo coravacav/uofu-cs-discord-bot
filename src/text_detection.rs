@@ -1,14 +1,12 @@
-use crate::types;
+use crate::types::{Data, Error, MessageAttachment::*};
+
+use std::sync::{Mutex, MutexGuard};
+
 use chrono::{DateTime, Duration, Utc};
 use poise::serenity_prelude as serenity;
 use poise::Event;
-use serenity::Message;
-use std::sync::{Mutex, MutexGuard};
-
-use types::{Data, Error};
-
 use rand::prelude::*;
-use crate::types::MessageAttachment::*;
+use serenity::Message;
 
 pub fn register_detectors(data: &mut Data) {
     data.register(
@@ -25,39 +23,21 @@ pub fn register_detectors(data: &mut Data) {
             })
         }
     );
-    data.register(
-        "tkinter",
-        r"tkinter",
-        |_message, _ctx| {
-            TextPlusImage("TKINTER MENTIONED","./assets/tkinter.png")
-        }
-    );
-    data.register(
-        "arch",
-        r"arch",
-        |_message, _ctx| {
-            Text("I use Arch btw")
-        }
-    );
-    data.register(
-        "goop",
-        r"goop",
-        |_message, _ctx| {
-            let i = random::<bool>();
-            Text(if i {
-                "https://tenor.com/view/gunge-gunged-slime-slimed-dunk-gif-21115557"
-            } else {
-                "https://tenor.com/view/goop-goop-house-jello-gif-23114313"
-            })
-        }
-    );
-    data.register(
-        "1984",
-        r"1984",
-        |_message, _ctx| {
-            Text("https://tenor.com/view/1984-gif-19260546")
-        }
-    );
+    data.register("tkinter", r"tkinter", |_message, _ctx| {
+        TextPlusImage("TKINTER MENTIONED", "./assets/tkinter.png")
+    });
+    data.register("arch", r"arch", |_message, _ctx| Text("I use Arch btw"));
+    data.register("goop", r"goop", |_message, _ctx| {
+        let i = random::<bool>();
+        Text(if i {
+            "https://tenor.com/view/gunge-gunged-slime-slimed-dunk-gif-21115557"
+        } else {
+            "https://tenor.com/view/goop-goop-house-jello-gif-23114313"
+        })
+    });
+    data.register("1984", r"1984", |_message, _ctx| {
+        Text("https://tenor.com/view/1984-gif-19260546")
+    });
 }
 
 pub async fn text_detection(
@@ -67,17 +47,14 @@ pub async fn text_detection(
     data: &Data,
     message: &Message,
 ) -> Result<(), Error> {
-    match data.check_should_respond(message) {
-        Some(name) => {
-            if cooldown_checker(
-                data.last_response(&name),
-                    data.config.lock_cooldown(),
-                message.timestamp.with_timezone(&Utc)
-            ) {
-                data.run_action(&name, message, ctx).await?;
-            }
+    if let Some(name) = data.check_should_respond(message) {
+        if cooldown_checker(
+            data.last_response(&name),
+            data.config.lock_cooldown(),
+            message.timestamp.with_timezone(&Utc),
+        ) {
+            data.run_action(&name, message, ctx).await?;
         }
-        None => {}
     }
 
     Ok(())
