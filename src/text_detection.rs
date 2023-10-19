@@ -8,6 +8,57 @@ use std::sync::{Mutex, MutexGuard};
 use types::{Data, Error};
 
 use rand::prelude::*;
+use crate::types::MessageAttachment::*;
+
+pub fn register_detectors(data: &mut Data) {
+    data.register(
+        "rust",
+        r"rust",
+        |_message, _ctx| {
+            let i = random::<u8>() % 5;
+            Text(match i {
+                1 => "RUST MENTIONED :crab: :crab: :crab:",
+                2 => "<@216767618923757568>",
+                3 => "Rust is simply the best programming language. Nothing else can compare. I am naming my kids Rust and Ferris.",
+                4 => concat!("Launch the Polaris,\n", "the end doesn't scare us\n", "When will this cease?\n", "The warheads will all rust in peace!"),
+                _ => "Rust? Oh, you mean the game?"
+            })
+        }
+    );
+    data.register(
+        "tkinter",
+        r"tkinter",
+        |_message, _ctx| {
+            TextPlusImage("TKINTER MENTIONED","./assets/tkinter.png")
+        }
+    );
+    data.register(
+        "arch",
+        r"arch",
+        |_message, _ctx| {
+            Text("I use Arch btw")
+        }
+    );
+    data.register(
+        "goop",
+        r"goop",
+        |_message, _ctx| {
+            let i = random::<bool>();
+            Text(if i {
+                "https://tenor.com/view/gunge-gunged-slime-slimed-dunk-gif-21115557"
+            } else {
+                "https://tenor.com/view/goop-goop-house-jello-gif-23114313"
+            })
+        }
+    );
+    data.register(
+        "1984",
+        r"1984",
+        |_message, _ctx| {
+            Text("https://tenor.com/view/1984-gif-19260546")
+        }
+    );
+}
 
 pub async fn text_detection(
     ctx: &serenity::Context,
@@ -16,63 +67,17 @@ pub async fn text_detection(
     data: &Data,
     message: &Message,
 ) -> Result<(), Error> {
-    if message.content.to_lowercase().contains("rust") && !message.author.bot {
-        if cooldown_checker(
-            &data.last_rust_response,
-            data.config.lock_cooldown(),
-            message.timestamp.with_timezone(&Utc),
-        ) {
-            message.reply(ctx, rust_response()).await?;
+    match data.check_should_respond(message) {
+        Some(name) => {
+            if cooldown_checker(
+                data.last_response(&name),
+                    data.config.lock_cooldown(),
+                message.timestamp.with_timezone(&Utc)
+            ) {
+                data.run_action(&name, message, ctx).await?;
+            }
         }
-    } else if message.content.to_lowercase().contains("tkinter") && !message.author.bot {
-        if cooldown_checker(
-            &data.last_tkinter_response,
-            data.config.lock_cooldown(),
-            message.timestamp.with_timezone(&Utc),
-        ) {
-            let file = [(
-                &tokio::fs::File::open("./assets/tkinter.png").await?,
-                "./assets/tkinter.png",
-            )];
-            message
-                .channel_id
-                .send_message(ctx, |m| {
-                    m.reference_message(message);
-                    m.allowed_mentions(|am| {
-                        am.replied_user(false);
-                        am
-                    });
-                    m.content("TKINTER MENTIONED");
-                    m.files(file);
-                    return m;
-                })
-                .await?;
-        }
-    } else if message.content.to_lowercase().contains("arch") && !message.author.bot {
-        if cooldown_checker(
-            &data.last_arch_response,
-            data.config.lock_cooldown(),
-            message.timestamp.with_timezone(&Utc),
-        ) {
-            message.reply(ctx, "i use arch btw").await?;
-        }
-    } else if message.content.to_lowercase().contains("goop") && !message.author.bot {
-        if cooldown_checker(
-            &data.last_goop_response,
-            data.config.lock_cooldown(),
-            message.timestamp.with_timezone(&Utc),
-        ) {
-            message.reply(ctx, goop_response()).await?;
-        }
-    } else if message.content.to_lowercase().contains("1984") && !message.author.bot {
-        if cooldown_checker(
-            &data.last_1984_response,
-            data.config.lock_cooldown(),
-            message.timestamp.with_timezone(&Utc)
-        ) {
-            // literally 1984
-            message.reply(ctx, "https://tenor.com/view/1984-gif-19260546").await?;
-        }
+        None => {}
     }
 
     Ok(())
@@ -93,24 +98,4 @@ fn cooldown_checker(
     *last_message = timestamp;
 
     true
-}
-
-fn rust_response<'a>() -> &'a str {
-    let i = random::<u8>() % 5;
-    match i {
-        1 => "RUST MENTIONED :crab: :crab: :crab:",
-        2 => "<@216767618923757568>",
-        3 => "Rust is simply the best programming language. Nothing else can compare. I am naming my kids Rust and Ferris.",
-        4 => concat!("Launch the Polaris,\n", "the end doesn't scare us\n", "When will this cease?\n", "The warheads will all rust in peace!"),
-        _ => "Rust? Oh, you mean the game?"
-    }
-}
-
-fn goop_response<'a>() -> &'a str {
-    let i = random::<bool>();
-    if i {
-        "https://tenor.com/view/gunge-gunged-slime-slimed-dunk-gif-21115557"
-    } else {
-        "https://tenor.com/view/goop-goop-house-jello-gif-23114313"
-    }
 }
