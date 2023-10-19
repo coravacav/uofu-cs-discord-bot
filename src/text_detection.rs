@@ -59,7 +59,7 @@ pub async fn text_detection(
     } else if message.content.to_lowercase().contains("goop") && !message.author.bot {
         if cooldown_checker(
             &data.last_goop_response,
-            &data.text_detect_cooldown,
+            data.config.lock_cooldown(),
             message.timestamp.with_timezone(&Utc),
         ) {
             message.reply(ctx, goop_response()).await?;
