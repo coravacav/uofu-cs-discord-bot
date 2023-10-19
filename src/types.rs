@@ -1,13 +1,13 @@
 use crate::config::Config;
 use crate::types::MessageAttachment::{Image, Text, TextPlusImage};
-use chrono::{DateTime, Duration, Utc};
+
+use std::collections::HashMap;
+use std::sync::Mutex;
+
+use chrono::{DateTime, Utc};
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::Message;
 use regex::Regex;
-use std::collections::HashMap;
-use std::future::Future;
-use std::pin::Pin;
-use std::sync::Mutex;
 
 pub struct Data {
     last_responses: HashMap<String, Mutex<DateTime<Utc>>>,

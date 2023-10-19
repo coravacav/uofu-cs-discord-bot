@@ -1,6 +1,7 @@
+use std::sync::{Mutex, MutexGuard};
+
 use chrono::Duration;
 use serde::{Deserialize, Serialize};
-use std::sync::{Mutex, MutexGuard};
 
 /// In minutes
 const DEFAULT_TEXT_DETECT_COOLDOWN: i64 = 5;

@@ -1,12 +1,8 @@
-use crate::types;
+use crate::types::{Context, Error};
+
 use chrono::Duration;
 use poise::serenity_prelude as serenity;
 use serenity::{ChannelType, PermissionOverwrite, PermissionOverwriteType, Permissions};
-use std::ops::Index;
-
-use types::{Context, Error};
-
-use rand::prelude::*;
 
 #[poise::command(slash_command)]
 pub async fn change_text_detect_cooldown(

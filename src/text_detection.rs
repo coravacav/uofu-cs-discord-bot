@@ -1,14 +1,12 @@
-use crate::types;
+use crate::types::{Data, Error, MessageAttachment::*};
+
+use std::sync::{Mutex, MutexGuard};
+
 use chrono::{DateTime, Duration, Utc};
 use poise::serenity_prelude as serenity;
 use poise::Event;
-use serenity::Message;
-use std::sync::{Mutex, MutexGuard};
-
-use types::{Data, Error};
-
-use crate::types::MessageAttachment::*;
 use rand::prelude::*;
+use serenity::Message;
 
 pub fn register_detectors(data: &mut Data) {
     data.register(

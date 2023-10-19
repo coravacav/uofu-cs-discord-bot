@@ -3,14 +3,12 @@ mod config;
 mod text_detection;
 mod types;
 
-use chrono::{DateTime, Duration, Utc};
+use config::Config;
+use types::{Context, Data, Error};
+
 use poise::builtins::register_application_commands_buttons;
 use poise::serenity_prelude as serenity;
 use poise::Event;
-use std::sync::Mutex;
-
-use config::Config;
-use types::{Context, Data, Error};
 
 #[tokio::main]
 async fn main() {
