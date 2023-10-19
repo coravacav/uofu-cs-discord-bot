@@ -1,8 +1,8 @@
 use crate::types;
 use chrono::Duration;
 use poise::serenity_prelude as serenity;
-use poise::serenity_prelude::{PermissionOverwrite, PermissionOverwriteType, Permissions};
-use serenity::ChannelType;
+use serenity::{ChannelType, PermissionOverwrite, PermissionOverwriteType, Permissions};
+use std::ops::Index;
 
 use types::{Context, Error};
 
@@ -32,12 +32,26 @@ pub async fn create_class_category(
 ) -> Result<(), Error> {
     let guild = ctx.guild().unwrap();
     let channels = ctx.guild().unwrap().channels(ctx).await?;
+    let roles = ctx.guild().unwrap().roles;
 
     let number_string = number.to_string();
     for (_id, channel) in channels {
         if channel.name.contains(&number_string) {
-            ctx.say("Category already seems to exist!").await?;
+            ctx.say("Category/channels already seem to exist!").await?;
             return Ok(());
+        }
+    }
+
+    // This is a really horrific way to just grab a random value to pre-initialize
+    // We need the loop because the everyone ID is the same as the guild ID
+    let mut everyone = roles.values().next().unwrap().clone();
+
+    for (_id, role) in roles {
+        if role.name.contains(&number_string) {
+            ctx.say("Role already seems to exist!").await?;
+            return Ok(());
+        } else if role.id.as_u64() == guild.id.as_u64() {
+            everyone = role;
         }
     }
 
@@ -50,11 +64,18 @@ pub async fn create_class_category(
         .create_channel(ctx, |c| {
             c.name(format!("CS {}", number_string))
                 .kind(ChannelType::Category)
-                .permissions(vec![PermissionOverwrite {
-                    allow: Permissions::VIEW_CHANNEL,
-                    deny: Permissions::empty(),
-                    kind: PermissionOverwriteType::Role(role.id),
-                }])
+                .permissions(vec![
+                    PermissionOverwrite {
+                        allow: Permissions::VIEW_CHANNEL,
+                        deny: Permissions::empty(),
+                        kind: PermissionOverwriteType::Role(role.id),
+                    },
+                    PermissionOverwrite {
+                        allow: Permissions::empty(),
+                        deny: Permissions::all(),
+                        kind: PermissionOverwriteType::Role(everyone.id),
+                    },
+                ])
         })
         .await
         .unwrap();
