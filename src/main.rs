@@ -40,6 +40,7 @@ async fn main() {
                         DateTime::<Utc>::from_timestamp(0, 0).unwrap(),
                     ),
                     last_arch_response: Mutex::new(DateTime::<Utc>::from_timestamp(0, 0).unwrap()),
+                    last_goop_response: Mutex::new(DateTime::<Utc>::from_timestamp(0, 0).unwrap()),
                     last_1984_response: Mutex::new(DateTime::<Utc>::from_timestamp(0, 0).unwrap()),
                     config
                 })

@@ -6,6 +6,7 @@ pub struct Data {
     pub last_rust_response: Mutex<DateTime<Utc>>,
     pub last_tkinter_response: Mutex<DateTime<Utc>>,
     pub last_arch_response: Mutex<DateTime<Utc>>,
+    pub last_goop_response: Mutex<DateTime<Utc>>,
     pub last_1984_response: Mutex<DateTime<Utc>>,
     pub config: Config
 }

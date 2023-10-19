@@ -56,6 +56,13 @@ pub async fn text_detection(
         ) {
             message.reply(ctx, "i use arch btw").await?;
         }
+    } else if message.content.to_lowercase().contains("goop") && !message.author.bot {
+        if cooldown_checker(
+            &data.last_goop_response,
+            &data.text_detect_cooldown,
+            message.timestamp.with_timezone(&Utc),
+        ) {
+            message.reply(ctx, goop_response()).await?;
     } else if message.content.to_lowercase().contains("1984") && !message.author.bot {
         if cooldown_checker(
             &data.last_1984_response,
@@ -95,5 +102,14 @@ fn rust_response<'a>() -> &'a str {
         3 => "Rust is simply the best programming language. Nothing else can compare. I am naming my kids Rust and Ferris.",
         4 => concat!("Launch the Polaris,\n", "the end doesn't scare us\n", "When will this cease?\n", "The warheads will all rust in peace!"),
         _ => "Rust? Oh, you mean the game?"
+    }
+}
+
+fn goop_response<'a>() -> &'a str {
+    let i = random::<bool>();
+    if i {
+        "https://tenor.com/view/gunge-gunged-slime-slimed-dunk-gif-21115557"
+    } else {
+        "https://tenor.com/view/goop-goop-house-jello-gif-23114313"
     }
 }
