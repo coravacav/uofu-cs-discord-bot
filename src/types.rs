@@ -15,10 +15,16 @@ pub struct Data {
 
 impl Data {
     pub fn init(config: Config) -> Data {
-        let last_responses = config.lock_responses().iter()
+        let last_responses = config
+            .lock_responses()
+            .iter()
             .map(|response| {
-                (response.get_name(), Mutex::new(DateTime::<Utc>::from_timestamp(0, 0).unwrap()))
-            }).collect();
+                (
+                    response.get_name(),
+                    Mutex::new(DateTime::<Utc>::from_timestamp(0, 0).unwrap()),
+                )
+            })
+            .collect();
         Data {
             last_responses,
             config,
@@ -37,9 +43,11 @@ impl Data {
     /// If the message contents match any pattern, return the name of the response type.
     /// Otherwise, return None
     pub fn check_should_respond(&self, message: &Message) -> Option<String> {
-        self.config.lock_responses().iter().find(|response| {
-            response.get_pattern().is_match(&message.content)
-        }).map(|response| response.get_name())
+        self.config
+            .lock_responses()
+            .iter()
+            .find(|response| response.get_pattern().is_match(&message.content))
+            .map(|response| response.get_name())
     }
 
     pub fn last_response(&self, name: &String) -> &Mutex<DateTime<Utc>> {
@@ -54,37 +62,43 @@ impl Data {
     ) -> Result<(), Error> {
         let action = self.config.get_response(name.to_string());
         match action {
-            MessageResponse::Text{content, ..} => {
+            MessageResponse::Text { content, .. } => {
                 message.reply(ctx, content).await?;
-            },
-            MessageResponse::RandomText{content, ..} => {
+            }
+            MessageResponse::RandomText { content, .. } => {
                 let pick_index = rand::random::<usize>() % content.len();
                 message.reply(ctx, content[pick_index].clone()).await?;
-            },
-            MessageResponse::Image{path, ..} => {
-                message.channel_id.send_message(ctx, |m| {
-                    m.reference_message(message);
-                    m.allowed_mentions(|am| {
-                        am.replied_user(false);
-                        am
-                    });
-                    m.add_file(path.as_str());
+            }
+            MessageResponse::Image { path, .. } => {
+                message
+                    .channel_id
+                    .send_message(ctx, |m| {
+                        m.reference_message(message);
+                        m.allowed_mentions(|am| {
+                            am.replied_user(false);
+                            am
+                        });
+                        m.add_file(path.as_str());
 
-                    m
-                }).await?;
-            },
-            MessageResponse::TextAndImage{content, path, ..} => {
-                message.channel_id.send_message(ctx, |m| {
-                    m.reference_message(message);
-                    m.allowed_mentions(|am| {
-                        am.replied_user(false);
-                        am
-                    });
-                    m.content(content);
-                    m.add_file(path.as_str());
+                        m
+                    })
+                    .await?;
+            }
+            MessageResponse::TextAndImage { content, path, .. } => {
+                message
+                    .channel_id
+                    .send_message(ctx, |m| {
+                        m.reference_message(message);
+                        m.allowed_mentions(|am| {
+                            am.replied_user(false);
+                            am
+                        });
+                        m.content(content);
+                        m.add_file(path.as_str());
 
-                    m
-                }).await?;
+                        m
+                    })
+                    .await?;
             }
         }
         Ok(())

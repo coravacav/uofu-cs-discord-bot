@@ -10,7 +10,7 @@ const DEFAULT_TEXT_DETECT_COOLDOWN: i64 = 5;
 pub struct Config {
     text_detect_cooldown: Mutex<Duration>,
     discord_token: String,
-    responses: Mutex<Vec<MessageResponse>>
+    responses: Mutex<Vec<MessageResponse>>,
 }
 
 impl Config {
@@ -37,7 +37,7 @@ impl Config {
         let config = Config {
             text_detect_cooldown: Mutex::new(text_detect_cooldown),
             discord_token,
-            responses: Mutex::new(config_builder.responses)
+            responses: Mutex::new(config_builder.responses),
         };
 
         config
@@ -62,7 +62,11 @@ impl Config {
     /// Removes a response from the config.toml file and the config.
     pub fn remove_response(&self, name: String) {
         let mut responses = self.responses.lock().unwrap();
-        *responses = responses.iter().filter(|response| response.get_name() != name).cloned().collect();
+        *responses = responses
+            .iter()
+            .filter(|response| response.get_name() != name)
+            .cloned()
+            .collect();
 
         self.save();
     }
@@ -85,9 +89,13 @@ impl Config {
     }
 
     pub fn get_response(&self, name: String) -> MessageResponse {
-        self.responses.lock().unwrap().iter()
+        self.responses
+            .lock()
+            .unwrap()
+            .iter()
             .find(|response| response.get_name() == name)
-            .unwrap().clone()
+            .unwrap()
+            .clone()
     }
 
     pub fn get_token(&self) -> String {
@@ -98,7 +106,7 @@ impl Config {
         let config_builder = ConfigBuilder {
             text_detect_cooldown: Some(self.lock_cooldown().num_minutes()),
             discord_token: Some(self.discord_token.clone()),
-            responses: self.responses.lock().unwrap().clone()
+            responses: self.responses.lock().unwrap().clone(),
         };
         let toml = toml::to_string(&config_builder).unwrap();
 
@@ -110,7 +118,7 @@ impl Config {
 struct ConfigBuilder {
     text_detect_cooldown: Option<i64>,
     discord_token: Option<String>,
-    responses: Vec<MessageResponse>
+    responses: Vec<MessageResponse>,
 }
 
 impl ConfigBuilder {
@@ -118,35 +126,52 @@ impl ConfigBuilder {
         ConfigBuilder {
             text_detect_cooldown: None,
             discord_token: None,
-            responses: Vec::new()
+            responses: Vec::new(),
         }
     }
 }
 
-#[derive(Deserialize,Serialize,Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub enum MessageResponse {
-    Text{name: String, pattern: String, content: String},
-    RandomText{name: String, pattern: String, content: Vec<String>},
-    Image{name: String, pattern: String, path: String},
-    TextAndImage{name: String, pattern: String, content: String, path: String}
+    Text {
+        name: String,
+        pattern: String,
+        content: String,
+    },
+    RandomText {
+        name: String,
+        pattern: String,
+        content: Vec<String>,
+    },
+    Image {
+        name: String,
+        pattern: String,
+        path: String,
+    },
+    TextAndImage {
+        name: String,
+        pattern: String,
+        content: String,
+        path: String,
+    },
 }
 
 impl MessageResponse {
     pub fn get_name(&self) -> String {
         match self {
-            MessageResponse::Text{name, ..} => name.clone(),
-            MessageResponse::RandomText{name, ..} => name.clone(),
-            MessageResponse::TextAndImage{name, ..} => name.clone(),
-            MessageResponse::Image{name, ..} => name.clone()
+            MessageResponse::Text { name, .. } => name.clone(),
+            MessageResponse::RandomText { name, .. } => name.clone(),
+            MessageResponse::TextAndImage { name, .. } => name.clone(),
+            MessageResponse::Image { name, .. } => name.clone(),
         }
     }
 
     pub fn get_pattern(&self) -> Regex {
         match self {
-            MessageResponse::Text{pattern, ..} => Regex::new(pattern).unwrap(),
-            MessageResponse::RandomText{pattern, ..} => Regex::new(pattern).unwrap(),
-            MessageResponse::TextAndImage{pattern, ..} => Regex::new(pattern).unwrap(),
-            MessageResponse::Image{pattern, ..} => Regex::new(pattern).unwrap()
+            MessageResponse::Text { pattern, .. } => Regex::new(pattern).unwrap(),
+            MessageResponse::RandomText { pattern, .. } => Regex::new(pattern).unwrap(),
+            MessageResponse::TextAndImage { pattern, .. } => Regex::new(pattern).unwrap(),
+            MessageResponse::Image { pattern, .. } => Regex::new(pattern).unwrap(),
         }
     }
 }
