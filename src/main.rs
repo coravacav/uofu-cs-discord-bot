@@ -1,6 +1,7 @@
 mod commands;
 mod text_detection;
 mod types;
+mod config;
 
 use chrono::{DateTime, Duration, Utc};
 use poise::builtins::register_application_commands_buttons;
@@ -9,12 +10,11 @@ use poise::Event;
 use std::sync::Mutex;
 
 use types::{Context, Data, Error};
-
-/// In minutes
-const DEFAULT_TEXT_DETECT_COOLDOWN: i64 = 5;
+use config::Config;
 
 #[tokio::main]
 async fn main() {
+    let config = Config::fetch();
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![
@@ -27,7 +27,7 @@ async fn main() {
             },
             ..Default::default()
         })
-        .token(std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN"))
+        .token(config.get_token())
         .intents(
             serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT,
         )
@@ -40,9 +40,7 @@ async fn main() {
                         DateTime::<Utc>::from_timestamp(0, 0).unwrap(),
                     ),
                     last_arch_response: Mutex::new(DateTime::<Utc>::from_timestamp(0, 0).unwrap()),
-                    text_detect_cooldown: Mutex::new(Duration::minutes(
-                        DEFAULT_TEXT_DETECT_COOLDOWN,
-                    )),
+                    config
                 })
             })
         });
