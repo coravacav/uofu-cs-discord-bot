@@ -56,6 +56,15 @@ pub async fn text_detection(
         ) {
             message.reply(ctx, "i use arch btw").await?;
         }
+    } else if message.content.to_lowercase().contains("1984") && !message.author.bot {
+        if cooldown_checker(
+            &data.last_1984_response,
+            data.config.lock_cooldown(),
+            message.timestamp.with_timezone(&Utc)
+        ) {
+            // literally 1984
+            message.reply(ctx, "https://tenor.com/view/1984-gif-19260546").await?;
+        }
     }
 
     Ok(())
