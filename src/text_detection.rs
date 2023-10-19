@@ -63,6 +63,7 @@ pub async fn text_detection(
             message.timestamp.with_timezone(&Utc),
         ) {
             message.reply(ctx, goop_response()).await?;
+        }
     } else if message.content.to_lowercase().contains("1984") && !message.author.bot {
         if cooldown_checker(
             &data.last_1984_response,
