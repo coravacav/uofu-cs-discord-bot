@@ -67,7 +67,12 @@ impl Data {
     }
 
     pub fn last_response(&self, name: &String) -> DateTime<Utc> {
-        self.last_responses.lock().unwrap().get(name).unwrap().clone()
+        self.last_responses
+            .lock()
+            .unwrap()
+            .get(name)
+            .unwrap()
+            .clone()
     }
 
     pub fn reset_last_response(&self, name: &String, timestamp: DateTime<Utc>) {

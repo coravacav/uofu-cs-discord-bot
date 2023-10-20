@@ -21,7 +21,8 @@ pub async fn change_text_detect_cooldown(
 #[poise::command(slash_command)]
 pub async fn reload_config(ctx: Context<'_>) -> Result<(), Error> {
     ctx.data().reload();
-    ctx.say("Successfully reloaded cooldown and responses from config.toml").await?;
+    ctx.say("Successfully reloaded cooldown and responses from config.toml")
+        .await?;
     Ok(())
 }
 
