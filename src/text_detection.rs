@@ -1,6 +1,6 @@
 use crate::types::{Data, Error};
 
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{MutexGuard};
 
 use chrono::{DateTime, Duration, Utc};
 use poise::serenity_prelude as serenity;
