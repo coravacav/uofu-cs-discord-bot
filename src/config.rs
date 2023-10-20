@@ -18,13 +18,7 @@ impl Config {
     /// If the delay is missing, it will default to 5 minutes.
     /// If the discord token is missing, it will attempt to use the DISCORD_TOKEN environment variable.
     pub fn fetch() -> Config {
-        let config_builder = match std::fs::read_to_string("./config.toml") {
-            Ok(contents) => toml::from_str(&contents).expect("Error parsing config.toml"),
-            Err(e) => match e.kind() {
-                std::io::ErrorKind::NotFound => ConfigBuilder::empty(),
-                _ => panic!("Error reading config.toml: {}", e),
-            },
-        };
+        let config_builder: ConfigBuilder = toml::from_str(&Config::read_all_configs()).expect("Error parsing configuration.");
         let text_detect_cooldown = match config_builder.text_detect_cooldown {
             Some(cooldown) => Duration::minutes(cooldown),
             None => Duration::minutes(DEFAULT_TEXT_DETECT_COOLDOWN),
@@ -39,6 +33,12 @@ impl Config {
             discord_token,
             responses: Mutex::new(config_builder.responses),
         }
+    }
+
+    fn read_all_configs() -> String {
+        let config = std::fs::read_to_string("./config.toml").expect("Error reading config.toml");
+        let responses = std::fs::read_to_string("./assets/responses.toml").expect("Error reading responses.toml");;
+        return dbg!(config + "\n" + &responses);
     }
 
     /// Reloads the config.toml file and updates the configuration.
@@ -116,9 +116,11 @@ impl Config {
             discord_token: Some(self.discord_token.clone()),
             responses: self.responses.lock().unwrap().clone(),
         };
-        let toml = toml::to_string(&config_builder).unwrap();
+        let mut toml = toml::to_string(&config_builder).unwrap();
 
-        std::fs::write("./config.toml", toml).expect("Could not write to config.toml");
+        let secrets = toml.split("[[responses]]").next().unwrap().to_string();
+
+        std::fs::write("./config.toml", secrets).expect("Could not write to config.toml");
     }
 }
 
