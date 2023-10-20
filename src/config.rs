@@ -41,10 +41,20 @@ impl Config {
         }
     }
 
+    /// Reloads the config.toml file and updates the configuration.
+    /// Note that this does not update the discord token, only the cooldown and responses
+    pub fn reload(&self) {
+        let new_config = Config::fetch();
+        *self.lock_cooldown() = *new_config.lock_cooldown();
+        *self.lock_responses() = new_config.lock_responses().clone();
+    }
+
     /// Updates config.toml with the new cooldown, and updates the cooldown as well
     pub fn update_cooldown(&self, cooldown: Duration) {
-        let mut text_detect_cooldown = self.lock_cooldown();
-        *text_detect_cooldown = cooldown;
+        {
+            let mut text_detect_cooldown = self.lock_cooldown();
+            *text_detect_cooldown = cooldown;
+        }
 
         self.save();
     }
@@ -129,7 +139,7 @@ impl ConfigBuilder {
     }
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum MessageResponse {
     Text {
         name: String,

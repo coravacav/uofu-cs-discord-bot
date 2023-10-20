@@ -21,6 +21,7 @@ async fn main() {
                 register(),
                 commands::change_text_detect_cooldown(),
                 commands::create_class_category(),
+                commands::reload_config(),
             ],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(ctx, event, framework, data))

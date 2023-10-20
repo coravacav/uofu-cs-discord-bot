@@ -1,6 +1,6 @@
 use crate::types::{Data, Error};
 
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{MutexGuard};
 
 use chrono::{DateTime, Duration, Utc};
 use poise::serenity_prelude as serenity;
@@ -23,6 +23,7 @@ pub async fn text_detection(
             data.config.lock_cooldown(),
             message.timestamp.with_timezone(&Utc),
         ) {
+            data.reset_last_response(&name, message.timestamp.with_timezone(&Utc));
             data.run_action(&name, message, ctx).await?;
         }
     }
@@ -33,16 +34,13 @@ pub async fn text_detection(
 /// Checks if the cooldown is met. If yes, it is, returns true and resets the cooldown. If not,
 /// returns false and does nothing.
 fn cooldown_checker(
-    last_message: &Mutex<DateTime<Utc>>,
+    last_message: DateTime<Utc>,
     cooldown: MutexGuard<Duration>,
     timestamp: DateTime<Utc>,
 ) -> bool {
-    let mut last_message = last_message.lock().expect("Could not lock mutex");
-    if *last_message + *cooldown > timestamp {
+    if last_message + *cooldown > timestamp {
         return false;
     }
-
-    *last_message = timestamp;
 
     true
 }
