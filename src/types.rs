@@ -30,15 +30,6 @@ impl Data {
         }
     }
 
-    /// Register a new response type for messages matching a regular expression pattern
-    pub fn register(&self, response: MessageResponse) {
-        self.last_responses.lock().unwrap().insert(
-            response.get_name(),
-            DateTime::<Utc>::from_timestamp(0, 0).unwrap(),
-        );
-        self.config.add_response(response);
-    }
-
     /// Reload the configuration file and update the responses hash map accordingly
     pub fn reload(&self) {
         self.config.reload();

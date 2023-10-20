@@ -59,26 +59,6 @@ impl Config {
         self.save();
     }
 
-    /// Adds a response to the config.toml file and the config.
-    pub fn add_response(&self, response: MessageResponse) {
-        let mut responses = self.responses.lock().unwrap();
-        responses.push(response);
-
-        self.save();
-    }
-
-    /// Removes a response from the config.toml file and the config.
-    pub fn remove_response(&self, name: String) {
-        let mut responses = self.responses.lock().unwrap();
-        *responses = responses
-            .iter()
-            .filter(|response| response.get_name() != name)
-            .cloned()
-            .collect();
-
-        self.save();
-    }
-
     /// Locks and returns the text detect cooldown.
     /// The mutex guard returned is guaranteed to be unlocked, so can be used immediately.
     pub fn lock_cooldown(&self) -> MutexGuard<Duration> {
