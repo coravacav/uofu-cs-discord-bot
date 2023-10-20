@@ -38,7 +38,7 @@ impl Config {
     fn read_all_configs() -> String {
         let config = std::fs::read_to_string("./config.toml").expect("Error reading config.toml");
         let responses = std::fs::read_to_string("./assets/responses.toml").expect("Error reading responses.toml");;
-        return dbg!(config + "\n" + &responses);
+        return config + "\n" + &responses
     }
 
     /// Reloads the config.toml file and updates the configuration.
