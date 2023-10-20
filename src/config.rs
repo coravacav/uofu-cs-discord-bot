@@ -18,7 +18,8 @@ impl Config {
     /// If the delay is missing, it will default to 5 minutes.
     /// If the discord token is missing, it will attempt to use the DISCORD_TOKEN environment variable.
     pub fn fetch() -> Config {
-        let config_builder: ConfigBuilder = toml::from_str(&Config::read_all_configs()).expect("Error parsing configuration.");
+        let config_builder: ConfigBuilder =
+            toml::from_str(&Config::read_all_configs()).expect("Error parsing configuration.");
         let text_detect_cooldown = match config_builder.text_detect_cooldown {
             Some(cooldown) => Duration::minutes(cooldown),
             None => Duration::minutes(DEFAULT_TEXT_DETECT_COOLDOWN),
@@ -37,8 +38,9 @@ impl Config {
 
     fn read_all_configs() -> String {
         let config = std::fs::read_to_string("./config.toml").expect("Error reading config.toml");
-        let responses = std::fs::read_to_string("./assets/responses.toml").expect("Error reading responses.toml");;
-        return config + "\n" + &responses
+        let responses = std::fs::read_to_string("./assets/responses.toml")
+            .expect("Error reading responses.toml");
+        return config + "\n" + &responses;
     }
 
     /// Reloads the config.toml file and updates the configuration.
