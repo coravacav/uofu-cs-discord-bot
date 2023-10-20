@@ -40,7 +40,7 @@ impl Config {
         let config = std::fs::read_to_string("./config.toml").expect("Error reading config.toml");
         let responses = std::fs::read_to_string("./assets/responses.toml")
             .expect("Error reading responses.toml");
-        return config + "\n" + &responses;
+        config + "\n" + &responses
     }
 
     /// Reloads the config.toml file and updates the configuration.
@@ -98,7 +98,7 @@ impl Config {
             discord_token: Some(self.discord_token.clone()),
             responses: self.responses.lock().unwrap().clone(),
         };
-        let mut toml = toml::to_string(&config_builder).unwrap();
+        let toml = toml::to_string(&config_builder).unwrap();
 
         let secrets = toml.split("[[responses]]").next().unwrap().to_string();
 
