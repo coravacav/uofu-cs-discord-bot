@@ -1,0 +1,33 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Format
+      run: cargo fmt
+    - name: Clippy add
+      run: rustup component add clippy
+    - name: Clippy run
+      run: cargo clippy --fix
+    - uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        # Optional. Commit message for the created commit.
+        # Defaults to "Apply automatic changes"
+        commit_message: Automatically ran format and clippy fix
+    
