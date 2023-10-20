@@ -19,6 +19,13 @@ pub async fn change_text_detect_cooldown(
 }
 
 #[poise::command(slash_command)]
+pub async fn reload_config(ctx: Context<'_>) -> Result<(), Error> {
+    ctx.data().reload();
+    ctx.say("Successfully reloaded cooldown and responses from config.toml").await?;
+    Ok(())
+}
+
+#[poise::command(slash_command)]
 pub async fn create_class_category(
     ctx: Context<'_>,
     #[description = "The class number, eg. for CS2420 put in \"2420\""] number: u32,
