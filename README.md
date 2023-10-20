@@ -12,17 +12,11 @@ An example `config.toml` file looks like this:
 ```toml
 text_detect_cooldown = 5
 discord_token = "your_token_here"
-
-[[responses]]
-[responses.Text]
-name = "example"
-pattern = "ex(ample)?"
-content = "Hello, world!"
 ```
 Note that the text detection cooldown is
 specified in minutes.
 
-Message responses are also specified in the configuration file,
+Message responses are specified in the `assets/responses.toml` file,
 in a `[[responses]]` array. The four possible types of response
 are currently `Text`, `RandomText`, `Image`, and `TextAndImage`.
 Fields that are common to all response types are the `name` and `pattern`
