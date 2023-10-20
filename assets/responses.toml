@@ -1,5 +1,4 @@
 [[responses]]
-
 [responses.RandomText]
 name = "rust"
 pattern = "rust"
@@ -17,7 +16,6 @@ content = [
 ]
 
 [[responses]]
-
 [responses.TextAndImage]
 name = "tkinter"
 pattern = "tkinter"
@@ -25,14 +23,12 @@ content = "TKINTER MENTIONED"
 path = "./assets/tkinter.png"
 
 [[responses]]
-
 [responses.Text]
 name = "arch"
 pattern = "arch"
 content = "I use Arch btw."
 
 [[responses]]
-
 [responses.RandomText]
 name = "goop"
 pattern = "goop"
@@ -42,14 +38,12 @@ content = [
 ]
 
 [[responses]]
-
 [responses.Text]
 name = "1984"
 pattern = "1984"
 content = "https://tenor.com/view/1984-gif-19260546"
 
 [[responses]]
-
 [responses.Text]
 name = "cs major"
 pattern = 'cs\s*major'
