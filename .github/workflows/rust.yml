@@ -20,7 +20,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Format
-      run: cargo format
+      run: cargo fmt
     - name: Clippy add
       run: rustup component add clippy
     - name: Clippy run
