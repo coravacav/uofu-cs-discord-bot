@@ -66,13 +66,13 @@ impl Data {
             .map(|response| response.get_name())
     }
 
-    pub fn last_response(&self, name: &String) -> DateTime<Utc> {
+    pub fn last_response(&self, name: &str) -> DateTime<Utc> {
         *self.last_responses.lock().unwrap().get(name).unwrap()
     }
 
-    pub fn reset_last_response(&self, name: &String, timestamp: DateTime<Utc>) {
+    pub fn reset_last_response(&self, name: &str, timestamp: DateTime<Utc>) {
         let mut last_responses = self.last_responses.lock().unwrap();
-        last_responses.insert(name.clone(), timestamp);
+        last_responses.insert(name.to_owned(), timestamp);
     }
 
     pub async fn run_action(
