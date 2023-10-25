@@ -1,6 +1,5 @@
 use std::sync::{Mutex, MutexGuard};
 
-use anyhow::Context;
 use chrono::Duration;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -143,7 +142,7 @@ impl Config {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, PartialEq, Eq, Debug)]
 struct ConfigBuilder {
     text_detect_cooldown: Option<i64>,
     discord_token: Option<String>,
@@ -160,7 +159,8 @@ impl ConfigBuilder {
     }
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
+#[serde(untagged)]
 pub enum MessageResponseKind {
     Text { content: String },
     RandomText { content: Vec<String> },
@@ -168,10 +168,12 @@ pub enum MessageResponseKind {
     TextAndImage { content: String, path: String },
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
 pub struct MessageResponse {
     pub name: String,
     pub pattern: String,
+    #[serde(flatten)]
+    // This makes it so it pretends the attributes of the enum are attributes of the struct
     pub kind: MessageResponseKind,
 }
 
@@ -182,5 +184,31 @@ impl MessageResponse {
 
     pub fn get_pattern(&self) -> Regex {
         Regex::new(&self.pattern).unwrap()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn should_deserialize_properly() {
+        let test_input = r#"[[responses]]
+name = "1984"
+pattern = "1984"
+content = "literally 1984""#;
+
+        let config: ConfigBuilder = toml::from_str(test_input).unwrap();
+
+        assert_eq!(
+            config.responses.first(),
+            Some(&MessageResponse {
+                name: "1984".to_string(),
+                pattern: "1984".to_string(),
+                kind: MessageResponseKind::Text {
+                    content: "literally 1984".to_string(),
+                },
+            })
+        );
     }
 }
