@@ -55,10 +55,9 @@ async fn event_handler(
     _framework: poise::FrameworkContext<'_, Data, anyhow::Error>,
     data: &Data,
 ) -> anyhow::Result<()> {
-    match event {
-        Event::Message { new_message } => {
-            text_detection::text_detection(ctx, event, _framework, data, new_message).await
-        }
-        _ => Ok(()),
+    if let Event::Message { new_message } = event {
+        text_detection::text_detection(ctx, event, _framework, data, new_message).await?;
     }
+
+    Ok(())
 }
