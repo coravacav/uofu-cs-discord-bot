@@ -1,4 +1,4 @@
-use crate::config::{Config, MessageResponse};
+use crate::config::{Config, MessageResponse, MessageResponseType};
 
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -82,15 +82,15 @@ impl Data {
         ctx: &serenity::Context,
     ) -> Result<(), Error> {
         let action = self.config.get_response(name.to_string());
-        match action {
-            MessageResponse::Text { content, .. } => {
+        match action.repsonse_type {
+            MessageResponseType::Text { content, .. } => {
                 message.reply(ctx, content).await?;
             }
-            MessageResponse::RandomText { content, .. } => {
+            MessageResponseType::RandomText { content, .. } => {
                 let pick_index = rand::random::<usize>() % content.len();
                 message.reply(ctx, content[pick_index].clone()).await?;
             }
-            MessageResponse::Image { path, .. } => {
+            MessageResponseType::Image { path, .. } => {
                 message
                     .channel_id
                     .send_message(ctx, |m| {
@@ -105,7 +105,7 @@ impl Data {
                     })
                     .await?;
             }
-            MessageResponse::TextAndImage { content, path, .. } => {
+            MessageResponseType::TextAndImage { content, path, .. } => {
                 message
                     .channel_id
                     .send_message(ctx, |m| {

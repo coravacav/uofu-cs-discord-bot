@@ -140,46 +140,26 @@ impl ConfigBuilder {
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum MessageResponse {
-    Text {
-        name: String,
-        pattern: String,
-        content: String,
-    },
-    RandomText {
-        name: String,
-        pattern: String,
-        content: Vec<String>,
-    },
-    Image {
-        name: String,
-        pattern: String,
-        path: String,
-    },
-    TextAndImage {
-        name: String,
-        pattern: String,
-        content: String,
-        path: String,
-    },
+pub enum MessageResponseType {
+    Text { content: String },
+    RandomText { content: Vec<String> },
+    Image { path: String },
+    TextAndImage { content: String, path: String },
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct MessageResponse {
+    pub name: String,
+    pub pattern: String,
+    pub repsonse_type: MessageResponseType,
 }
 
 impl MessageResponse {
     pub fn get_name(&self) -> String {
-        match self {
-            MessageResponse::Text { name, .. } => name.clone(),
-            MessageResponse::RandomText { name, .. } => name.clone(),
-            MessageResponse::TextAndImage { name, .. } => name.clone(),
-            MessageResponse::Image { name, .. } => name.clone(),
-        }
+        self.name.clone()
     }
 
     pub fn get_pattern(&self) -> Regex {
-        match self {
-            MessageResponse::Text { pattern, .. } => Regex::new(pattern).unwrap(),
-            MessageResponse::RandomText { pattern, .. } => Regex::new(pattern).unwrap(),
-            MessageResponse::TextAndImage { pattern, .. } => Regex::new(pattern).unwrap(),
-            MessageResponse::Image { pattern, .. } => Regex::new(pattern).unwrap(),
-        }
+        Regex::new(&self.pattern).unwrap()
     }
 }
