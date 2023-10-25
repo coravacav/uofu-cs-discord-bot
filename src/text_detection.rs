@@ -1,4 +1,4 @@
-use crate::types::{Data, Error};
+use crate::types::Data;
 
 use std::sync::MutexGuard;
 
@@ -10,10 +10,10 @@ use serenity::Message;
 pub async fn text_detection(
     ctx: &serenity::Context,
     _event: &Event<'_>,
-    _framework: poise::FrameworkContext<'_, Data, Error>,
+    _framework: poise::FrameworkContext<'_, Data, anyhow::Error>,
     data: &Data,
     message: &Message,
-) -> Result<(), Error> {
+) -> anyhow::Result<()> {
     if message.is_own(ctx) {
         return Ok(());
     }

@@ -80,7 +80,7 @@ impl Data {
         name: &str,
         message: &Message,
         ctx: &serenity::Context,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         let action = self.config.get_response(name.to_string());
         match action.kind {
             MessageResponseKind::Text { content, .. } => {
@@ -127,5 +127,4 @@ impl Data {
 }
 
 // User data, which is stored and accessible in all command invocations
-pub type Error = Box<dyn std::error::Error + Send + Sync>;
-pub type Context<'a> = poise::Context<'a, Data, Error>;
+pub type Context<'a> = poise::Context<'a, Data, anyhow::Error>;

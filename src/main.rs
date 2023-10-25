@@ -4,7 +4,7 @@ mod text_detection;
 mod types;
 
 use config::Config;
-use types::{Context, Data, Error};
+use types::{Context, Data};
 
 use poise::builtins::register_application_commands_buttons;
 use poise::serenity_prelude as serenity;
@@ -43,7 +43,7 @@ async fn main() {
 }
 
 #[poise::command(prefix_command)]
-pub async fn register(ctx: Context<'_>) -> Result<(), Error> {
+pub async fn register(ctx: Context<'_>) -> anyhow::Result<()> {
     register_application_commands_buttons(ctx).await?;
     Ok(())
 }
@@ -51,9 +51,9 @@ pub async fn register(ctx: Context<'_>) -> Result<(), Error> {
 async fn event_handler(
     ctx: &serenity::Context,
     event: &Event<'_>,
-    _framework: poise::FrameworkContext<'_, Data, Error>,
+    _framework: poise::FrameworkContext<'_, Data, anyhow::Error>,
     data: &Data,
-) -> Result<(), Error> {
+) -> anyhow::Result<()> {
     match event {
         Event::Message { new_message } => {
             text_detection::text_detection(ctx, event, _framework, data, new_message).await

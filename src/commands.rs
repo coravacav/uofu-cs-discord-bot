@@ -1,4 +1,4 @@
-use crate::types::{Context, Error};
+use crate::types::Context;
 
 use chrono::Duration;
 use poise::serenity_prelude as serenity;
@@ -8,7 +8,7 @@ use serenity::{ChannelType, PermissionOverwrite, PermissionOverwriteType, Permis
 pub async fn change_text_detect_cooldown(
     ctx: Context<'_>,
     #[description = "The cooldown in minutes"] cooldown: i64,
-) -> Result<(), Error> {
+) -> anyhow::Result<()> {
     {
         ctx.data()
             .config
@@ -19,7 +19,7 @@ pub async fn change_text_detect_cooldown(
 }
 
 #[poise::command(slash_command)]
-pub async fn reload_config(ctx: Context<'_>) -> Result<(), Error> {
+pub async fn reload_config(ctx: Context<'_>) -> anyhow::Result<()> {
     ctx.data().reload();
     ctx.say("Successfully reloaded cooldown and responses from config.toml")
         .await?;
@@ -30,7 +30,7 @@ pub async fn reload_config(ctx: Context<'_>) -> Result<(), Error> {
 pub async fn create_class_category(
     ctx: Context<'_>,
     #[description = "The class number, eg. for CS2420 put in \"2420\""] number: u32,
-) -> Result<(), Error> {
+) -> anyhow::Result<()> {
     let guild = ctx.guild().unwrap();
     let channels = ctx.guild().unwrap().channels(ctx).await?;
     let roles = ctx.guild().unwrap().roles;
