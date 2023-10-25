@@ -18,26 +18,32 @@ impl Config {
     /// If the delay is missing, it will default to 5 minutes.
     /// If the discord token is missing, it will attempt to use the DISCORD_TOKEN environment variable.
     pub fn fetch() -> Config {
-        let config_builder = match std::fs::read_to_string("./config.toml") {
+        let ConfigBuilder {
+            text_detect_cooldown,
+            discord_token,
+            responses,
+        } = match std::fs::read_to_string("./config.toml") {
             Ok(contents) => toml::from_str(&contents).expect("Error parsing config.toml"),
             Err(e) => match e.kind() {
                 std::io::ErrorKind::NotFound => ConfigBuilder::empty(),
                 _ => panic!("Error reading config.toml: {}", e),
             },
         };
-        let text_detect_cooldown = match config_builder.text_detect_cooldown {
-            Some(cooldown) => Duration::minutes(cooldown),
-            None => Duration::minutes(DEFAULT_TEXT_DETECT_COOLDOWN),
-        };
-        let discord_token = match config_builder.discord_token {
-            Some(token) => token,
-            None => std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN"),
-        };
+
+        let text_detect_cooldown = Mutex::new(text_detect_cooldown.map_or(
+            Duration::minutes(DEFAULT_TEXT_DETECT_COOLDOWN),
+            Duration::minutes,
+        ));
+
+        let discord_token = discord_token.map_or(
+            std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN"),
+            |token| token,
+        );
 
         Config {
-            text_detect_cooldown: Mutex::new(text_detect_cooldown),
+            text_detect_cooldown,
             discord_token,
-            responses: Mutex::new(config_builder.responses),
+            responses: Mutex::new(responses),
         }
     }
 
@@ -61,7 +67,10 @@ impl Config {
 
     /// Adds a response to the config.toml file and the config.
     pub fn add_response(&self, response: MessageResponse) {
-        let mut responses = self.responses.lock().unwrap();
+        let mut responses = self
+            .responses
+            .lock()
+            .expect("Could not lock mutex for add_response");
         responses.push(response);
 
         self.save();
@@ -69,7 +78,11 @@ impl Config {
 
     /// Removes a response from the config.toml file and the config.
     pub fn remove_response(&self, name: String) {
-        let mut responses = self.responses.lock().unwrap();
+        let mut responses = self
+            .responses
+            .lock()
+            .expect("Could not lock mutex for remove_response");
+
         *responses = responses
             .iter()
             .filter(|response| response.get_name() != name)
@@ -85,13 +98,16 @@ impl Config {
         let text_detect_cooldown = self
             .text_detect_cooldown
             .lock()
-            .expect("Could not lock mutex");
+            .expect("Could not lock mutex in lock_cooldown");
 
         text_detect_cooldown
     }
 
     pub fn lock_responses(&self) -> MutexGuard<Vec<MessageResponse>> {
-        let responses = self.responses.lock().unwrap();
+        let responses = self
+            .responses
+            .lock()
+            .expect("Could not lock mutex in lock_responses");
 
         responses
     }
@@ -99,10 +115,10 @@ impl Config {
     pub fn get_response(&self, name: String) -> MessageResponse {
         self.responses
             .lock()
-            .unwrap()
+            .expect("Could not lock mutex in get_response")
             .iter()
             .find(|response| response.get_name() == name)
-            .unwrap()
+            .expect("Could not find response with name") // I can't be arsed to make this be correct rn.
             .clone()
     }
 
@@ -114,15 +130,19 @@ impl Config {
         let config_builder = ConfigBuilder {
             text_detect_cooldown: Some(self.lock_cooldown().num_minutes()),
             discord_token: Some(self.discord_token.clone()),
-            responses: self.responses.lock().unwrap().clone(),
+            responses: self
+                .responses
+                .lock()
+                .expect("Could not lock mutex in save")
+                .clone(),
         };
-        let toml = toml::to_string(&config_builder).unwrap();
+        let toml = toml::to_string(&config_builder).expect("Could not serialize config");
 
         std::fs::write("./config.toml", toml).expect("Could not write to config.toml");
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, PartialEq, Eq, Debug)]
 struct ConfigBuilder {
     text_detect_cooldown: Option<i64>,
     discord_token: Option<String>,
@@ -139,47 +159,56 @@ impl ConfigBuilder {
     }
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum MessageResponse {
-    Text {
-        name: String,
-        pattern: String,
-        content: String,
-    },
-    RandomText {
-        name: String,
-        pattern: String,
-        content: Vec<String>,
-    },
-    Image {
-        name: String,
-        pattern: String,
-        path: String,
-    },
-    TextAndImage {
-        name: String,
-        pattern: String,
-        content: String,
-        path: String,
-    },
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum MessageResponseKind {
+    Text { content: String },
+    RandomText { content: Vec<String> },
+    Image { path: String },
+    TextAndImage { content: String, path: String },
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
+pub struct MessageResponse {
+    pub name: String,
+    pub pattern: String,
+    #[serde(flatten)]
+    // This makes it so it pretends the attributes of the enum are attributes of the struct
+    pub kind: MessageResponseKind,
 }
 
 impl MessageResponse {
     pub fn get_name(&self) -> String {
-        match self {
-            MessageResponse::Text { name, .. } => name.clone(),
-            MessageResponse::RandomText { name, .. } => name.clone(),
-            MessageResponse::TextAndImage { name, .. } => name.clone(),
-            MessageResponse::Image { name, .. } => name.clone(),
-        }
+        self.name.clone()
     }
 
     pub fn get_pattern(&self) -> Regex {
-        match self {
-            MessageResponse::Text { pattern, .. } => Regex::new(pattern).unwrap(),
-            MessageResponse::RandomText { pattern, .. } => Regex::new(pattern).unwrap(),
-            MessageResponse::TextAndImage { pattern, .. } => Regex::new(pattern).unwrap(),
-            MessageResponse::Image { pattern, .. } => Regex::new(pattern).unwrap(),
-        }
+        Regex::new(&self.pattern).unwrap()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn should_deserialize_properly() {
+        let test_input = r#"[[responses]]
+name = "1984"
+pattern = "1984"
+content = "literally 1984""#;
+
+        let config: ConfigBuilder = toml::from_str(test_input).unwrap();
+
+        assert_eq!(
+            config.responses.first(),
+            Some(&MessageResponse {
+                name: "1984".to_string(),
+                pattern: "1984".to_string(),
+                kind: MessageResponseKind::Text {
+                    content: "literally 1984".to_string(),
+                },
+            })
+        );
     }
 }

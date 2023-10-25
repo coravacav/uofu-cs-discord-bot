@@ -1,4 +1,4 @@
-use crate::config::{Config, MessageResponse};
+use crate::config::{Config, MessageResponse, MessageResponseKind};
 
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -66,13 +66,13 @@ impl Data {
             .map(|response| response.get_name())
     }
 
-    pub fn last_response(&self, name: &String) -> DateTime<Utc> {
+    pub fn last_response(&self, name: &str) -> DateTime<Utc> {
         *self.last_responses.lock().unwrap().get(name).unwrap()
     }
 
-    pub fn reset_last_response(&self, name: &String, timestamp: DateTime<Utc>) {
+    pub fn reset_last_response(&self, name: &str, timestamp: DateTime<Utc>) {
         let mut last_responses = self.last_responses.lock().unwrap();
-        last_responses.insert(name.clone(), timestamp);
+        last_responses.insert(name.to_owned(), timestamp);
     }
 
     pub async fn run_action(
@@ -80,17 +80,17 @@ impl Data {
         name: &str,
         message: &Message,
         ctx: &serenity::Context,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         let action = self.config.get_response(name.to_string());
-        match action {
-            MessageResponse::Text { content, .. } => {
+        match action.kind {
+            MessageResponseKind::Text { content, .. } => {
                 message.reply(ctx, content).await?;
             }
-            MessageResponse::RandomText { content, .. } => {
+            MessageResponseKind::RandomText { content, .. } => {
                 let pick_index = rand::random::<usize>() % content.len();
                 message.reply(ctx, content[pick_index].clone()).await?;
             }
-            MessageResponse::Image { path, .. } => {
+            MessageResponseKind::Image { path, .. } => {
                 message
                     .channel_id
                     .send_message(ctx, |m| {
@@ -105,7 +105,7 @@ impl Data {
                     })
                     .await?;
             }
-            MessageResponse::TextAndImage { content, path, .. } => {
+            MessageResponseKind::TextAndImage { content, path, .. } => {
                 message
                     .channel_id
                     .send_message(ctx, |m| {
@@ -127,5 +127,4 @@ impl Data {
 }
 
 // User data, which is stored and accessible in all command invocations
-pub type Error = Box<dyn std::error::Error + Send + Sync>;
-pub type Context<'a> = poise::Context<'a, Data, Error>;
+pub type PoiseContext<'a> = poise::Context<'a, Data, anyhow::Error>;

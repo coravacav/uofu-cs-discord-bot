@@ -1,14 +1,15 @@
-use crate::types::{Context, Error};
+use crate::types::PoiseContext;
 
+use anyhow::Context;
 use chrono::Duration;
-use poise::serenity_prelude as serenity;
+use poise::serenity_prelude::{self as serenity, RoleId};
 use serenity::{ChannelType, PermissionOverwrite, PermissionOverwriteType, Permissions};
 
 #[poise::command(slash_command)]
 pub async fn change_text_detect_cooldown(
-    ctx: Context<'_>,
+    ctx: PoiseContext<'_>,
     #[description = "The cooldown in minutes"] cooldown: i64,
-) -> Result<(), Error> {
+) -> anyhow::Result<()> {
     {
         ctx.data()
             .config
@@ -19,7 +20,7 @@ pub async fn change_text_detect_cooldown(
 }
 
 #[poise::command(slash_command)]
-pub async fn reload_config(ctx: Context<'_>) -> Result<(), Error> {
+pub async fn reload_config(ctx: PoiseContext<'_>) -> anyhow::Result<()> {
     ctx.data().reload();
     ctx.say("Successfully reloaded cooldown and responses from config.toml")
         .await?;
@@ -28,12 +29,11 @@ pub async fn reload_config(ctx: Context<'_>) -> Result<(), Error> {
 
 #[poise::command(slash_command)]
 pub async fn create_class_category(
-    ctx: Context<'_>,
+    ctx: PoiseContext<'_>,
     #[description = "The class number, eg. for CS2420 put in \"2420\""] number: u32,
-) -> Result<(), Error> {
-    let guild = ctx.guild().unwrap();
-    let channels = ctx.guild().unwrap().channels(ctx).await?;
-    let roles = ctx.guild().unwrap().roles;
+) -> anyhow::Result<()> {
+    let guild = ctx.guild().context("Couldn't get guild")?;
+    let channels = guild.channels(ctx).await?;
 
     let number_string = number.to_string();
     for (_id, channel) in channels {
@@ -45,21 +45,12 @@ pub async fn create_class_category(
 
     // This is a really horrific way to just grab a random value to pre-initialize
     // We need the loop because the everyone ID is the same as the guild ID
-    let mut everyone = roles.values().next().unwrap().clone();
-
-    for (_id, role) in roles {
-        if role.name.contains(&number_string) {
-            ctx.say("Role already seems to exist!").await?;
-            return Ok(());
-        } else if role.id.as_u64() == guild.id.as_u64() {
-            everyone = role;
-        }
-    }
+    let everyone = RoleId::from(*guild.id.as_u64());
 
     let role = guild
         .create_role(ctx, |r| r.hoist(true).name(format!("CS {}", number_string)))
         .await
-        .unwrap();
+        .context("Couldn't create role")?;
 
     let category = guild
         .create_channel(ctx, |c| {
@@ -74,12 +65,13 @@ pub async fn create_class_category(
                     PermissionOverwrite {
                         allow: Permissions::empty(),
                         deny: Permissions::all(),
-                        kind: PermissionOverwriteType::Role(everyone.id),
+                        kind: PermissionOverwriteType::Role(everyone),
                     },
                 ])
         })
         .await
-        .unwrap();
+        .context("Couldn't create category")?;
+
     guild
         .create_channel(ctx, |c| {
             c.name(format!("{}-resources", number_string))
@@ -87,7 +79,8 @@ pub async fn create_class_category(
                 .category(category.id)
         })
         .await
-        .unwrap();
+        .context("Couldn't create resources channel")?;
+
     guild
         .create_channel(ctx, |c| {
             c.name(format!("{}-general", number_string))
@@ -95,7 +88,8 @@ pub async fn create_class_category(
                 .category(category.id)
         })
         .await
-        .unwrap();
+        .context("Couldn't create general channel")?;
+
     guild
         .create_channel(ctx, |c| {
             c.name(format!("{}-assignment-discussion", number_string))
@@ -103,7 +97,7 @@ pub async fn create_class_category(
                 .category(category.id)
         })
         .await
-        .unwrap();
+        .context("Couldn't create assignment discussion channel")?;
 
     ctx.say("Success!").await?;
     Ok(())
