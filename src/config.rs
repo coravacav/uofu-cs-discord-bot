@@ -32,7 +32,7 @@ impl Config {
 
         let text_detect_cooldown = Mutex::new(text_detect_cooldown.map_or(
             Duration::minutes(DEFAULT_TEXT_DETECT_COOLDOWN),
-            |cooldown| Duration::minutes(cooldown),
+            Duration::minutes,
         ));
 
         let discord_token = discord_token.map_or(
@@ -41,7 +41,7 @@ impl Config {
         );
 
         Config {
-            text_detect_cooldown: text_detect_cooldown,
+            text_detect_cooldown,
             discord_token,
             responses: Mutex::new(responses),
         }
