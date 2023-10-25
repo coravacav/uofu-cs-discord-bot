@@ -1,30 +1,27 @@
+use std::sync::RwLockReadGuard;
+
 use crate::types::Data;
-
-use std::sync::MutexGuard;
-
 use chrono::{DateTime, Duration, Utc};
 use poise::serenity_prelude as serenity;
-use poise::Event;
 use serenity::Message;
 
 pub async fn text_detection(
     ctx: &serenity::Context,
-    _event: &Event<'_>,
-    _framework: poise::FrameworkContext<'_, Data, anyhow::Error>,
     data: &Data,
     message: &Message,
 ) -> anyhow::Result<()> {
     if message.is_own(ctx) {
         return Ok(());
     }
-    if let Some(name) = data.check_should_respond(message) {
+
+    if let Some(name) = &data.check_should_respond(message) {
         if cooldown_checker(
-            data.last_response(&name),
-            data.config.lock_cooldown(),
+            data.last_response(name),
+            data.config.get_cooldown(),
             message.timestamp.with_timezone(&Utc),
         ) {
-            data.reset_last_response(&name, message.timestamp.with_timezone(&Utc));
-            data.run_action(&name, message, ctx).await?;
+            data.reset_last_response(name, message.timestamp.with_timezone(&Utc));
+            data.run_action(name, message, ctx).await?;
         }
     }
 
@@ -34,13 +31,13 @@ pub async fn text_detection(
 /// Checks if the cooldown is met. If yes, it is, returns true and resets the cooldown. If not,
 /// returns false and does nothing.
 fn cooldown_checker(
-    last_message: DateTime<Utc>,
-    cooldown: MutexGuard<Duration>,
+    last_message: Option<DateTime<Utc>>,
+    cooldown: RwLockReadGuard<Duration>,
     timestamp: DateTime<Utc>,
 ) -> bool {
-    if last_message + *cooldown > timestamp {
-        return false;
+    if let Some(last_message) = last_message {
+        last_message + *cooldown <= timestamp
+    } else {
+        false
     }
-
-    true
 }

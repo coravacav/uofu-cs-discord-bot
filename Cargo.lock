@@ -1540,6 +1540,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "chrono",
+ "dashmap",
  "poise",
  "rand",
  "regex",

@@ -1,78 +1,65 @@
 use crate::config::{Config, MessageResponse, MessageResponseKind};
 
-use std::collections::HashMap;
-use std::sync::Mutex;
-
 use chrono::{DateTime, Utc};
+use dashmap::DashMap;
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::Message;
 
 pub struct Data {
-    last_responses: Mutex<HashMap<String, DateTime<Utc>>>,
+    last_responses: DashMap<String, DateTime<Utc>>,
     pub config: Config,
 }
 
 impl Data {
     pub fn init(config: Config) -> Data {
         let last_responses = config
-            .lock_responses()
+            .get_responses()
             .iter()
-            .map(|response| {
-                (
-                    response.get_name(),
-                    DateTime::<Utc>::from_timestamp(0, 0).unwrap(),
-                )
-            })
+            .map(|response| (response.name.clone(), DateTime::<Utc>::UNIX_EPOCH))
             .collect();
+
         Data {
-            last_responses: Mutex::new(last_responses),
+            last_responses,
             config,
         }
     }
 
     /// Register a new response type for messages matching a regular expression pattern
-    pub fn register(&self, response: MessageResponse) {
-        self.last_responses.lock().unwrap().insert(
-            response.get_name(),
-            DateTime::<Utc>::from_timestamp(0, 0).unwrap(),
-        );
+    pub fn register(&mut self, response: MessageResponse) {
+        self.last_responses
+            .insert(response.name.clone(), DateTime::<Utc>::UNIX_EPOCH);
+
         self.config.add_response(response);
     }
 
     /// Reload the configuration file and update the responses hash map accordingly
     pub fn reload(&self) {
         self.config.reload();
-        let mut last_responses = self.last_responses.lock().unwrap();
-        *last_responses = self
-            .config
-            .lock_responses()
-            .iter()
-            .map(|response| {
-                (
-                    response.get_name().clone(),
-                    DateTime::<Utc>::from_timestamp(0, 0).unwrap(),
-                )
-            })
-            .collect();
+        self.last_responses
+            .alter_all(|_, _| DateTime::<Utc>::UNIX_EPOCH);
     }
 
     /// If the message contents match any pattern, return the name of the response type.
     /// Otherwise, return None
     pub fn check_should_respond(&self, message: &Message) -> Option<String> {
-        self.config
-            .lock_responses()
-            .iter()
-            .find(|response| response.get_pattern().is_match(&message.content))
-            .map(|response| response.get_name())
+        self.config.get_responses().iter().find_map(|response| {
+            if response.get_pattern().is_match(&message.content) {
+                Some(response.name.clone())
+            } else {
+                None
+            }
+        })
     }
 
-    pub fn last_response(&self, name: &str) -> DateTime<Utc> {
-        *self.last_responses.lock().unwrap().get(name).unwrap()
+    pub fn last_response(&self, name: &str) -> Option<DateTime<Utc>> {
+        self.last_responses.get(name).as_deref().copied()
     }
 
     pub fn reset_last_response(&self, name: &str, timestamp: DateTime<Utc>) {
-        let mut last_responses = self.last_responses.lock().unwrap();
-        last_responses.insert(name.to_owned(), timestamp);
+        self.last_responses
+            .entry(name.to_owned())
+            .and_modify(|v| *v = timestamp)
+            .or_insert(timestamp);
     }
 
     pub async fn run_action(
@@ -82,7 +69,7 @@ impl Data {
         ctx: &serenity::Context,
     ) -> anyhow::Result<()> {
         let action = self.config.get_response(name.to_string());
-        match action.kind {
+        match &action.kind {
             MessageResponseKind::Text { content, .. } => {
                 message.reply(ctx, content).await?;
             }
@@ -95,13 +82,8 @@ impl Data {
                     .channel_id
                     .send_message(ctx, |m| {
                         m.reference_message(message);
-                        m.allowed_mentions(|am| {
-                            am.replied_user(false);
-                            am
-                        });
-                        m.add_file(path.as_str());
-
-                        m
+                        m.allowed_mentions(|am| am.replied_user(false));
+                        m.add_file(path.as_str())
                     })
                     .await?;
             }
@@ -110,14 +92,9 @@ impl Data {
                     .channel_id
                     .send_message(ctx, |m| {
                         m.reference_message(message);
-                        m.allowed_mentions(|am| {
-                            am.replied_user(false);
-                            am
-                        });
+                        m.allowed_mentions(|am| am.replied_user(false));
                         m.content(content);
-                        m.add_file(path.as_str());
-
-                        m
+                        m.add_file(path.as_str())
                     })
                     .await?;
             }

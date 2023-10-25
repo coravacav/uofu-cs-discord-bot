@@ -10,11 +10,9 @@ pub async fn change_text_detect_cooldown(
     ctx: PoiseContext<'_>,
     #[description = "The cooldown in minutes"] cooldown: i64,
 ) -> anyhow::Result<()> {
-    {
-        ctx.data()
-            .config
-            .update_cooldown(Duration::minutes(cooldown));
-    }
+    ctx.data()
+        .config
+        .update_cooldown(Duration::minutes(cooldown));
     ctx.say("Done!").await?;
     Ok(())
 }
