@@ -18,26 +18,32 @@ impl Config {
     /// If the delay is missing, it will default to 5 minutes.
     /// If the discord token is missing, it will attempt to use the DISCORD_TOKEN environment variable.
     pub fn fetch() -> Config {
-        let config_builder = match std::fs::read_to_string("./config.toml") {
+        let ConfigBuilder {
+            text_detect_cooldown,
+            discord_token,
+            responses,
+        } = match std::fs::read_to_string("./config.toml") {
             Ok(contents) => toml::from_str(&contents).expect("Error parsing config.toml"),
             Err(e) => match e.kind() {
                 std::io::ErrorKind::NotFound => ConfigBuilder::empty(),
                 _ => panic!("Error reading config.toml: {}", e),
             },
         };
-        let text_detect_cooldown = match config_builder.text_detect_cooldown {
-            Some(cooldown) => Duration::minutes(cooldown),
-            None => Duration::minutes(DEFAULT_TEXT_DETECT_COOLDOWN),
-        };
-        let discord_token = match config_builder.discord_token {
-            Some(token) => token,
-            None => std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN"),
-        };
+
+        let text_detect_cooldown = Mutex::new(text_detect_cooldown.map_or(
+            Duration::minutes(DEFAULT_TEXT_DETECT_COOLDOWN),
+            |cooldown| Duration::minutes(cooldown),
+        ));
+
+        let discord_token = discord_token.map_or(
+            std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN"),
+            |token| token,
+        );
 
         Config {
-            text_detect_cooldown: Mutex::new(text_detect_cooldown),
+            text_detect_cooldown: text_detect_cooldown,
             discord_token,
-            responses: Mutex::new(config_builder.responses),
+            responses: Mutex::new(responses),
         }
     }
 
