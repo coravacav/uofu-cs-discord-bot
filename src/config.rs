@@ -140,7 +140,7 @@ impl ConfigBuilder {
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum MessageResponseType {
+pub enum MessageResponseKind {
     Text { content: String },
     RandomText { content: Vec<String> },
     Image { path: String },
@@ -151,7 +151,7 @@ pub enum MessageResponseType {
 pub struct MessageResponse {
     pub name: String,
     pub pattern: String,
-    pub repsonse_type: MessageResponseType,
+    pub kind: MessageResponseKind,
 }
 
 impl MessageResponse {
