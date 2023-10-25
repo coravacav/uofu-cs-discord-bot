@@ -5,7 +5,8 @@ mod types;
 
 use anyhow::Context;
 use config::Config;
-use types::{Data, PoiseContext};
+use types::Data;
+use types::PoiseContext;
 
 use poise::builtins::register_application_commands_buttons;
 use poise::serenity_prelude as serenity;
@@ -52,11 +53,11 @@ pub async fn register(ctx: PoiseContext<'_>) -> anyhow::Result<()> {
 async fn event_handler(
     ctx: &serenity::Context,
     event: &Event<'_>,
-    _framework: poise::FrameworkContext<'_, Data, anyhow::Error>,
-    data: &Data,
+    framework: poise::FrameworkContext<'_, Data, anyhow::Error>,
+    _data: &Data,
 ) -> anyhow::Result<()> {
     if let Event::Message { new_message } = event {
-        text_detection::text_detection(ctx, event, _framework, data, new_message).await?;
+        text_detection::text_detection(ctx, framework.user_data, new_message).await?;
     }
 
     Ok(())
