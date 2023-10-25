@@ -1,7 +1,7 @@
 use crate::config::{Config, MessageResponse};
 
 use std::collections::HashMap;
-use std::sync::{Mutex};
+use std::sync::Mutex;
 
 use chrono::{DateTime, Utc};
 use poise::serenity_prelude as serenity;
@@ -67,11 +67,7 @@ impl Data {
     }
 
     pub fn last_response(&self, name: &String) -> DateTime<Utc> {
-        *self.last_responses
-            .lock()
-            .unwrap()
-            .get(name)
-            .unwrap()
+        *self.last_responses.lock().unwrap().get(name).unwrap()
     }
 
     pub fn reset_last_response(&self, name: &String, timestamp: DateTime<Utc>) {
