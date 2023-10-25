@@ -35,4 +35,6 @@ jobs:
         # Optional. Commit message for the created commit.
         # Defaults to "Apply automatic changes"
         commit_message: Automatically ran clippy fix
+    - name: Cargo Test
+      run: cargo test
     
