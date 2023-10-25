@@ -3,15 +3,16 @@ mod config;
 mod text_detection;
 mod types;
 
+use anyhow::Context;
 use config::Config;
-use types::{Context, Data};
+use types::{Data, PoiseContext};
 
 use poise::builtins::register_application_commands_buttons;
 use poise::serenity_prelude as serenity;
 use poise::Event;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     let config = Config::fetch();
     config.save();
     let data = Data::init(config);
@@ -39,11 +40,11 @@ async fn main() {
             })
         });
 
-    framework.run().await.unwrap();
+    framework.run().await.context("Failed to start bot")
 }
 
 #[poise::command(prefix_command)]
-pub async fn register(ctx: Context<'_>) -> anyhow::Result<()> {
+pub async fn register(ctx: PoiseContext<'_>) -> anyhow::Result<()> {
     register_application_commands_buttons(ctx).await?;
     Ok(())
 }

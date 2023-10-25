@@ -1,5 +1,6 @@
 use std::sync::{Mutex, MutexGuard};
 
+use anyhow::Context;
 use chrono::Duration;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -67,7 +68,10 @@ impl Config {
 
     /// Adds a response to the config.toml file and the config.
     pub fn add_response(&self, response: MessageResponse) {
-        let mut responses = self.responses.lock().unwrap();
+        let mut responses = self
+            .responses
+            .lock()
+            .expect("Could not lock mutex for add_response");
         responses.push(response);
 
         self.save();
@@ -75,7 +79,11 @@ impl Config {
 
     /// Removes a response from the config.toml file and the config.
     pub fn remove_response(&self, name: String) {
-        let mut responses = self.responses.lock().unwrap();
+        let mut responses = self
+            .responses
+            .lock()
+            .expect("Could not lock mutex for remove_response");
+
         *responses = responses
             .iter()
             .filter(|response| response.get_name() != name)
@@ -91,13 +99,16 @@ impl Config {
         let text_detect_cooldown = self
             .text_detect_cooldown
             .lock()
-            .expect("Could not lock mutex");
+            .expect("Could not lock mutex in lock_cooldown");
 
         text_detect_cooldown
     }
 
     pub fn lock_responses(&self) -> MutexGuard<Vec<MessageResponse>> {
-        let responses = self.responses.lock().unwrap();
+        let responses = self
+            .responses
+            .lock()
+            .expect("Could not lock mutex in lock_responses");
 
         responses
     }
@@ -105,10 +116,10 @@ impl Config {
     pub fn get_response(&self, name: String) -> MessageResponse {
         self.responses
             .lock()
-            .unwrap()
+            .expect("Could not lock mutex in get_response")
             .iter()
             .find(|response| response.get_name() == name)
-            .unwrap()
+            .expect("Could not find response with name") // I can't be arsed to make this be correct rn.
             .clone()
     }
 
@@ -120,9 +131,13 @@ impl Config {
         let config_builder = ConfigBuilder {
             text_detect_cooldown: Some(self.lock_cooldown().num_minutes()),
             discord_token: Some(self.discord_token.clone()),
-            responses: self.responses.lock().unwrap().clone(),
+            responses: self
+                .responses
+                .lock()
+                .expect("Could not lock mutex in save")
+                .clone(),
         };
-        let toml = toml::to_string(&config_builder).unwrap();
+        let toml = toml::to_string(&config_builder).expect("Could not serialize config");
 
         std::fs::write("./config.toml", toml).expect("Could not write to config.toml");
     }
