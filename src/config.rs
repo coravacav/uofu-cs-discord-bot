@@ -171,7 +171,9 @@ mod test {
 
     #[test]
     fn should_deserialize_properly() {
-        let test_input = r#"[[responses]]
+        let test_input = r#"
+discord_token = "test_token_not_real"
+[[responses]]
 name = "1984"
 pattern = "1984"
 content = "literally 1984""#;
