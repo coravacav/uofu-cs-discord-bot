@@ -35,8 +35,9 @@ impl Data {
     /// Reload the configuration file and update the responses hash map accordingly
     pub fn reload(&self) {
         self.config.reload();
-        self.last_responses
-            .alter_all(|_, _| DateTime::<Utc>::UNIX_EPOCH);
+        self.config.get_responses().iter().for_each(|response| {
+            self.reset_last_response(&response.name, DateTime::<Utc>::UNIX_EPOCH)
+        });
     }
 
     /// If the message contents match any pattern, return the name of the response type.
