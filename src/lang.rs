@@ -103,7 +103,7 @@ impl<'de> Visitor<'de> for RulesetVisitor {
     where
         E: serde::de::Error,
     {
-        self.visit_str(&v)
+        self.visit_str(v)
     }
 }
 
