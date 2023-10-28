@@ -1,8 +1,9 @@
 use std::sync::{RwLock, RwLockReadGuard};
 
 use chrono::Duration;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
+
+use crate::lang::Ruleset;
 
 /// In minutes
 const DEFAULT_TEXT_DETECT_COOLDOWN: i64 = 5;
@@ -153,20 +154,19 @@ pub enum MessageResponseKind {
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
 pub struct MessageResponse {
     pub name: String,
-    pub pattern: String,
+    pub ruleset: Ruleset,
     #[serde(flatten)]
     // This makes it so it pretends the attributes of the enum are attributes of the struct
     pub kind: MessageResponseKind,
 }
 
-impl MessageResponse {
-    pub fn get_pattern(&self) -> Regex {
-        Regex::new(&self.pattern).unwrap()
-    }
-}
-
 #[cfg(test)]
 mod test {
+    use crate::{
+        lang::{Kind, Line},
+        memory_regex::MemoryRegex,
+    };
+
     use super::*;
 
     #[test]
@@ -175,7 +175,10 @@ mod test {
 discord_token = "test_token_not_real"
 [[responses]]
 name = "1984"
-pattern = "1984"
+ruleset = '''
+r 1234
+!r 4312
+'''
 content = "literally 1984""#;
 
         let config: ConfigBuilder = toml::from_str(test_input).unwrap();
@@ -184,7 +187,16 @@ content = "literally 1984""#;
             config.responses.first(),
             Some(&MessageResponse {
                 name: "1984".to_string(),
-                pattern: "1984".to_string(),
+                ruleset: Ruleset::new(vec![
+                    Line {
+                        kind: Kind::Regex(MemoryRegex::new("1234".to_string()).unwrap()),
+                        negated: false,
+                    },
+                    Line {
+                        kind: Kind::Regex(MemoryRegex::new("4312".to_string()).unwrap()),
+                        negated: true,
+                    }
+                ]),
                 kind: MessageResponseKind::Text {
                     content: "literally 1984".to_string(),
                 },
