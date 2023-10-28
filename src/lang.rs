@@ -98,6 +98,13 @@ impl<'de> Visitor<'de> for RulesetVisitor {
     {
         self.visit_str(&v)
     }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        self.visit_str(&v)
+    }
 }
 
 impl<'de> Deserialize<'de> for Ruleset {
