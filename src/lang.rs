@@ -66,7 +66,7 @@ impl std::ops::DerefMut for Ruleset {
 struct RulesetVisitor {}
 
 impl RulesetVisitor {
-    fn visit_str<'de, E>(self, v: &'de str) -> Result<Ruleset, E>
+    fn visit_str<E>(self, v: &str) -> Result<Ruleset, E>
     where
         E: serde::de::Error,
     {
