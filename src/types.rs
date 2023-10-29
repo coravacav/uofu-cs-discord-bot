@@ -44,7 +44,7 @@ impl Data {
     /// Otherwise, return None
     pub fn check_should_respond(&self, message: &Message) -> Option<String> {
         self.config.get_responses().iter().find_map(|response| {
-            if response.get_pattern().is_match(&message.content) {
+            if response.ruleset.matches(&message.content) {
                 Some(response.name.clone())
             } else {
                 None

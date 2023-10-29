@@ -1,5 +1,7 @@
 mod commands;
 mod config;
+mod lang;
+mod memory_regex;
 mod text_detection;
 mod types;
 
