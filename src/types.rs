@@ -70,7 +70,6 @@ impl Data {
         ctx: &serenity::Context,
     ) -> anyhow::Result<()> {
         let action = self.config.get_response(name.to_string());
-        println!("{:?}", action.kind);
         match &action.kind {
             MessageResponseKind::Text { content, .. } => {
                 message.reply(ctx, content).await?;
