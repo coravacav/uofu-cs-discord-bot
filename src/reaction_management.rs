@@ -1,5 +1,5 @@
 use crate::types::Data;
-use emojis;
+
 use poise::serenity_prelude as serenity;
 use serenity::ChannelId;
 use serenity::Message;

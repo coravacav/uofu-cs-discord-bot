@@ -142,21 +142,19 @@ impl Config {
                 .expect("could not read cooldown")
                 .num_minutes(),
             discord_token: self.discord_token.clone(),
-            starboard_reaction_count: self
+            starboard_reaction_count: *self
                 .starboard_reaction_count
                 .read()
-                .expect("could not read reaction count")
-                .clone(),
+                .expect("could not read reaction count"),
             starboard_emote_name: self
                 .starboard_emote_name
                 .read()
                 .expect("could not emote name")
                 .clone(),
-            starboard_channel_id: self
+            starboard_channel_id: *self
                 .starboard_channel_id
                 .read()
-                .expect("could not read starboard channel id")
-                .clone(),
+                .expect("could not read starboard channel id"),
             responses: self
                 .responses
                 .read()
