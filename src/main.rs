@@ -2,6 +2,7 @@ mod commands;
 mod config;
 mod lang;
 mod memory_regex;
+mod reaction_management;
 mod text_detection;
 mod types;
 
@@ -58,9 +59,19 @@ async fn event_handler(
     framework: poise::FrameworkContext<'_, Data, anyhow::Error>,
     _data: &Data,
 ) -> anyhow::Result<()> {
-    if let Event::Message { new_message } = event {
-        text_detection::text_detection(ctx, framework.user_data, new_message).await?;
-    }
+    match event {
+        Event::Message { new_message } => {
+            text_detection::text_detection(ctx, framework.user_data, new_message).await?
+        }
+        Event::ReactionAdd { add_reaction } => {
+            reaction_management::reaction_management(ctx, framework.user_data, add_reaction).await?
+        }
+        Event::ReactionRemove { removed_reaction } => {
+            reaction_management::reaction_management(ctx, framework.user_data, removed_reaction)
+                .await?
+        }
+        _ => {}
+    };
 
     Ok(())
 }
