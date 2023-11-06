@@ -32,11 +32,8 @@ pub async fn starboard(
     let reaction_type = &reaction.emoji;
 
     let name = match reaction_type {
-        ReactionType::Unicode(String) => String.to_string(),
-        ReactionType::Custom { id, .. } => {
-            let str = id.as_u64().to_string();
-            str
-        }
+        ReactionType::Unicode(String) => String.to_owned(),
+        ReactionType::Custom { id, .. } => id.as_u64().to_string(),
         _ => "Error".to_string(),
     };
 
