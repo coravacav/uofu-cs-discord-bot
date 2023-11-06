@@ -13,7 +13,6 @@ pub async fn reaction_management(
 ) -> anyhow::Result<()> {
     let message = reaction.message(ctx).await?;
 
-    println!("Reaction caught!");
     starboard(ctx, data, &message, reaction).await?;
 
     Ok(())
@@ -37,8 +36,6 @@ pub async fn starboard(
     };
 
     let mut reaction_count = 0;
-    println!("{}", reaction_count);
-    println!("{}", name);
 
     for message_reaction in &message.reactions {
         if message_reaction.reaction_type == *reaction_type {
