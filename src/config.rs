@@ -219,6 +219,9 @@ mod test {
     fn should_deserialize_properly() {
         let test_input = r#"
 discord_token = "test_token_not_real"
+starboard_reaction_count = 3
+starboard_emote_name = "star"
+starboard_channel_id = 123456789109876
 [[responses]]
 name = "1984"
 ruleset = '''
