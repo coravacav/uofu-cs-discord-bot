@@ -12,6 +12,9 @@ An example `config.toml` file looks like this:
 ```toml
 text_detect_cooldown = 5
 discord_token = "Your token here"
+starboard_reaction_count = 3
+starboard_emote_name = "star"
+starboard_channel_id = 123456789109876
 
 [[responses]]
 name = "example"
