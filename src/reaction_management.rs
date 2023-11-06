@@ -48,7 +48,7 @@ pub async fn starboard(
     let stored_name = (*data.config.get_starboard_emote()).clone();
     let starboard_channel = ChannelId(*data.config.get_starboard_channel());
 
-    if reaction_count > reaction_count_requirement && name == stored_name {
+    if reaction_count >= reaction_count_requirement && name == stored_name {
         let previous_messages = starboard_channel.messages(ctx, |m| m).await?;
 
         let mut send = true;
