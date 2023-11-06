@@ -1,12 +1,7 @@
-use std::sync::RwLockReadGuard;
-
 use crate::types::Data;
-use crate::types::PoiseContext;
-use chrono::{DateTime, Duration, Utc};
+use emojis;
 use poise::serenity_prelude as serenity;
 use serenity::ChannelId;
-use serenity::EmojiId;
-use serenity::Guild;
 use serenity::Message;
 use serenity::Reaction;
 use serenity::ReactionType;
@@ -32,7 +27,10 @@ pub async fn starboard(
     let reaction_type = &reaction.emoji;
 
     let name = match reaction_type {
-        ReactionType::Unicode(String) => String.to_owned(),
+        ReactionType::Unicode(String) => emojis::get(String)
+            .expect("Default emojis should always be in unicode")
+            .name()
+            .to_owned(),
         ReactionType::Custom { id, .. } => id.as_u64().to_string(),
         _ => "Error".to_string(),
     };
@@ -46,10 +44,11 @@ pub async fn starboard(
         }
     }
 
-    // TODO: When converting to config file constants, the emojis crate offers shortcode conversion
-    if reaction_count > 0 && name == "⭐" {
-        let starboard_channel = ChannelId(900962773599658055);
+    let reaction_count_requirement = *data.config.get_starboard_reaction_count();
+    let stored_name = (*data.config.get_starboard_emote()).clone();
+    let starboard_channel = ChannelId(*data.config.get_starboard_channel());
 
+    if reaction_count > reaction_count_requirement && name == stored_name {
         let previous_messages = starboard_channel.messages(ctx, |m| m).await?;
 
         let mut send = true;

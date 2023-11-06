@@ -11,12 +11,33 @@ const DEFAULT_TEXT_DETECT_COOLDOWN: i64 = 5;
 pub struct Config {
     text_detect_cooldown: RwLock<Duration>,
     discord_token: String,
+    starboard_reaction_count: RwLock<u64>,
+    starboard_emote_name: RwLock<String>,
+    starboard_channel_id: RwLock<u64>,
     responses: RwLock<Vec<MessageResponse>>,
 }
 
 impl Config {
     pub fn get_cooldown(&self) -> RwLockReadGuard<Duration> {
         self.text_detect_cooldown
+            .read()
+            .expect("Could not read cooldown")
+    }
+
+    pub fn get_starboard_reaction_count(&self) -> RwLockReadGuard<u64> {
+        self.starboard_reaction_count
+            .read()
+            .expect("Could not read reaction count")
+    }
+
+    pub fn get_starboard_emote(&self) -> RwLockReadGuard<String> {
+        self.starboard_emote_name
+            .read()
+            .expect("Could not read emote name")
+    }
+
+    pub fn get_starboard_channel(&self) -> RwLockReadGuard<u64> {
+        self.starboard_channel_id
             .read()
             .expect("Could not read cooldown")
     }
@@ -38,15 +59,24 @@ impl Config {
         let ConfigBuilder {
             text_detect_cooldown,
             discord_token,
+            starboard_reaction_count,
+            starboard_emote_name,
+            starboard_channel_id,
             responses,
         } = Config::fetch_config();
 
         let text_detect_cooldown = RwLock::new(Duration::minutes(text_detect_cooldown));
         let responses = RwLock::new(responses);
+        let starboard_reaction_count = RwLock::new(starboard_reaction_count);
+        let starboard_emote_name = RwLock::new(starboard_emote_name);
+        let starboard_channel_id = RwLock::new(starboard_channel_id);
 
         Config {
             text_detect_cooldown,
             discord_token,
+            starboard_reaction_count,
+            starboard_emote_name,
+            starboard_channel_id,
             responses,
         }
     }
@@ -112,6 +142,21 @@ impl Config {
                 .expect("could not read cooldown")
                 .num_minutes(),
             discord_token: self.discord_token.clone(),
+            starboard_reaction_count: self
+                .starboard_reaction_count
+                .read()
+                .expect("could not read reaction count")
+                .clone(),
+            starboard_emote_name: self
+                .starboard_emote_name
+                .read()
+                .expect("could not emote name")
+                .clone(),
+            starboard_channel_id: self
+                .starboard_channel_id
+                .read()
+                .expect("could not read starboard channel id")
+                .clone(),
             responses: self
                 .responses
                 .read()
@@ -139,6 +184,9 @@ struct ConfigBuilder {
     text_detect_cooldown: i64,
     #[serde(default = "get_default_discord_token")]
     discord_token: String,
+    starboard_reaction_count: u64,
+    starboard_emote_name: String,
+    starboard_channel_id: u64,
     responses: Vec<MessageResponse>,
 }
 
