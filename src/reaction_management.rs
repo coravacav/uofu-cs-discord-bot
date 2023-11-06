@@ -46,6 +46,7 @@ pub async fn starboard(
         }
     }
 
+    // TODO: When converting to config file constants, the emojis crate offers shortcode conversion
     if reaction_count > 0 && name == "⭐" {
         let starboard_channel = ChannelId(900962773599658055);
 
