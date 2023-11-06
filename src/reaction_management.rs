@@ -27,7 +27,7 @@ pub async fn starboard(
     let reaction_type = &reaction.emoji;
 
     let name = match reaction_type {
-        ReactionType::Unicode(String) => emojis::get(String)
+        ReactionType::Unicode(string) => emojis::get(string)
             .expect("Default emojis should always be in unicode")
             .name()
             .to_owned(),
