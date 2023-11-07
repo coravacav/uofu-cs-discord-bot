@@ -4,10 +4,11 @@ use chrono::{DateTime, Utc};
 use dashmap::DashMap;
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::Message;
+use tokio::sync::RwLock;
 
 pub struct Data {
     last_responses: DashMap<String, DateTime<Utc>>,
-    pub config: Config,
+    pub config: RwLock<Config>,
 }
 
 impl Data {
@@ -20,7 +21,7 @@ impl Data {
 
         Data {
             last_responses,
-            config,
+            config: RwLock::new(config),
         }
     }
 
@@ -29,23 +30,27 @@ impl Data {
         self.last_responses
             .insert(response.name.clone(), DateTime::<Utc>::UNIX_EPOCH);
 
-        self.config.add_response(response);
+        self.config.blocking_write().add_response(response);
     }
 
     /// Reload the configuration file and update the responses hash map accordingly
     pub fn reload(&self) {
-        self.config.reload();
-        self.config.get_responses().iter().for_each(|response| {
-            self.reset_last_response(&response.name, DateTime::<Utc>::UNIX_EPOCH)
-        });
+        self.config.blocking_write().reload();
+        self.config
+            .blocking_write()
+            .get_responses()
+            .iter()
+            .for_each(|response| {
+                self.reset_last_response(&response.name, DateTime::<Utc>::UNIX_EPOCH)
+            });
     }
 
     /// If the message contents match any pattern, return the name of the response type.
     /// Otherwise, return None
-    pub fn check_should_respond(&self, message: &Message) -> Option<String> {
+    pub fn check_should_respond<'a>(&'a self, message: &Message) -> Option<&'a str> {
         self.config.get_responses().iter().find_map(|response| {
             if response.ruleset.matches(&message.content) {
-                Some(response.name.clone())
+                Some(response.name.as_str())
             } else {
                 None
             }

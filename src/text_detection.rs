@@ -1,5 +1,3 @@
-use std::sync::RwLockReadGuard;
-
 use crate::types::Data;
 use chrono::{DateTime, Duration, Utc};
 use poise::serenity_prelude as serenity;
@@ -32,11 +30,11 @@ pub async fn text_detection(
 /// returns false and does nothing.
 fn cooldown_checker(
     last_message: Option<DateTime<Utc>>,
-    cooldown: RwLockReadGuard<Duration>,
+    cooldown: Duration,
     timestamp: DateTime<Utc>,
 ) -> bool {
     if let Some(last_message) = last_message {
-        last_message + *cooldown <= timestamp
+        last_message + cooldown <= timestamp
     } else {
         false
     }

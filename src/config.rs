@@ -9,41 +9,33 @@ use crate::lang::Ruleset;
 const DEFAULT_TEXT_DETECT_COOLDOWN: i64 = 5;
 
 pub struct Config {
-    text_detect_cooldown: RwLock<Duration>,
+    text_detect_cooldown: Duration,
     discord_token: String,
-    starboard_reaction_count: RwLock<u64>,
-    starboard_emote_name: RwLock<String>,
-    starboard_channel_id: RwLock<u64>,
-    responses: RwLock<Vec<MessageResponse>>,
+    starboard_reaction_count: u64,
+    starboard_emote_name: String,
+    starboard_channel_id: u64,
+    responses: Vec<MessageResponse>,
 }
 
 impl Config {
-    pub fn get_cooldown(&self) -> RwLockReadGuard<Duration> {
+    pub fn get_cooldown(&self) -> Duration {
         self.text_detect_cooldown
-            .read()
-            .expect("Could not read cooldown")
     }
 
-    pub fn get_starboard_reaction_count(&self) -> RwLockReadGuard<u64> {
+    pub fn get_starboard_reaction_count(&self) -> u64 {
         self.starboard_reaction_count
-            .read()
-            .expect("Could not read reaction count")
     }
 
-    pub fn get_starboard_emote(&self) -> RwLockReadGuard<String> {
+    pub fn get_starboard_emote(&self) -> String {
         self.starboard_emote_name
-            .read()
-            .expect("Could not read emote name")
     }
 
-    pub fn get_starboard_channel(&self) -> RwLockReadGuard<u64> {
+    pub fn get_starboard_channel(&self) -> u64 {
         self.starboard_channel_id
-            .read()
-            .expect("Could not read cooldown")
     }
 
-    pub fn get_responses(&self) -> RwLockReadGuard<Vec<MessageResponse>> {
-        self.responses.read().expect("Could not read responses")
+    pub fn get_responses(&self) -> Vec<MessageResponse> {
+        self.responses
     }
 
     fn fetch_config() -> ConfigBuilder {
@@ -65,11 +57,7 @@ impl Config {
             responses,
         } = Config::fetch_config();
 
-        let text_detect_cooldown = RwLock::new(Duration::minutes(text_detect_cooldown));
-        let responses = RwLock::new(responses);
-        let starboard_reaction_count = RwLock::new(starboard_reaction_count);
-        let starboard_emote_name = RwLock::new(starboard_emote_name);
-        let starboard_channel_id = RwLock::new(starboard_channel_id);
+        let text_detect_cooldown = Duration::minutes(text_detect_cooldown);
 
         Config {
             text_detect_cooldown,
@@ -84,46 +72,31 @@ impl Config {
     /// Reloads the config.toml file and updates the configuration.
     pub fn reload(&self) {
         let new_config = Config::fetch_config();
-        *self
-            .text_detect_cooldown
-            .write()
-            .expect("Could not write cooldown") =
-            Duration::minutes(new_config.text_detect_cooldown);
-        *self.responses.write().expect("Could not write responses") = new_config.responses;
+        self.text_detect_cooldown = Duration::minutes(new_config.text_detect_cooldown);
+        self.responses = new_config.responses;
     }
 
     /// Updates config.toml with the new cooldown, and updates the cooldown as well
     pub fn update_cooldown(&self, cooldown: Duration) {
-        *self
-            .text_detect_cooldown
-            .write()
-            .expect("Could not set cooldown") = cooldown;
+        self.text_detect_cooldown = cooldown;
 
         self.save();
     }
 
     /// Adds a response to the config.toml file and the config.
     pub fn add_response(&mut self, response: MessageResponse) {
-        self.responses
-            .write()
-            .expect("Could not write responses")
-            .push(response);
+        self.responses.push(response);
         self.save();
     }
 
     /// Removes a response from the config.toml file and the config.
     pub fn remove_response(&mut self, name: String) {
-        self.responses
-            .write()
-            .expect("Could not write responses")
-            .retain(|response| response.name != name);
+        self.responses.retain(|response| response.name != name);
         self.save();
     }
 
     pub fn get_response(&self, name: String) -> MessageResponse {
         self.responses
-            .read()
-            .expect("Could not read responses")
             .iter()
             .find(|response| response.name == name)
             .expect("Could not find response with name")
@@ -136,30 +109,12 @@ impl Config {
 
     pub fn save(&self) {
         let config_builder = ConfigBuilder {
-            text_detect_cooldown: self
-                .text_detect_cooldown
-                .read()
-                .expect("could not read cooldown")
-                .num_minutes(),
+            text_detect_cooldown: self.text_detect_cooldown.num_minutes(),
             discord_token: self.discord_token.clone(),
-            starboard_reaction_count: *self
-                .starboard_reaction_count
-                .read()
-                .expect("could not read reaction count"),
-            starboard_emote_name: self
-                .starboard_emote_name
-                .read()
-                .expect("could not emote name")
-                .clone(),
-            starboard_channel_id: *self
-                .starboard_channel_id
-                .read()
-                .expect("could not read starboard channel id"),
-            responses: self
-                .responses
-                .read()
-                .expect("could not read responses")
-                .clone(),
+            starboard_reaction_count: self.starboard_reaction_count,
+            starboard_emote_name: self.starboard_emote_name,
+            starboard_channel_id: self.starboard_channel_id,
+            responses: self.responses,
         };
 
         let toml = toml::to_string(&config_builder).expect("Could not serialize config");
