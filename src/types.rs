@@ -11,7 +11,7 @@ use tokio::sync::RwLock;
 
 pub struct Data {
     last_responses: DashMap<Arc<String>, DateTime<Utc>>,
-    pub config: RwLock<Config>,
+    pub config: Arc<RwLock<Config>>,
 }
 
 impl Data {
@@ -22,10 +22,27 @@ impl Data {
             .map(|response| (Arc::clone(&response.name), DateTime::<Utc>::UNIX_EPOCH))
             .collect();
 
+        let config = Arc::new(RwLock::new(config));
+
         Data {
             last_responses,
-            config: RwLock::new(config),
+            config,
         }
+        .setup_file_watcher()
+    }
+
+    pub fn setup_file_watcher(self) -> Self {
+        let config_clone = Arc::clone(&self.config);
+
+        tokio::spawn(async move {
+            notify::recommended_watcher(move |res| match res {
+                Ok(_) => config_clone.blocking_write().reload(),
+                Err(e) => println!("watch error: {:?}", e),
+            })
+            .expect("Failed to create file watcher")
+        });
+
+        self
     }
 
     /// Register a new response type for messages matching a regular expression pattern

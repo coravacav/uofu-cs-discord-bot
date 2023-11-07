@@ -39,7 +39,7 @@ impl Config {
     }
 
     fn fetch_config() -> ConfigBuilder {
-        let config = std::fs::read_to_string("./config.toml").expect("Could not read config.toml");
+        let config = std::fs::read_to_string(CONFIG_PATH).expect("Could not read config.toml");
 
         toml::from_str(&config).expect("Could not deserialize config.toml")
     }
@@ -118,7 +118,7 @@ impl Config {
 
         let toml = toml::to_string(&config_builder).expect("Could not serialize config");
 
-        std::fs::write("./config.toml", toml).expect("Could not write to config.toml");
+        std::fs::write(CONFIG_PATH, toml).expect("Could not write to config.toml");
     }
 }
 
@@ -207,3 +207,5 @@ content = "literally 1984""#;
         );
     }
 }
+
+pub static CONFIG_PATH: &str = "./config.toml";
