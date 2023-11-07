@@ -6,6 +6,7 @@ use chrono::{DateTime, Utc};
 use dashmap::DashMap;
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::Message;
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use tokio::sync::RwLock;
 
 pub struct Data {
@@ -54,8 +55,8 @@ impl Data {
             .read()
             .await
             .get_responses()
-            .iter()
-            .find_map(|response| {
+            .par_iter()
+            .find_map_any(|response| {
                 if response.ruleset.matches(&message.content) {
                     Some(Arc::clone(&response.name))
                 } else {
