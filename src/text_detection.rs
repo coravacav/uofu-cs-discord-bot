@@ -16,12 +16,12 @@ pub async fn text_detection(
 
     if let Some(name) = &data.check_should_respond(message).await {
         if cooldown_checker(
-            data.last_response(Arc::clone(&name)),
+            data.last_response(Arc::clone(name)),
             data.config.read().await.get_cooldown(),
             message.timestamp.with_timezone(&Utc),
         ) {
-            data.reset_last_response(Arc::clone(&name), message.timestamp.with_timezone(&Utc));
-            data.run_action(&name, message, ctx).await?;
+            data.reset_last_response(Arc::clone(name), message.timestamp.with_timezone(&Utc));
+            data.run_action(name, message, ctx).await?;
         }
     }
 
