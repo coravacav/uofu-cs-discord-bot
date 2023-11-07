@@ -12,6 +12,8 @@ pub async fn change_text_detect_cooldown(
 ) -> anyhow::Result<()> {
     ctx.data()
         .config
+        .write()
+        .await
         .update_cooldown(Duration::minutes(cooldown));
     ctx.say("Done!").await?;
     Ok(())

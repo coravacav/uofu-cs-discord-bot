@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::types::Data;
 use chrono::{DateTime, Duration, Utc};
 use poise::serenity_prelude as serenity;
@@ -12,14 +14,14 @@ pub async fn text_detection(
         return Ok(());
     }
 
-    if let Some(name) = &data.check_should_respond(message) {
+    if let Some(name) = &data.check_should_respond(message).await {
         if cooldown_checker(
-            data.last_response(name),
-            data.config.get_cooldown(),
+            data.last_response(Arc::clone(&name)),
+            data.config.read().await.get_cooldown(),
             message.timestamp.with_timezone(&Utc),
         ) {
-            data.reset_last_response(name, message.timestamp.with_timezone(&Utc));
-            data.run_action(name, message, ctx).await?;
+            data.reset_last_response(Arc::clone(&name), message.timestamp.with_timezone(&Utc));
+            data.run_action(&name, message, ctx).await?;
         }
     }
 
@@ -30,11 +32,11 @@ pub async fn text_detection(
 /// returns false and does nothing.
 fn cooldown_checker(
     last_message: Option<DateTime<Utc>>,
-    cooldown: Duration,
+    cooldown: &Duration,
     timestamp: DateTime<Utc>,
 ) -> bool {
     if let Some(last_message) = last_message {
-        last_message + cooldown <= timestamp
+        last_message + *cooldown <= timestamp
     } else {
         false
     }

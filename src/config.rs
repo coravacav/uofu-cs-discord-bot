@@ -1,4 +1,4 @@
-use std::sync::{RwLock, RwLockReadGuard};
+use std::sync::Arc;
 
 use chrono::Duration;
 use serde::{Deserialize, Serialize};
@@ -18,24 +18,24 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn get_cooldown(&self) -> Duration {
-        self.text_detect_cooldown
+    pub fn get_cooldown(&self) -> &Duration {
+        &self.text_detect_cooldown
     }
 
-    pub fn get_starboard_reaction_count(&self) -> u64 {
-        self.starboard_reaction_count
+    pub fn get_starboard_reaction_count(&self) -> &u64 {
+        &self.starboard_reaction_count
     }
 
-    pub fn get_starboard_emote(&self) -> String {
-        self.starboard_emote_name
+    pub fn get_starboard_emote(&self) -> &String {
+        &self.starboard_emote_name
     }
 
-    pub fn get_starboard_channel(&self) -> u64 {
-        self.starboard_channel_id
+    pub fn get_starboard_channel(&self) -> &u64 {
+        &self.starboard_channel_id
     }
 
-    pub fn get_responses(&self) -> Vec<MessageResponse> {
-        self.responses
+    pub fn get_responses(&self) -> &Vec<MessageResponse> {
+        &self.responses
     }
 
     fn fetch_config() -> ConfigBuilder {
@@ -70,14 +70,14 @@ impl Config {
     }
 
     /// Reloads the config.toml file and updates the configuration.
-    pub fn reload(&self) {
+    pub fn reload(&mut self) {
         let new_config = Config::fetch_config();
         self.text_detect_cooldown = Duration::minutes(new_config.text_detect_cooldown);
         self.responses = new_config.responses;
     }
 
     /// Updates config.toml with the new cooldown, and updates the cooldown as well
-    pub fn update_cooldown(&self, cooldown: Duration) {
+    pub fn update_cooldown(&mut self, cooldown: Duration) {
         self.text_detect_cooldown = cooldown;
 
         self.save();
@@ -91,20 +91,19 @@ impl Config {
 
     /// Removes a response from the config.toml file and the config.
     pub fn remove_response(&mut self, name: String) {
-        self.responses.retain(|response| response.name != name);
+        self.responses.retain(|response| &*response.name != &name);
         self.save();
     }
 
-    pub fn get_response(&self, name: String) -> MessageResponse {
+    pub fn get_response(&self, name: &str) -> &MessageResponse {
         self.responses
             .iter()
-            .find(|response| response.name == name)
+            .find(|response| &*response.name == &name)
             .expect("Could not find response with name")
-            .clone()
     }
 
-    pub fn get_token(&self) -> String {
-        self.discord_token.clone()
+    pub fn get_token(&self) -> &str {
+        &self.discord_token
     }
 
     pub fn save(&self) {
@@ -112,9 +111,9 @@ impl Config {
             text_detect_cooldown: self.text_detect_cooldown.num_minutes(),
             discord_token: self.discord_token.clone(),
             starboard_reaction_count: self.starboard_reaction_count,
-            starboard_emote_name: self.starboard_emote_name,
+            starboard_emote_name: self.starboard_emote_name.clone(),
             starboard_channel_id: self.starboard_channel_id,
-            responses: self.responses,
+            responses: self.responses.clone(),
         };
 
         let toml = toml::to_string(&config_builder).expect("Could not serialize config");
@@ -154,7 +153,7 @@ pub enum MessageResponseKind {
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
 pub struct MessageResponse {
-    pub name: String,
+    pub name: Arc<String>,
     pub ruleset: Ruleset,
     #[serde(flatten)]
     // This makes it so it pretends the attributes of the enum are attributes of the struct
@@ -190,7 +189,7 @@ content = "literally 1984""#;
         assert_eq!(
             config.responses.first(),
             Some(&MessageResponse {
-                name: "1984".to_string(),
+                name: Arc::new("1984".to_string()),
                 ruleset: Ruleset::new(vec![
                     Line {
                         kind: Kind::Regex(MemoryRegex::new("1234".to_string()).unwrap()),
