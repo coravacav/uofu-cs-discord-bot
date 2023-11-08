@@ -44,11 +44,13 @@ pub async fn starboard(
         }
     }
 
-    let reaction_count_requirement = *data.config.get_starboard_reaction_count();
-    let stored_name = (*data.config.get_starboard_emote()).clone();
-    let starboard_channel = ChannelId(*data.config.get_starboard_channel());
+    let config = data.config.blocking_read();
 
-    if reaction_count >= reaction_count_requirement && name == stored_name {
+    let reaction_count_requirement = *config.get_starboard_reaction_count();
+    let stored_name = config.get_starboard_emote();
+    let starboard_channel = ChannelId(*config.get_starboard_channel());
+
+    if reaction_count >= reaction_count_requirement && &name == stored_name {
         let previous_messages = starboard_channel.messages(ctx, |m| m).await?;
 
         let mut send = true;

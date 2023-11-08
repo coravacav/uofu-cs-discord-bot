@@ -19,7 +19,7 @@ use poise::Event;
 async fn main() -> anyhow::Result<()> {
     let config = Config::fetch();
     config.save();
-    let data = Data::init(config);
+    let token = config.get_token();
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![
@@ -33,14 +33,14 @@ async fn main() -> anyhow::Result<()> {
             },
             ..Default::default()
         })
-        .token(data.config.get_token())
+        .token(token)
         .intents(
             serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT,
         )
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                Ok(data)
+                Ok(Data::init(config))
             })
         });
 
