@@ -4,12 +4,13 @@ use nom::{
     bytes::complete::take_till,
     character::complete::{char, newline},
     combinator::{map_res, opt, value},
-    multi::many1,
+    multi::separated_list1,
     sequence::{terminated, tuple},
     IResult,
 };
 use regex::Error;
-use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
+
+mod serialization;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Kind {
@@ -18,147 +19,75 @@ pub enum Kind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Line {
+pub struct Case {
     pub kind: Kind,
     pub negated: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Rule {
+    cases: Vec<Case>,
+}
+
+impl Rule {
+    pub fn new(case: Vec<Case>) -> Self {
+        Self { cases: case }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Ruleset {
-    lines: Vec<Line>,
+    rules: Vec<Rule>,
 }
 
 impl Ruleset {
-    pub fn new(lines: Vec<Line>) -> Self {
-        Self { lines }
+    pub fn new(rules: Vec<Rule>) -> Self {
+        Self { rules }
     }
 
     pub fn matches(&self, input: &str) -> bool {
-        self.lines.iter().all(|line| {
-            let res = match &line.kind {
-                Kind::RegexUnparsed => panic!("unparsed regex"),
-                Kind::Regex(regex) => regex.is_match(input),
-            };
+        self.rules.iter().any(|rule| {
+            rule.cases.iter().all(|case| {
+                let res = match &case.kind {
+                    Kind::RegexUnparsed => panic!("unparsed regex"),
+                    Kind::Regex(regex) => regex.is_match(input),
+                };
 
-            if line.negated {
-                !res
-            } else {
-                res
-            }
+                if case.negated {
+                    !res
+                } else {
+                    res
+                }
+            })
         })
     }
 }
 
 impl std::ops::Deref for Ruleset {
-    type Target = Vec<Line>;
+    type Target = Vec<Rule>;
 
     fn deref(&self) -> &Self::Target {
-        &self.lines
+        &self.rules
     }
 }
 
 impl std::ops::DerefMut for Ruleset {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.lines
+        &mut self.rules
     }
 }
 
-struct RulesetVisitor {}
-
-impl RulesetVisitor {
-    fn visit_str<E>(self, v: &str) -> Result<Ruleset, E>
-    where
-        E: serde::de::Error,
-    {
-        if let Some(v) = parse(v) {
-            Ok(Ruleset { lines: v })
-        } else {
-            Err(E::custom("invalid ruleset"))
-        }
-    }
-}
-
-impl<'de> Visitor<'de> for RulesetVisitor {
-    type Value = Ruleset;
-
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        formatter.write_str("a valid ruleset")
-    }
-
-    fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        self.visit_str(v)
-    }
-
-    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        self.visit_str(&v)
-    }
-
-    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        self.visit_str(v)
-    }
-}
-
-impl<'de> Deserialize<'de> for Ruleset {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_str(RulesetVisitor {})
-    }
-}
-
-impl Serialize for Ruleset {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::ser::Serializer,
-    {
-        let mut s = String::new();
-        for line in &self.lines {
-            if line.negated {
-                s.push('!');
-            }
-
-            match &line.kind {
-                Kind::RegexUnparsed => panic!("unparsed regex"),
-                Kind::Regex(lazy) => {
-                    s.push_str(&format!("r {}", lazy.as_str()));
-                }
-            };
-
-            s.push('\n');
-        }
-
-        serializer.serialize_str(&s)
-    }
-}
-
-fn parser(input: &str) -> IResult<&str, Vec<Line>> {
-    many1(parse_line)(input)
-}
-
-fn parse_line(input: &str) -> IResult<&str, Line> {
+fn parse_case(input: &str) -> IResult<&str, Case> {
     map_res(
-        terminated(
-            tuple((
-                opt(tag("!")),
-                terminated(value(Kind::RegexUnparsed, tag("r")), char(' ')),
-                take_till(|c| c == '\n'),
-            )),
-            newline,
-        ),
+        tuple((
+            opt(tag("!")),
+            terminated(value(Kind::RegexUnparsed, tag("r")), char(' ')),
+            take_till(|c| c == '\n'),
+        )),
         |(negated, kind, content)| {
             let negated: Option<&str> = negated; // Needs to be coerced for some reason.
 
-            Ok::<Line, Error>(Line {
+            Ok::<Case, Error>(Case {
                 negated: negated.is_some(),
                 kind: match kind {
                     Kind::RegexUnparsed => Kind::Regex(MemoryRegex::new(content.to_string())?),
@@ -169,32 +98,102 @@ fn parse_line(input: &str) -> IResult<&str, Line> {
     )(input)
 }
 
-pub fn parse(input: &str) -> Option<Vec<Line>> {
-    parser(input.trim_start()).map(|v| v.1).ok()
+fn parse_all_cases(input: &str) -> IResult<&str, Vec<Case>> {
+    separated_list1(newline, parse_case)(input)
 }
+
+fn parse_rules(input: &str) -> Option<Vec<Rule>> {
+    match separated_list1(tag(SPLIT_RULE_SEPARATOR), parse_all_cases)(input) {
+        Ok((_, vec_vec_case)) => Some(vec_vec_case.into_iter().map(Rule::new).collect()),
+        Err(e) => {
+            eprintln!("Error parsing rules: {:?}", e);
+            None
+        }
+    }
+}
+
+pub fn parse(input: &str) -> Option<Vec<Rule>> {
+    parse_rules(input.trim_start())
+}
+
+const SPLIT_RULE_SEPARATOR: &str = "\nor\n";
 
 #[cfg(test)]
 mod test {
+    use serde::Serialize;
+
     use super::*;
+
+    #[test]
+    fn test_parse_case() {
+        let test = "!r 1234";
+
+        let result = parse_case(test).unwrap();
+        assert_eq!(
+            result,
+            (
+                "",
+                Case {
+                    kind: Kind::Regex(MemoryRegex::new("1234".to_string()).unwrap()),
+                    negated: true,
+                }
+            )
+        );
+    }
+
+    #[test]
+    fn test_parse_all_cases() {
+        let test = "!r 1234\nr 4321";
+
+        let result = parse_all_cases(test).unwrap();
+        assert_eq!(
+            result,
+            (
+                "",
+                vec![
+                    Case {
+                        kind: Kind::Regex(MemoryRegex::new("1234".to_string()).unwrap()),
+                        negated: true,
+                    },
+                    Case {
+                        kind: Kind::Regex(MemoryRegex::new("4321".to_string()).unwrap()),
+                        negated: false,
+                    },
+                ]
+            )
+        );
+    }
 
     #[test]
     fn test_deserialize() {
         let test = r#"
 r 1234
 !r 4321
+or
+r 3333
 "#;
 
         let result = parse(test).unwrap();
         assert_eq!(
             result,
             vec![
-                Line {
-                    kind: Kind::Regex(MemoryRegex::new("1234".to_string()).unwrap()),
-                    negated: false,
+                Rule {
+                    cases: vec![
+                        Case {
+                            kind: Kind::Regex(MemoryRegex::new("1234".to_string()).unwrap()),
+                            negated: false,
+                        },
+                        Case {
+                            kind: Kind::Regex(MemoryRegex::new("4321".to_string()).unwrap()),
+                            negated: true,
+                        },
+                    ],
                 },
-                Line {
-                    kind: Kind::Regex(MemoryRegex::new("4321".to_string()).unwrap()),
-                    negated: true,
+                Rule {
+                    cases: vec![Case {
+                        kind: Kind::Regex(MemoryRegex::new("3333".to_string()).unwrap()),
+                        negated: false,
+                    }],
                 },
             ]
         );
@@ -203,13 +202,29 @@ r 1234
     #[test]
     fn test_serialize() {
         let ruleset = Ruleset::new(vec![
-            Line {
-                kind: Kind::Regex(MemoryRegex::new("1234".to_string()).unwrap()),
-                negated: false,
+            Rule {
+                cases: vec![
+                    Case {
+                        kind: Kind::Regex(MemoryRegex::new("1234".to_string()).unwrap()),
+                        negated: false,
+                    },
+                    Case {
+                        kind: Kind::Regex(MemoryRegex::new("4321".to_string()).unwrap()),
+                        negated: true,
+                    },
+                ],
             },
-            Line {
-                kind: Kind::Regex(MemoryRegex::new("4321".to_string()).unwrap()),
-                negated: true,
+            Rule {
+                cases: vec![Case {
+                    kind: Kind::Regex(MemoryRegex::new("3333".to_string()).unwrap()),
+                    negated: false,
+                }],
+            },
+            Rule {
+                cases: vec![Case {
+                    kind: Kind::Regex(MemoryRegex::new("6969".to_string()).unwrap()),
+                    negated: true,
+                }],
             },
         ]);
 
@@ -225,6 +240,10 @@ r 1234
             r#"ruleset = """
 r 1234
 !r 4321
+or
+r 3333
+or
+!r 6969
 """
 "#
         );

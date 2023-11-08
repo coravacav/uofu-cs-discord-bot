@@ -163,7 +163,7 @@ pub struct MessageResponse {
 #[cfg(test)]
 mod test {
     use crate::{
-        lang::{Kind, Line},
+        lang::{Case, Kind, Rule},
         memory_regex::MemoryRegex,
     };
 
@@ -187,19 +187,33 @@ content = "literally 1984""#;
         let config: ConfigBuilder = toml::from_str(test_input).unwrap();
 
         assert_eq!(
+            config.responses.first().unwrap().ruleset,
+            Ruleset::new(vec![Rule::new(vec![
+                Case {
+                    kind: Kind::Regex(MemoryRegex::new("1234".to_string()).unwrap()),
+                    negated: false,
+                },
+                Case {
+                    kind: Kind::Regex(MemoryRegex::new("4312".to_string()).unwrap()),
+                    negated: true,
+                },
+            ])])
+        );
+
+        assert_eq!(
             config.responses.first(),
             Some(&MessageResponse {
                 name: Arc::new("1984".to_string()),
-                ruleset: Ruleset::new(vec![
-                    Line {
+                ruleset: Ruleset::new(vec![Rule::new(vec![
+                    Case {
                         kind: Kind::Regex(MemoryRegex::new("1234".to_string()).unwrap()),
                         negated: false,
                     },
-                    Line {
+                    Case {
                         kind: Kind::Regex(MemoryRegex::new("4312".to_string()).unwrap()),
                         negated: true,
                     }
-                ]),
+                ])]),
                 kind: MessageResponseKind::Text {
                     content: "literally 1984".to_string(),
                 },
@@ -209,3 +223,11 @@ content = "literally 1984""#;
 }
 
 pub static CONFIG_PATH: &str = "./config.toml";
+
+// Ruleset { rules: [Rule { sets: [Set { kind: Regex(MemoryRegex { regex: Regex("1234"), pattern: "1234" }), negated: false }] }, Rule { sets: [Set { kind: Regex(MemoryRegex { regex: Regex("4312"), pattern: "4312" }), negated: true }] }] }
+
+// Some(MessageResponse { name: "1984", ruleset: Ruleset { rules:
+// [Rule { sets: [Set { kind: Regex(MemoryRegex { regex: Regex("1234"), pattern: "1234" }), negated: false }] },
+//  Rule { sets: [Set { kind: Regex(MemoryRegex { regex: Regex("4312"), pattern: "4312" }), negated: true }] }] }, kind: Text { content: "literally 1984" } })
+// Some(MessageResponse { name: "1984", ruleset: Ruleset { rules:
+// [Rule { sets: [Set { kind: Regex(MemoryRegex { regex: Regex("1234"), pattern: "1234" }), negated: false }, Set { kind: Regex(MemoryRegex { regex: Regex("4312"), pattern: "4312" }), negated: true }] }] }, kind: Text { content: "literally 1984" } })
