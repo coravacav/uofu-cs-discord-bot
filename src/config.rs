@@ -223,11 +223,3 @@ content = "literally 1984""#;
 }
 
 pub static CONFIG_PATH: &str = "./config.toml";
-
-// Ruleset { rules: [Rule { sets: [Set { kind: Regex(MemoryRegex { regex: Regex("1234"), pattern: "1234" }), negated: false }] }, Rule { sets: [Set { kind: Regex(MemoryRegex { regex: Regex("4312"), pattern: "4312" }), negated: true }] }] }
-
-// Some(MessageResponse { name: "1984", ruleset: Ruleset { rules:
-// [Rule { sets: [Set { kind: Regex(MemoryRegex { regex: Regex("1234"), pattern: "1234" }), negated: false }] },
-//  Rule { sets: [Set { kind: Regex(MemoryRegex { regex: Regex("4312"), pattern: "4312" }), negated: true }] }] }, kind: Text { content: "literally 1984" } })
-// Some(MessageResponse { name: "1984", ruleset: Ruleset { rules:
-// [Rule { sets: [Set { kind: Regex(MemoryRegex { regex: Regex("1234"), pattern: "1234" }), negated: false }, Set { kind: Regex(MemoryRegex { regex: Regex("4312"), pattern: "4312" }), negated: true }] }] }, kind: Text { content: "literally 1984" } })
