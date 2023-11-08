@@ -91,14 +91,14 @@ impl Config {
 
     /// Removes a response from the config.toml file and the config.
     pub fn remove_response(&mut self, name: String) {
-        self.responses.retain(|response| &*response.name != &name);
+        self.responses.retain(|response| *response.name != name);
         self.save();
     }
 
     pub fn get_response(&self, name: &str) -> &MessageResponse {
         self.responses
             .iter()
-            .find(|response| &*response.name == &name)
+            .find(|response| *response.name == name)
             .expect("Could not find response with name")
     }
 
