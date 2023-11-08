@@ -77,7 +77,7 @@ impl Serialize for Ruleset {
                 s.push('\n');
             }
 
-            s.push_str("next\n");
+            s.push_str("or\n");
         }
 
         // Remove the final next
