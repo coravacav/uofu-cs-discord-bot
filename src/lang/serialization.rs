@@ -85,8 +85,6 @@ impl Serialize for Ruleset {
         s.pop();
         s.pop();
         s.pop();
-        s.pop();
-        s.pop();
 
         serializer.serialize_str(&s)
     }
