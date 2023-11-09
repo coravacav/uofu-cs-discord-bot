@@ -91,14 +91,14 @@ impl Config {
 
     /// Removes a response from the config.toml file and the config.
     pub fn remove_response(&mut self, name: String) {
-        self.responses.retain(|response| &*response.name != &name);
+        self.responses.retain(|response| *response.name != name);
         self.save();
     }
 
     pub fn get_response(&self, name: &str) -> &MessageResponse {
         self.responses
             .iter()
-            .find(|response| &*response.name == &name)
+            .find(|response| *response.name == name)
             .expect("Could not find response with name")
     }
 
@@ -163,7 +163,7 @@ pub struct MessageResponse {
 #[cfg(test)]
 mod test {
     use crate::{
-        lang::{Kind, Line},
+        lang::{Case, Kind, Rule},
         memory_regex::MemoryRegex,
     };
 
@@ -187,19 +187,33 @@ content = "literally 1984""#;
         let config: ConfigBuilder = toml::from_str(test_input).unwrap();
 
         assert_eq!(
+            config.responses.first().unwrap().ruleset,
+            Ruleset::new(vec![Rule::new(vec![
+                Case {
+                    kind: Kind::Regex(MemoryRegex::new("1234".to_string()).unwrap()),
+                    negated: false,
+                },
+                Case {
+                    kind: Kind::Regex(MemoryRegex::new("4312".to_string()).unwrap()),
+                    negated: true,
+                },
+            ])])
+        );
+
+        assert_eq!(
             config.responses.first(),
             Some(&MessageResponse {
                 name: Arc::new("1984".to_string()),
-                ruleset: Ruleset::new(vec![
-                    Line {
+                ruleset: Ruleset::new(vec![Rule::new(vec![
+                    Case {
                         kind: Kind::Regex(MemoryRegex::new("1234".to_string()).unwrap()),
                         negated: false,
                     },
-                    Line {
+                    Case {
                         kind: Kind::Regex(MemoryRegex::new("4312".to_string()).unwrap()),
                         negated: true,
                     }
-                ]),
+                ])]),
                 kind: MessageResponseKind::Text {
                     content: "literally 1984".to_string(),
                 },
