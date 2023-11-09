@@ -15,6 +15,7 @@ pub struct Config {
     starboard_emote_name: String,
     starboard_channel_id: u64,
     responses: Vec<MessageResponse>,
+    config_path: String,
 }
 
 impl Config {
@@ -38,16 +39,11 @@ impl Config {
         &self.responses
     }
 
-    fn fetch_config() -> ConfigBuilder {
-        let config = std::fs::read_to_string(CONFIG_PATH).expect("Could not read config.toml");
-
-        toml::from_str(&config).expect("Could not deserialize config.toml")
-    }
-
     /// Fetches the config from the config.toml file in the root directory.
-    /// If the delay is missing, it will default to 5 minutes.
-    /// If the discord token is missing, it will attempt to use the DISCORD_TOKEN environment variable.
-    pub fn fetch() -> Config {
+    pub fn create_from_file(config_path: &str) -> Config {
+        let file = std::fs::read_to_string(config_path)
+            .expect(format!("Could not read {}", config_path).as_str());
+
         let ConfigBuilder {
             text_detect_cooldown,
             discord_token,
@@ -55,7 +51,7 @@ impl Config {
             starboard_emote_name,
             starboard_channel_id,
             responses,
-        } = Config::fetch_config();
+        } = toml::from_str(&file).expect("Could not deserialize config.toml");
 
         let text_detect_cooldown = Duration::minutes(text_detect_cooldown);
 
@@ -66,14 +62,13 @@ impl Config {
             starboard_emote_name,
             starboard_channel_id,
             responses,
+            config_path: config_path.to_owned(),
         }
     }
 
-    /// Reloads the config.toml file and updates the configuration.
+    /// Reloads the config file and updates the configuration.
     pub fn reload(&mut self) {
-        let new_config = Config::fetch_config();
-        self.text_detect_cooldown = Duration::minutes(new_config.text_detect_cooldown);
-        self.responses = new_config.responses;
+        *self = Config::create_from_file(&self.config_path);
     }
 
     /// Updates config.toml with the new cooldown, and updates the cooldown as well
@@ -118,7 +113,7 @@ impl Config {
 
         let toml = toml::to_string(&config_builder).expect("Could not serialize config");
 
-        std::fs::write(CONFIG_PATH, toml).expect("Could not write to config.toml");
+        std::fs::write(&self.config_path, toml).expect("Could not write to config.toml");
     }
 }
 
@@ -200,5 +195,3 @@ content = "literally 1984""#;
         );
     }
 }
-
-pub static CONFIG_PATH: &str = "./config.toml";

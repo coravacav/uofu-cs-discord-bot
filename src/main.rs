@@ -1,3 +1,4 @@
+mod args;
 mod commands;
 mod config;
 mod data;
@@ -11,13 +12,16 @@ use config::Config;
 use data::Data;
 use data::PoiseContext;
 
+use clap::Parser;
 use poise::builtins::register_application_commands_buttons;
 use poise::serenity_prelude as serenity;
 use poise::Event;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let config = Config::fetch();
+    let args = args::Args::parse();
+    let config = Config::create_from_file(&args.config);
+
     config.save();
     let token = config.get_token();
     let framework = poise::Framework::builder()
