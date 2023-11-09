@@ -1,23 +1,27 @@
+mod args;
 mod commands;
 mod config;
+mod data;
 mod lang;
 mod memory_regex;
 mod reaction_management;
 mod text_detection;
-mod types;
 
 use anyhow::Context;
 use config::Config;
-use types::Data;
-use types::PoiseContext;
+use data::Data;
+use data::PoiseContext;
 
+use clap::Parser;
 use poise::builtins::register_application_commands_buttons;
 use poise::serenity_prelude as serenity;
 use poise::Event;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let config = Config::fetch();
+    let args = args::Args::parse();
+    let config = Config::create_from_file(&args.config);
+
     config.save();
     let token = config.get_token();
     let framework = poise::Framework::builder()

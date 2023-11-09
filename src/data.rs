@@ -1,9 +1,10 @@
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
 use crate::config::{Config, MessageResponse, MessageResponseKind};
 
 use chrono::{DateTime, Utc};
 use dashmap::DashMap;
+use notify::Watcher;
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::Message;
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
@@ -16,6 +17,9 @@ pub struct Data {
 
 impl Data {
     pub fn init(config: Config) -> Data {
+        let config_path = config.get_config_path().to_owned();
+        let config_path = Path::new(&config_path);
+
         let last_responses = config
             .get_responses()
             .iter()
@@ -24,25 +28,27 @@ impl Data {
 
         let config = Arc::new(RwLock::new(config));
 
-        Data {
+        let data = Data {
             last_responses,
             config,
-        }
-        .setup_file_watcher()
-    }
+        };
 
-    pub fn setup_file_watcher(self) -> Self {
-        let config_clone = Arc::clone(&self.config);
+        let config_clone = Arc::clone(&data.config);
 
-        tokio::spawn(async move {
-            notify::recommended_watcher(move |res| match res {
-                Ok(_) => config_clone.blocking_write().reload(),
-                Err(e) => println!("watch error: {:?}", e),
-            })
-            .expect("Failed to create file watcher")
-        });
+        let mut watcher = notify::recommended_watcher(move |res| match res {
+            Ok(_) => {
+                println!("config changed, reloading...");
+                config_clone.blocking_write().reload();
+            }
+            Err(e) => println!("watch error: {:?}", e),
+        })
+        .expect("Failed to create file watcher");
 
-        self
+        watcher
+            .watch(config_path, notify::RecursiveMode::NonRecursive)
+            .unwrap_or_else(|_| panic!("Failed to watch {:?}", config_path));
+
+        data
     }
 
     /// Register a new response type for messages matching a regular expression pattern

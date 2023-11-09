@@ -1,4 +1,4 @@
-use crate::types::Data;
+use crate::data::Data;
 
 use poise::serenity_prelude as serenity;
 use serenity::ChannelId;
