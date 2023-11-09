@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::types::Data;
+use crate::data::Data;
 use chrono::{DateTime, Duration, Utc};
 use poise::serenity_prelude as serenity;
 use serenity::Message;
