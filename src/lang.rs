@@ -142,6 +142,32 @@ mod test {
     }
 
     #[test]
+    fn test_detection_2() {
+        let ruleset = fast_ruleset!(
+            r#"r (?i)\bme+o*w\b"#,
+            "or",
+            "r (?i)[ou]w[ou]",
+            "or",
+            "r 喵",
+            "or",
+            "r :3",
+            "or",
+            r#"r (?i)\bee+p.*"#,
+            "or",
+            "r (?i)ny+a+",
+            "or",
+            "r (?i)mrr+[pb]",
+            "or",
+            "r (?i)pu+rr+"
+        );
+
+        assert!(ruleset.matches("mew"));
+        assert!(ruleset.matches(":3"));
+        assert!(!ruleset.matches("123"));
+        assert!(ruleset.matches("meow"));
+    }
+
+    #[test]
     fn test_parse_case() {
         let test = "!r 1234";
 

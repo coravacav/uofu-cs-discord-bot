@@ -39,6 +39,10 @@ impl Config {
         &self.responses
     }
 
+    pub fn get_config_path(&self) -> &str {
+        &self.config_path
+    }
+
     /// Fetches the config from the config.toml file in the root directory.
     pub fn create_from_file(config_path: &str) -> Config {
         let file = std::fs::read_to_string(config_path)
