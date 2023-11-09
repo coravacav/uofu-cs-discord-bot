@@ -46,7 +46,7 @@ impl Config {
     /// Fetches the config from the config.toml file in the root directory.
     pub fn create_from_file(config_path: &str) -> Config {
         let file = std::fs::read_to_string(config_path)
-            .expect(format!("Could not read {}", config_path).as_str());
+            .unwrap_or_else(|_| panic!("Could not read {}", config_path));
 
         let ConfigBuilder {
             text_detect_cooldown,

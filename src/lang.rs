@@ -119,7 +119,7 @@ pub fn parse(input: &str) -> Option<Vec<Rule>> {
 #[macro_export]
 macro_rules! fast_ruleset {
     ($($x:expr),*) => {{
-        crate::lang::parse(&[$($x),*].join("\n")).map(Ruleset::new).unwrap()
+        $crate::lang::parse(&[$($x),*].join("\n")).map(Ruleset::new).unwrap()
     }};
 }
 
@@ -144,7 +144,7 @@ mod test {
     #[test]
     fn test_detection_2() {
         let ruleset = fast_ruleset!(
-            r#"r (?i)\bme+o*w\b"#,
+            r"r (?i)\bme+o*w\b",
             "or",
             "r (?i)[ou]w[ou]",
             "or",
@@ -152,7 +152,7 @@ mod test {
             "or",
             "r :3",
             "or",
-            r#"r (?i)\bee+p.*"#,
+            r"r (?i)\bee+p.*",
             "or",
             "r (?i)ny+a+",
             "or",

@@ -46,7 +46,7 @@ impl Data {
 
         watcher
             .watch(config_path, notify::RecursiveMode::NonRecursive)
-            .expect(format!("Failed to watch {:?}", config_path).as_str());
+            .unwrap_or_else(|_| panic!("Failed to watch {:?}", config_path));
 
         data
     }
