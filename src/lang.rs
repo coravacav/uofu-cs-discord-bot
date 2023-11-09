@@ -116,6 +116,10 @@ pub fn parse(input: &str) -> Option<Vec<Rule>> {
     parse_rules(input.trim_start())
 }
 
+pub fn get_ruleset(input: &str) -> Option<Ruleset> {
+    parse(input).map(Ruleset::new)
+}
+
 const SPLIT_RULE_SEPARATOR: &str = "\nor\n";
 
 #[cfg(test)]
@@ -123,6 +127,23 @@ mod test {
     use serde::Serialize;
 
     use super::*;
+
+    #[test]
+    fn test_detection() {
+        let ruleset = r#"r 1234
+or
+r :3
+or
+r mew
+"#;
+
+        let ruleset = get_ruleset(ruleset).unwrap();
+
+        assert!(ruleset.matches("mew"));
+        assert!(ruleset.matches(":3"));
+        assert!(ruleset.matches("1234"));
+        assert!(!ruleset.matches("123"));
+    }
 
     #[test]
     fn test_parse_case() {
