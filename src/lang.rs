@@ -116,8 +116,11 @@ pub fn parse(input: &str) -> Option<Vec<Rule>> {
     parse_rules(input.trim_start())
 }
 
-pub fn get_ruleset(input: &str) -> Option<Ruleset> {
-    parse(input).map(Ruleset::new)
+#[macro_export]
+macro_rules! fast_ruleset {
+    ($($x:expr),*) => {{
+        crate::lang::parse(&[$($x),*].join("\n")).map(Ruleset::new).unwrap()
+    }};
 }
 
 const SPLIT_RULE_SEPARATOR: &str = "\nor\n";
@@ -130,14 +133,7 @@ mod test {
 
     #[test]
     fn test_detection() {
-        let ruleset = r#"r 1234
-or
-r :3
-or
-r mew
-"#;
-
-        let ruleset = get_ruleset(ruleset).unwrap();
+        let ruleset = fast_ruleset!("r 1234", "or", "r :3", "or", "r mew");
 
         assert!(ruleset.matches("mew"));
         assert!(ruleset.matches(":3"));
@@ -187,17 +183,11 @@ r mew
 
     #[test]
     fn test_deserialize() {
-        let test = r#"
-r 1234
-!r 4321
-or
-r 3333
-"#;
+        let ruleset = fast_ruleset!("r 1234", "!r 4321", "or", "r 3333");
 
-        let result = parse(test).unwrap();
         assert_eq!(
-            result,
-            vec![
+            ruleset,
+            Ruleset::new(vec![
                 Rule {
                     cases: vec![
                         Case {
@@ -216,7 +206,7 @@ r 3333
                         negated: false,
                     }],
                 },
-            ]
+            ])
         );
     }
 

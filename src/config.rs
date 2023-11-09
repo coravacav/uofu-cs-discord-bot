@@ -162,10 +162,7 @@ pub struct MessageResponse {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        lang::{Case, Kind, Rule},
-        memory_regex::MemoryRegex,
-    };
+    use crate::fast_ruleset;
 
     use super::*;
 
@@ -188,32 +185,14 @@ content = "literally 1984""#;
 
         assert_eq!(
             config.responses.first().unwrap().ruleset,
-            Ruleset::new(vec![Rule::new(vec![
-                Case {
-                    kind: Kind::Regex(MemoryRegex::new("1234".to_string()).unwrap()),
-                    negated: false,
-                },
-                Case {
-                    kind: Kind::Regex(MemoryRegex::new("4312".to_string()).unwrap()),
-                    negated: true,
-                },
-            ])])
+            fast_ruleset!("r 1234", "!r 4312")
         );
 
         assert_eq!(
             config.responses.first(),
             Some(&MessageResponse {
                 name: Arc::new("1984".to_string()),
-                ruleset: Ruleset::new(vec![Rule::new(vec![
-                    Case {
-                        kind: Kind::Regex(MemoryRegex::new("1234".to_string()).unwrap()),
-                        negated: false,
-                    },
-                    Case {
-                        kind: Kind::Regex(MemoryRegex::new("4312".to_string()).unwrap()),
-                        negated: true,
-                    }
-                ])]),
+                ruleset: fast_ruleset!("r 1234", "!r 4312"),
                 kind: MessageResponseKind::Text {
                     content: "literally 1984".to_string(),
                 },
