@@ -36,7 +36,10 @@ impl Data {
 
         tokio::spawn(async move {
             notify::recommended_watcher(move |res| match res {
-                Ok(_) => config_clone.blocking_write().reload(),
+                Ok(_) => {
+                    println!("config.toml changed, reloading...");
+                    config_clone.blocking_write().reload();
+                }
                 Err(e) => println!("watch error: {:?}", e),
             })
             .expect("Failed to create file watcher")
