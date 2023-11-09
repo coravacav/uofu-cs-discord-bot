@@ -37,7 +37,7 @@ impl Data {
 
         let mut watcher = notify::recommended_watcher(move |res| match res {
             Ok(_) => {
-                println!("config.toml changed, reloading...");
+                println!("config changed, reloading...");
                 config_clone.blocking_write().reload();
             }
             Err(e) => println!("watch error: {:?}", e),

@@ -25,10 +25,9 @@ pub async fn reload_config(ctx: PoiseContext<'_>) -> anyhow::Result<()> {
     ctx.data().reload();
     message
         .edit(ctx, |reply| {
-            reply.content("Successfully reloaded cooldown and responses from config.toml")
+            reply.content("Successfully reloaded cooldown and responses from config")
         })
         .await?;
-    //ctx.say("Successfully reloaded cooldown and responses from config.toml").await?;
     Ok(())
 }
 
