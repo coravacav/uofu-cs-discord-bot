@@ -18,7 +18,6 @@ pub struct Data {
 impl Data {
     pub fn init(config: Config) -> Data {
         let config_path = config.get_config_path().to_owned();
-        let config_path = Path::new(&config_path);
 
         let last_responses = config
             .get_responses()
@@ -35,18 +34,29 @@ impl Data {
 
         let config_clone = Arc::clone(&data.config);
 
-        let mut watcher = notify::recommended_watcher(move |res| match res {
-            Ok(_) => {
-                println!("config changed, reloading...");
-                config_clone.blocking_write().reload();
-            }
-            Err(e) => println!("watch error: {:?}", e),
-        })
+        let notify_config = notify::Config::default()
+            .with_poll_interval(std::time::Duration::from_secs(2))
+            .with_compare_contents(true);
+
+        let mut watcher = notify::PollWatcher::new(
+            move |res| match res {
+                Ok(_) => {
+                    println!("config changed, reloading...");
+                    config_clone.blocking_write().reload();
+                }
+                Err(e) => println!("watch error: {:?}", e),
+            },
+            notify_config,
+        )
         .expect("Failed to create file watcher");
 
-        watcher
-            .watch(config_path, notify::RecursiveMode::NonRecursive)
-            .unwrap_or_else(|_| panic!("Failed to watch {:?}", config_path));
+        tokio::spawn(async move {
+            watcher
+                .watch(Path::new(&config_path), notify::RecursiveMode::NonRecursive)
+                .expect("Failed to watch config file");
+
+            tokio::time::sleep(std::time::Duration::MAX).await;
+        });
 
         data
     }
