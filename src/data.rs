@@ -16,7 +16,7 @@ pub struct Data {
 }
 
 impl Data {
-    pub fn init(config: Config) -> Data {
+    pub fn new(config: Config) -> Data {
         let config_path = config.get_config_path().to_owned();
 
         let last_responses = config
@@ -32,7 +32,13 @@ impl Data {
             config,
         };
 
-        let config_clone = Arc::clone(&data.config);
+        data.setup_file_watcher(config_path);
+
+        data
+    }
+
+    fn setup_file_watcher(&self, config_path: String) {
+        let config_clone = Arc::clone(&self.config);
 
         let notify_config = notify::Config::default()
             .with_poll_interval(std::time::Duration::from_secs(2))
@@ -50,15 +56,12 @@ impl Data {
         )
         .expect("Failed to create file watcher");
 
-        tokio::spawn(async move {
-            watcher
-                .watch(Path::new(&config_path), notify::RecursiveMode::NonRecursive)
-                .expect("Failed to watch config file");
+        watcher
+            .watch(Path::new(&config_path), notify::RecursiveMode::NonRecursive)
+            .expect("Failed to watch config file");
 
-            tokio::time::sleep(std::time::Duration::MAX).await;
-        });
-
-        data
+        // Keep it alive for config reloads
+        Box::leak(Box::new(watcher));
     }
 
     /// Register a new response type for messages matching a regular expression pattern
