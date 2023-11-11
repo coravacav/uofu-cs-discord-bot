@@ -48,7 +48,12 @@ impl Data {
             move |res| match res {
                 Ok(_) => {
                     println!("config changed, reloading...");
-                    config_clone.blocking_write().reload();
+
+                    let config_clone = Arc::clone(&config_clone);
+
+                    tokio::spawn(async move {
+                        config_clone.write().await.reload();
+                    });
                 }
                 Err(e) => println!("watch error: {:?}", e),
             },
