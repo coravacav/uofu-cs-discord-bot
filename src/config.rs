@@ -193,7 +193,7 @@ impl MessageResponse {
     ) -> Option<Arc<MessageResponseKind>> {
         let duration = self
             .cooldown
-            .map(|d| Duration::seconds(d))
+            .map(Duration::seconds)
             .unwrap_or(default_duration);
 
         if self.ruleset.matches(input) {

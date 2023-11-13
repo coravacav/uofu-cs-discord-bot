@@ -70,7 +70,7 @@ impl Data {
     /// Otherwise, return None
     pub async fn find_response<'a>(&'a self, message: &str) -> Option<Arc<MessageResponseKind>> {
         let mut config = self.config.write().await;
-        let global_cooldown = config.get_global_cooldown().clone();
+        let global_cooldown = *config.get_global_cooldown();
 
         config
             .responses
