@@ -31,7 +31,7 @@ content = "TKINTER MENTIONED"
 [[responses]]
 name = "long ass word bro"
 ruleset = '''
-r \b\w{15,}\b
+r \b[a-zA-Z]{15,}\b
 '''
 content = "https://tenor.com/view/jfk-clone-high-i-like-your-funny-words-magic-man-jack-black-gif-18659433"
 
@@ -71,8 +71,8 @@ name = "stefan"
 ruleset = """
 r <@216767618923757568>
 """
-cooldown = 5
 content = "<@216767618923757568>"
+cooldown = 5
 
 [[responses]]
 name = "javascript"
