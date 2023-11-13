@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use chrono::Duration;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::lang::Ruleset;
@@ -14,7 +15,7 @@ pub struct Config {
     starboard_reaction_count: u64,
     starboard_emote_name: String,
     starboard_channel_id: u64,
-    responses: Vec<MessageResponse>,
+    pub responses: Vec<MessageResponse>,
     config_path: String,
 }
 
@@ -33,10 +34,6 @@ impl Config {
 
     pub fn get_starboard_channel(&self) -> &u64 {
         &self.starboard_channel_id
-    }
-
-    pub fn get_responses(&self) -> &Vec<MessageResponse> {
-        &self.responses
     }
 
     pub fn get_config_path(&self) -> &str {
@@ -94,11 +91,13 @@ impl Config {
         self.save();
     }
 
-    pub fn get_response(&self, name: &str) -> &MessageResponse {
-        self.responses
+    pub fn get_response(&self, name: &str) -> &MessageResponseKind {
+        &self
+            .responses
             .iter()
             .find(|response| *response.name == name)
             .expect("Could not find response with name")
+            .message_response
     }
 
     pub fn get_token(&self) -> &str {
@@ -152,11 +151,35 @@ pub enum MessageResponseKind {
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
 pub struct MessageResponse {
-    pub name: Arc<String>,
-    pub ruleset: Ruleset,
+    name: Arc<String>,
+    ruleset: Ruleset,
     #[serde(flatten)]
-    // This makes it so it pretends the attributes of the enum are attributes of the struct
-    pub kind: MessageResponseKind,
+    /// This makes it so it pretends the attributes of the enum are attributes of the struct
+    message_response: Arc<MessageResponseKind>,
+
+    /// This is not serialized, and is instead set to the current time when the config is loaded.
+    #[serde(skip)]
+    #[serde(default = "default_time")]
+    last_triggered: DateTime<Utc>,
+}
+
+fn default_time() -> DateTime<Utc> {
+    DateTime::<Utc>::MIN_UTC
+}
+
+impl MessageResponse {
+    pub fn is_valid_response(&mut self, input: &str) -> Option<Arc<MessageResponseKind>> {
+        if self.ruleset.matches(input) {
+            if self.last_triggered <= Utc::now() - Duration::minutes(5) {
+                self.last_triggered = Utc::now();
+                Some(Arc::clone(&self.message_response))
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
 }
 
 #[cfg(test)]
@@ -192,9 +215,10 @@ content = "literally 1984""#;
             Some(&MessageResponse {
                 name: Arc::new("1984".to_string()),
                 ruleset: fast_ruleset!("r 1234", "!r 4312"),
-                kind: MessageResponseKind::Text {
+                message_response: Arc::new(MessageResponseKind::Text {
                     content: "literally 1984".to_string(),
-                },
+                }),
+                last_triggered: Utc::now(),
             })
         );
     }

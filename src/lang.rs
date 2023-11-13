@@ -41,6 +41,7 @@ pub struct Ruleset {
 }
 
 impl Ruleset {
+    #[allow(dead_code)] // We use this at least in tests.
     pub fn new(rules: Vec<Rule>) -> Self {
         Self { rules }
     }
