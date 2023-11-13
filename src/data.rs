@@ -69,12 +69,13 @@ impl Data {
     /// If the message contents match any pattern, return the name of the response type.
     /// Otherwise, return None
     pub async fn find_response<'a>(&'a self, message: &str) -> Option<Arc<MessageResponseKind>> {
-        self.config
-            .write()
-            .await
+        let mut config = self.config.write().await;
+        let global_cooldown = *config.get_global_cooldown();
+
+        config
             .responses
             .iter_mut()
-            .find_map(|response| response.is_valid_response(message))
+            .find_map(|response| response.is_valid_response(message, global_cooldown))
     }
 
     pub async fn run_action(
@@ -112,6 +113,7 @@ impl Data {
                     })
                     .await?;
             }
+            MessageResponseKind::None => {}
         }
 
         Ok(())

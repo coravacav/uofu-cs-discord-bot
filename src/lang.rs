@@ -35,7 +35,7 @@ impl Rule {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct Ruleset {
     rules: Vec<Rule>,
 }

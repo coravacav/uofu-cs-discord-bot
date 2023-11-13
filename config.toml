@@ -71,6 +71,7 @@ name = "stefan"
 ruleset = """
 r <@216767618923757568>
 """
+cooldown = 5
 content = "<@216767618923757568>"
 
 [[responses]]
