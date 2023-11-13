@@ -20,7 +20,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn get_cooldown(&self) -> &Duration {
+    pub fn get_global_cooldown(&self) -> &Duration {
         &self.text_detect_cooldown
     }
 
@@ -144,16 +144,27 @@ struct ConfigBuilder {
     responses: Vec<MessageResponse>,
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq, Default)]
 #[serde(untagged)]
 pub enum MessageResponseKind {
-    Text { content: String },
-    RandomText { content: Vec<String> },
-    Image { path: String },
-    TextAndImage { content: String, path: String },
+    #[default]
+    None,
+    Text {
+        content: String,
+    },
+    RandomText {
+        content: Vec<String>,
+    },
+    Image {
+        path: String,
+    },
+    TextAndImage {
+        content: String,
+        path: String,
+    },
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq, Default)]
 pub struct MessageResponse {
     name: Arc<String>,
     ruleset: Ruleset,
@@ -165,6 +176,9 @@ pub struct MessageResponse {
     #[serde(skip)]
     #[serde(default = "default_time")]
     last_triggered: DateTime<Utc>,
+
+    /// Cooldown in seconds
+    cooldown: Option<i64>,
 }
 
 fn default_time() -> DateTime<Utc> {
@@ -172,9 +186,18 @@ fn default_time() -> DateTime<Utc> {
 }
 
 impl MessageResponse {
-    pub fn is_valid_response(&mut self, input: &str) -> Option<Arc<MessageResponseKind>> {
+    pub fn is_valid_response(
+        &mut self,
+        input: &str,
+        default_duration: Duration,
+    ) -> Option<Arc<MessageResponseKind>> {
+        let duration = self
+            .cooldown
+            .map(|d| Duration::seconds(d))
+            .unwrap_or(default_duration);
+
         if self.ruleset.matches(input) {
-            if self.last_triggered <= Utc::now() - Duration::minutes(5) {
+            if self.last_triggered <= Utc::now() - duration {
                 self.last_triggered = Utc::now();
                 Some(Arc::clone(&self.message_response))
             } else {
@@ -221,7 +244,7 @@ content = "literally 1984""#;
                 message_response: Arc::new(MessageResponseKind::Text {
                     content: "literally 1984".to_string(),
                 }),
-                last_triggered: Utc::now(),
+                ..Default::default()
             })
         );
     }
