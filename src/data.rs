@@ -44,29 +44,31 @@ impl Data {
             .with_poll_interval(std::time::Duration::from_secs(2))
             .with_compare_contents(true);
 
-        let mut watcher = notify::PollWatcher::new(
-            move |res| match res {
-                Ok(_) => {
-                    println!("config changed, reloading...");
+        std::thread::spawn(move || {
+            let mut watcher = notify::PollWatcher::new(
+                move |res| match res {
+                    Ok(_) => {
+                        println!("config changed, reloading...");
 
-                    let config_clone = Arc::clone(&config_clone);
+                        let config_clone = Arc::clone(&config_clone);
 
-                    tokio::spawn(async move {
-                        config_clone.write().await.reload();
-                    });
-                }
-                Err(e) => println!("watch error: {:?}", e),
-            },
-            notify_config,
-        )
-        .expect("Failed to create file watcher");
+                        config_clone.blocking_write().reload();
+                    }
+                    Err(e) => println!("watch error: {:?}", e),
+                },
+                notify_config,
+            )
+            .expect("Failed to create file watcher");
 
-        watcher
-            .watch(Path::new(&config_path), notify::RecursiveMode::NonRecursive)
-            .expect("Failed to watch config file");
+            watcher
+                .watch(Path::new(&config_path), notify::RecursiveMode::NonRecursive)
+                .expect("Failed to watch config file");
 
-        // Keep it alive for config reloads
-        Box::leak(Box::new(watcher));
+            // Sleep thread to keep watcher alive
+            loop {
+                std::thread::sleep(std::time::Duration::MAX);
+            }
+        });
     }
 
     /// Register a new response type for messages matching a regular expression pattern
