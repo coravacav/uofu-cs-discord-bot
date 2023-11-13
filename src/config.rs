@@ -15,6 +15,7 @@ pub struct Config {
     starboard_reaction_count: u64,
     starboard_emote_name: String,
     starboard_channel_id: u64,
+    bot_react_role_id: u64,
     pub responses: Vec<MessageResponse>,
     config_path: String,
 }
@@ -52,23 +53,21 @@ impl Config {
                     starboard_reaction_count,
                     starboard_emote_name,
                     starboard_channel_id,
+                    bot_react_role_id,
                     responses,
-                }) => {
-                    let text_detect_cooldown = Duration::minutes(text_detect_cooldown);
-
-                    Ok(Config {
-                        text_detect_cooldown,
-                        discord_token,
-                        starboard_reaction_count,
-                        starboard_emote_name,
-                        starboard_channel_id,
-                        responses,
-                        config_path: config_path.to_owned(),
-                    })
-                }
+                }) => Ok(Config {
+                    text_detect_cooldown: Duration::minutes(text_detect_cooldown),
+                    discord_token,
+                    starboard_reaction_count,
+                    starboard_emote_name,
+                    starboard_channel_id,
+                    bot_react_role_id,
+                    responses,
+                    config_path: config_path.to_owned(),
+                }),
                 Err(e) => {
                     eprintln!("Error parsing config file: {:?}", e);
-                    return Err(());
+                    Err(())
                 }
             },
             Err(e) => {
@@ -122,6 +121,7 @@ impl Config {
             text_detect_cooldown: self.text_detect_cooldown.num_minutes(),
             discord_token: self.discord_token.clone(),
             starboard_reaction_count: self.starboard_reaction_count,
+            bot_react_role_id: self.bot_react_role_id,
             starboard_emote_name: self.starboard_emote_name.clone(),
             starboard_channel_id: self.starboard_channel_id,
             responses: self.responses.clone(),
@@ -148,6 +148,7 @@ struct ConfigBuilder {
     #[serde(default = "get_default_discord_token")]
     discord_token: String,
     starboard_reaction_count: u64,
+    bot_react_role_id: u64,
     starboard_emote_name: String,
     starboard_channel_id: u64,
     responses: Vec<MessageResponse>,
