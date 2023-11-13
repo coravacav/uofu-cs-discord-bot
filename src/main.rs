@@ -20,7 +20,7 @@ use poise::Event;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args = args::Args::parse();
-    let config = Config::create_from_file(&args.config);
+    let config = Config::create_from_file(&args.config).expect("Failed to load config");
 
     config.save();
     let token = config.get_token();

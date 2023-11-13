@@ -41,35 +41,44 @@ impl Config {
     }
 
     /// Fetches the config from the config file in the root directory.
-    pub fn create_from_file(config_path: &str) -> Config {
-        let file = std::fs::read_to_string(config_path)
-            .unwrap_or_else(|_| panic!("Could not read {}", config_path));
+    pub fn create_from_file(config_path: &str) -> Result<Config, ()> {
+        let file = std::fs::read_to_string(config_path);
 
-        let ConfigBuilder {
-            text_detect_cooldown,
-            discord_token,
-            starboard_reaction_count,
-            starboard_emote_name,
-            starboard_channel_id,
-            responses,
-        } = toml::from_str(&file).expect("Could not deserialize config");
+        match file {
+            Ok(file) => {
+                let ConfigBuilder {
+                    text_detect_cooldown,
+                    discord_token,
+                    starboard_reaction_count,
+                    starboard_emote_name,
+                    starboard_channel_id,
+                    responses,
+                } = toml::from_str(&file).expect("Could not deserialize config");
 
-        let text_detect_cooldown = Duration::minutes(text_detect_cooldown);
+                let text_detect_cooldown = Duration::minutes(text_detect_cooldown);
 
-        Config {
-            text_detect_cooldown,
-            discord_token,
-            starboard_reaction_count,
-            starboard_emote_name,
-            starboard_channel_id,
-            responses,
-            config_path: config_path.to_owned(),
+                Ok(Config {
+                    text_detect_cooldown,
+                    discord_token,
+                    starboard_reaction_count,
+                    starboard_emote_name,
+                    starboard_channel_id,
+                    responses,
+                    config_path: config_path.to_owned(),
+                })
+            }
+            Err(e) => {
+                eprintln!("Error reading config file: {:?}", e);
+                Err(())
+            }
         }
     }
 
     /// Reloads the config file and updates the configuration.
     pub fn reload(&mut self) {
-        *self = Config::create_from_file(&self.config_path);
+        if let Ok(config) = Config::create_from_file(&self.config_path) {
+            *self = config;
+        }
     }
 
     /// Updates config with the new cooldown, and updates the cooldown as well
