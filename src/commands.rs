@@ -8,13 +8,13 @@ use serenity::{ChannelType, PermissionOverwrite, PermissionOverwriteType, Permis
 #[poise::command(slash_command)]
 pub async fn change_text_detect_cooldown(
     ctx: PoiseContext<'_>,
-    #[description = "The cooldown in minutes"] cooldown: i64,
+    #[description = "The cooldown in seconds"] cooldown: i64,
 ) -> anyhow::Result<()> {
     ctx.data()
         .config
         .write()
         .await
-        .update_cooldown(Duration::minutes(cooldown));
+        .update_cooldown(Duration::seconds(cooldown));
     ctx.say("Done!").await?;
     Ok(())
 }

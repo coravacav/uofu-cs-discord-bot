@@ -1,4 +1,4 @@
-text_detect_cooldown = 45
+text_detect_cooldown = 0
 starboard_reaction_count = 5
 bot_react_role_id = 1173465249823850496
 starboard_emote_name = "face with raised eyebrow"
@@ -30,9 +30,9 @@ content = "TKINTER MENTIONED"
 
 [[responses]]
 name = "long ass word bro"
-ruleset = '''
+ruleset = """
 r (?: |^)[a-zA-Z]{15,}(?: |$)
-'''
+"""
 content = "https://tenor.com/view/jfk-clone-high-i-like-your-funny-words-magic-man-jack-black-gif-18659433"
 
 [[responses]]

@@ -58,7 +58,7 @@ impl Config {
                     bot_react_role_id,
                     responses,
                 }) => Ok(Config {
-                    text_detect_cooldown: Duration::minutes(text_detect_cooldown),
+                    text_detect_cooldown: Duration::seconds(text_detect_cooldown),
                     starboard_reaction_count,
                     starboard_emote_name,
                     starboard_channel_id,
