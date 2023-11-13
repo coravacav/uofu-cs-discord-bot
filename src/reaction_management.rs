@@ -44,7 +44,7 @@ pub async fn starboard(
         }
     }
 
-    let config = data.config.blocking_read();
+    let config = data.config.read().await;
 
     let reaction_count_requirement = *config.get_starboard_reaction_count();
     let stored_name = config.get_starboard_emote();
