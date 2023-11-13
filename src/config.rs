@@ -45,28 +45,32 @@ impl Config {
         let file = std::fs::read_to_string(config_path);
 
         match file {
-            Ok(file) => {
-                let ConfigBuilder {
+            Ok(file) => match toml::from_str(&file) {
+                Ok(ConfigBuilder {
                     text_detect_cooldown,
                     discord_token,
                     starboard_reaction_count,
                     starboard_emote_name,
                     starboard_channel_id,
                     responses,
-                } = toml::from_str(&file).expect("Could not deserialize config");
+                }) => {
+                    let text_detect_cooldown = Duration::minutes(text_detect_cooldown);
 
-                let text_detect_cooldown = Duration::minutes(text_detect_cooldown);
-
-                Ok(Config {
-                    text_detect_cooldown,
-                    discord_token,
-                    starboard_reaction_count,
-                    starboard_emote_name,
-                    starboard_channel_id,
-                    responses,
-                    config_path: config_path.to_owned(),
-                })
-            }
+                    Ok(Config {
+                        text_detect_cooldown,
+                        discord_token,
+                        starboard_reaction_count,
+                        starboard_emote_name,
+                        starboard_channel_id,
+                        responses,
+                        config_path: config_path.to_owned(),
+                    })
+                }
+                Err(e) => {
+                    eprintln!("Error parsing config file: {:?}", e);
+                    return Err(());
+                }
+            },
             Err(e) => {
                 eprintln!("Error reading config file: {:?}", e);
                 Err(())
