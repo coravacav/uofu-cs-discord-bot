@@ -74,7 +74,7 @@ impl Data {
             .await
             .responses
             .iter_mut()
-            .find_map(|response| response.is_valid_response(&message))
+            .find_map(|response| response.is_valid_response(message))
     }
 
     pub async fn run_action(
