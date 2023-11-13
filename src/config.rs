@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::lang::Ruleset;
 
-/// In minutes
-const DEFAULT_TEXT_DETECT_COOLDOWN: i64 = 5;
+/// In seconds
+const DEFAULT_TEXT_DETECT_COOLDOWN: i64 = 45;
 
 pub struct Config {
     text_detect_cooldown: Duration,
@@ -115,7 +115,7 @@ impl Config {
 
     pub fn save(&self) {
         let config_builder = ConfigBuilder {
-            text_detect_cooldown: self.text_detect_cooldown.num_minutes(),
+            text_detect_cooldown: self.text_detect_cooldown.num_seconds(),
             starboard_reaction_count: self.starboard_reaction_count,
             bot_react_role_id: self.bot_react_role_id,
             starboard_emote_name: self.starboard_emote_name.clone(),

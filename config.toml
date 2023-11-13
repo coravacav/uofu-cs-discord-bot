@@ -1,4 +1,4 @@
-text_detect_cooldown = 0
+text_detect_cooldown = 45
 starboard_reaction_count = 5
 bot_react_role_id = 1173465249823850496
 starboard_emote_name = "face with raised eyebrow"
@@ -9,17 +9,11 @@ name = "rust"
 ruleset = """
 r (?i)rust
 """
-content = [
-    "RUST MENTIONED :crab: :crab: :crab:",
-    "<@216767618923757568>",
-    "Rust is simply the best programming language. Nothing else can compare. I am namingmy kids Rust and Ferris.",
-    """
+content = ["RUST MENTIONED :crab: :crab: :crab:", "<@216767618923757568>", "Rust is simply the best programming language. Nothing else can compare. I am namingmy kids Rust and Ferris.", """
 Launch the Polaris,
 the end doesn't scare us
 When will this cease?
-The warheads will all rust in peace!""",
-    "Rust? Oh, you mean the game?",
-]
+The warheads will all rust in peace!""", "Rust? Oh, you mean the game?"]
 
 [[responses]]
 name = "tkinter"
@@ -47,10 +41,7 @@ name = "goop"
 ruleset = """
 r (?i)goop
 """
-content = [
-    "https://tenor.com/view/gunge-gunged-slime-slimed-dunk-gif-21115557",
-    "https://tenor.com/view/goop-goop-house-jello-gif-23114313",
-]
+content = ["https://tenor.com/view/gunge-gunged-slime-slimed-dunk-gif-21115557", "https://tenor.com/view/goop-goop-house-jello-gif-23114313"]
 
 [[responses]]
 name = "1984"
@@ -136,11 +127,7 @@ name = "MY UNDERWEAR IS STAINED WITH AMONG US"
 ruleset = """
 r (?i)among.*us
 """
-content = [
-    "https://tenor.com/view/among-us-stop-posting-about-among-us-sus-amogus-sussy-gif-20696860",
-    "https://tenor.com/view/kriziebizie-krizziebuoy-magmastuff-magstok-pootisman-gif-1255252459385296217",
-    "https://tenor.com/view/among-us-gif-19075770",
-]
+content = ["https://tenor.com/view/among-us-stop-posting-about-among-us-sus-amogus-sussy-gif-20696860", "https://tenor.com/view/kriziebizie-krizziebuoy-magmastuff-magstok-pootisman-gif-1255252459385296217", "https://tenor.com/view/among-us-gif-19075770"]
 
 [[responses]]
 name = "society"
@@ -169,13 +156,7 @@ ruleset = """
 r (?i):.*k+o+p+t+a+.*:
 !r <:kopta_1:1166893677617090642><:kopta_2:1166893728619831397><:kopta_3:1166893843283710052><:kopta_4:1166893878910124032>
 """
-content = [
-    "https://tenor.com/view/horse-horse-react-thanos-meme-gif-26303208",
-    "https://tenor.com/view/thanos-point-face-with-monocle-this-man-react-him-gif-26503600",
-    "https://tenor.com/view/this-man-above-me-part_alternation_mark-gif-26966077",
-    "https://tenor.com/view/lobster-react-him-lobster-react-thanos-gif-26859688",
-    "https://tenor.com/view/discord-gif-27442765",
-]
+content = ["https://tenor.com/view/horse-horse-react-thanos-meme-gif-26303208", "https://tenor.com/view/thanos-point-face-with-monocle-this-man-react-him-gif-26503600", "https://tenor.com/view/this-man-above-me-part_alternation_mark-gif-26966077", "https://tenor.com/view/lobster-react-him-lobster-react-thanos-gif-26859688", "https://tenor.com/view/discord-gif-27442765"]
 
 [[responses]]
 name = "hey chat"
@@ -214,11 +195,7 @@ r (?i)grind
 or
 r (?i)based
 """
-content = [
-    "https://tenor.com/view/gentleman-giga-chad-sigma-male-gif-25702945",
-    "https://tenor.com/view/mujikcboro-seriymujik-gif-24361533",
-    "https://tenor.com/view/gigachad-chad-gif-20773266",
-]
+content = ["https://tenor.com/view/gentleman-giga-chad-sigma-male-gif-25702945", "https://tenor.com/view/mujikcboro-seriymujik-gif-24361533", "https://tenor.com/view/gigachad-chad-gif-20773266"]
 
 [[responses]]
 name = "um ackshually"
