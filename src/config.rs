@@ -41,6 +41,10 @@ impl Config {
         &self.config_path
     }
 
+    pub fn get_bot_react_role_id(&self) -> &u64 {
+        &self.bot_react_role_id
+    }
+
     /// Fetches the config from the config file in the root directory.
     pub fn create_from_file(config_path: &str) -> Result<Config, ()> {
         let file = std::fs::read_to_string(config_path);

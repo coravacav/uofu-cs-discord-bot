@@ -19,15 +19,45 @@ pub async fn change_text_detect_cooldown(
     Ok(())
 }
 
-#[poise::command(slash_command)]
-pub async fn reload_config(ctx: PoiseContext<'_>) -> anyhow::Result<()> {
-    let message = ctx.say("Reloading responses...").await?;
-    ctx.data().reload();
-    message
-        .edit(ctx, |reply| {
-            reply.content("Successfully reloaded cooldown and responses from config")
-        })
-        .await?;
+#[poise::command(slash_command, prefix_command, rename = "reactme")]
+pub async fn add_bot_role(ctx: PoiseContext<'_>) -> anyhow::Result<()> {
+    let author = ctx.author();
+    let guild = ctx.guild().context("Couldn't get guild")?;
+
+    guild
+        .member(ctx, author.id)
+        .await
+        .context("Couldn't get member")?
+        .add_role(
+            ctx,
+            RoleId::from(*ctx.data().config.read().await.get_bot_react_role_id()),
+        )
+        .await
+        .context("Couldn't add role")?;
+
+    ctx.say("Added role!").await?;
+
+    Ok(())
+}
+
+#[poise::command(slash_command, prefix_command, rename = "ignoreme")]
+pub async fn remove_bot_role(ctx: PoiseContext<'_>) -> anyhow::Result<()> {
+    let author = ctx.author();
+    let guild = ctx.guild().context("Couldn't get guild")?;
+
+    guild
+        .member(ctx, author.id)
+        .await
+        .context("Couldn't get member")?
+        .remove_role(
+            ctx,
+            RoleId::from(*ctx.data().config.read().await.get_bot_react_role_id()),
+        )
+        .await
+        .context("Couldn't remove role")?;
+
+    ctx.say("Removed role!").await?;
+
     Ok(())
 }
 

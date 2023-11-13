@@ -30,7 +30,8 @@ async fn main() -> anyhow::Result<()> {
                 register(),
                 commands::change_text_detect_cooldown(),
                 commands::create_class_category(),
-                commands::reload_config(),
+                commands::add_bot_role(),
+                commands::remove_bot_role(),
             ],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(ctx, event, framework, data))
@@ -39,11 +40,20 @@ async fn main() -> anyhow::Result<()> {
         })
         .token(token)
         .intents(
-            serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT,
+            serenity::GatewayIntents::non_privileged()
+                | serenity::GatewayIntents::MESSAGE_CONTENT
+                | serenity::GatewayIntents::GUILD_MEMBERS
+                | serenity::GatewayIntents::GUILD_MESSAGE_REACTIONS
+                | serenity::GatewayIntents::GUILD_MESSAGES,
         )
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
-                poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+                poise::builtins::register_in_guild(
+                    ctx,
+                    &framework.options().commands,
+                    serenity::GuildId::from(1065373537591894086),
+                )
+                .await?;
                 Ok(Data::new(config))
             })
         });
