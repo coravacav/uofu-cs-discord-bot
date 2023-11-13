@@ -40,7 +40,11 @@ async fn main() -> anyhow::Result<()> {
         })
         .token(token)
         .intents(
-            serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT,
+            serenity::GatewayIntents::non_privileged()
+                | serenity::GatewayIntents::MESSAGE_CONTENT
+                | serenity::GatewayIntents::GUILD_MEMBERS
+                | serenity::GatewayIntents::GUILD_MESSAGE_REACTIONS
+                | serenity::GatewayIntents::GUILD_MESSAGES,
         )
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {

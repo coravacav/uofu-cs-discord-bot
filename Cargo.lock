@@ -1799,6 +1799,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "clap",
+ "dashmap",
  "emojis",
  "itertools",
  "nom",
