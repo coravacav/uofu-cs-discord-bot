@@ -11,6 +11,7 @@ use anyhow::Context;
 use config::Config;
 use data::Data;
 use data::PoiseContext;
+use dotenvy::dotenv;
 
 use clap::Parser;
 use poise::builtins::register_application_commands_buttons;
@@ -19,11 +20,13 @@ use poise::Event;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    dotenv().context("Failed to load .env file")?;
+
     let args = args::Args::parse();
     let config = Config::create_from_file(&args.config).expect("Failed to load config");
 
     config.save();
-    let token = config.get_token();
+    let token = std::env::var("DISCORD_TOKEN").context("Expected a discord token")?;
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![

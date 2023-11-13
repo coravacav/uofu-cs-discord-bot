@@ -3,15 +3,15 @@
 This is a bot for the University of Utah CS Discord, written in Rust.
 
 ## Configuration
+
 The bot will read from a `config.toml` file in the root directory.
 If the file doesn't exist, it will create one, but bear in mind that
-it will not run without either a valid bot token in the `DISCORD_TOKEN` environment variable,
-or the `discord_token` field in the config file.
+it will not run without either a valid bot token in the `DISCORD_TOKEN` environment variable.
 
 An example `config.toml` file looks like this:
+
 ```toml
 text_detect_cooldown = 5
-discord_token = "Your token here"
 starboard_reaction_count = 3
 starboard_emote_name = "star"
 starboard_channel_id = 123456789109876
@@ -24,6 +24,7 @@ r! not example
 """
 content = "Hello, world!"
 ```
+
 Note that the text detection cooldown is
 specified in minutes.
 

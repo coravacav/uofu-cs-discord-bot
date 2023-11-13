@@ -1,0 +1,229 @@
+text_detect_cooldown = 45
+starboard_reaction_count = 5
+bot_react_role_id = 1173465249823850496
+starboard_emote_name = "face with raised eyebrow"
+starboard_channel_id = 1171176750819053589
+
+[[responses]]
+name = "rust"
+ruleset = """
+r (?i)rust
+"""
+content = [
+    "RUST MENTIONED :crab: :crab: :crab:",
+    "<@216767618923757568>",
+    "Rust is simply the best programming language. Nothing else can compare. I am namingmy kids Rust and Ferris.",
+    """
+Launch the Polaris,
+the end doesn't scare us
+When will this cease?
+The warheads will all rust in peace!""",
+    "Rust? Oh, you mean the game?",
+]
+
+[[responses]]
+name = "tkinter"
+ruleset = """
+r (?i)tkinter
+"""
+content = "TKINTER MENTIONED"
+
+[[responses]]
+name = "long ass word bro"
+ruleset = '''
+r \b\w{15,}\b
+'''
+content = "https://tenor.com/view/jfk-clone-high-i-like-your-funny-words-magic-man-jack-black-gif-18659433"
+
+[[responses]]
+name = "arch"
+ruleset = """
+r (?i)arch
+"""
+content = "i use arch btw."
+
+[[responses]]
+name = "goop"
+ruleset = """
+r (?i)goop
+"""
+content = [
+    "https://tenor.com/view/gunge-gunged-slime-slimed-dunk-gif-21115557",
+    "https://tenor.com/view/goop-goop-house-jello-gif-23114313",
+]
+
+[[responses]]
+name = "1984"
+ruleset = """
+r (?i)1984
+"""
+content = "https://tenor.com/view/1984-gif-19260546"
+
+[[responses]]
+name = "cs major"
+ruleset = '''
+r (?i)cs\s*major
+'''
+content = "I don't get the way you guys think. I want MONEY. 6 figures out of college. 200k a year entry level. I'm in this for MONEY. I don't care about whether I'm \"fulfilled\" I want MONEY. Whatever gets me the most MONEY. What technology gets me PAID THE BEST. All I care about in this major is MONEY. That's why I'm in college, I don't wanna laugh and play with y'all. I don't wanna be buddy buddy with y'all. I'm here for MONEY."
+
+[[responses]]
+name = "stefan"
+ruleset = """
+r <@216767618923757568>
+"""
+content = "<@216767618923757568>"
+
+[[responses]]
+name = "javascript"
+ruleset = '''
+r (?i)javascript
+or
+r (?i)\bjs\b
+or
+r (?i)\s===\s
+or
+r (?i)\s!==\s
+'''
+content = "https://tenor.com/view/if-you-cant-do-the-time-dont-do-crime-spongebob-police-close-door-gif-16367094"
+
+[[responses]]
+name = "league of legends"
+ruleset = """
+r (?i)league
+"""
+content = "Sorry for your loss."
+
+[[responses]]
+name = "mods"
+ruleset = """
+r (?i)mods
+"""
+content = "https://tenor.com/view/mods-crush-his-skull-low-tier-god-mods-crush-his-skull-cleaning-gif-27437796"
+
+[[responses]]
+name = "google maps"
+ruleset = """
+r (?i)google maps
+"""
+content = "Use two fingers to move the map :nerd::nerd::nerd:"
+
+[[responses]]
+name = "FOG"
+ruleset = """
+r (?i)fog
+"""
+content = "https://tenor.com/view/fog-fog-horn-spongebob-the-fog-scary-gif-25590686"
+
+[[responses]]
+name = "subway surfers"
+ruleset = """
+r (?i)((subway surfers)|(attention))
+or
+r (?i)attention
+"""
+content = "https://tenor.com/view/subway-surfers-gif-9012698"
+
+[[responses]]
+name = "do you kiss boys with that mouth?"
+ruleset = """
+r (?i)boykisser
+"""
+content = "https://tenor.com/view/behind-scary-jumpscare-math-teacher-gif-25119908"
+
+[[responses]]
+name = "MY UNDERWEAR IS STAINED WITH AMONG US"
+ruleset = """
+r (?i)among.*us
+"""
+content = [
+    "https://tenor.com/view/among-us-stop-posting-about-among-us-sus-amogus-sussy-gif-20696860",
+    "https://tenor.com/view/kriziebizie-krizziebuoy-magmastuff-magstok-pootisman-gif-1255252459385296217",
+    "https://tenor.com/view/among-us-gif-19075770",
+]
+
+[[responses]]
+name = "society"
+ruleset = """
+r (?i)society if
+"""
+content = "https://tenor.com/view/society-if-gif-22696824"
+
+[[responses]]
+name = "bad bot"
+ruleset = """
+r (?i)(((fuck)|(stfu)|(bad)).*bot)|(bot.*stfu)
+"""
+content = "Hitman dispatched. Do not slander me again."
+
+[[responses]]
+name = "works on my machine"
+ruleset = """
+r (?i)works on my machine
+"""
+content = "Oh, it works on your machine but not on my machine? Then perhaps, itdoesn't work, hmm?"
+
+[[responses]]
+name = "kopta"
+ruleset = """
+r (?i):.*k+o+p+t+a+.*:
+!r <:kopta_1:1166893677617090642><:kopta_2:1166893728619831397><:kopta_3:1166893843283710052><:kopta_4:1166893878910124032>
+"""
+content = [
+    "https://tenor.com/view/horse-horse-react-thanos-meme-gif-26303208",
+    "https://tenor.com/view/thanos-point-face-with-monocle-this-man-react-him-gif-26503600",
+    "https://tenor.com/view/this-man-above-me-part_alternation_mark-gif-26966077",
+    "https://tenor.com/view/lobster-react-him-lobster-react-thanos-gif-26859688",
+    "https://tenor.com/view/discord-gif-27442765",
+]
+
+[[responses]]
+name = "hey chat"
+ruleset = """
+r (?i)chat
+"""
+content = "https://tenor.com/view/xqc-what-xqc-what-xqc-search-gif-25343378"
+
+[[responses]]
+name = "uh, meow?"
+ruleset = '''
+r (?i)\bme+o*w\b
+or
+r (?i)[ou]w[ou]
+or
+r 喵
+or
+r :3
+or
+r (?i)\bee+p.*
+or
+r (?i)ny+a+
+or
+r (?i)mrr+[pb]
+or
+r (?i)pu+rr+
+'''
+content = "https://tenor.com/view/modern-family-spray-squirt-annoyed-irritated-gif-4445288"
+
+[[responses]]
+name = "chad"
+ruleset = """
+r (?i)chad
+or
+r (?i)grind
+or
+r (?i)based
+"""
+content = [
+    "https://tenor.com/view/gentleman-giga-chad-sigma-male-gif-25702945",
+    "https://tenor.com/view/mujikcboro-seriymujik-gif-24361533",
+    "https://tenor.com/view/gigachad-chad-gif-20773266",
+]
+
+[[responses]]
+name = "um ackshually"
+ruleset = '''
+r (?i)ackshually
+or
+r (?i)um\s+actually
+'''
+content = "https://tenor.com/view/nerd-nerd-glasses-uhm-aktually-glasses-gif-4161113894351475297"

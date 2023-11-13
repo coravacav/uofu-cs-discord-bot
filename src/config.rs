@@ -11,7 +11,6 @@ const DEFAULT_TEXT_DETECT_COOLDOWN: i64 = 5;
 
 pub struct Config {
     text_detect_cooldown: Duration,
-    discord_token: String,
     starboard_reaction_count: u64,
     starboard_emote_name: String,
     starboard_channel_id: u64,
@@ -53,7 +52,6 @@ impl Config {
             Ok(file) => match toml::from_str(&file) {
                 Ok(ConfigBuilder {
                     text_detect_cooldown,
-                    discord_token,
                     starboard_reaction_count,
                     starboard_emote_name,
                     starboard_channel_id,
@@ -61,7 +59,6 @@ impl Config {
                     responses,
                 }) => Ok(Config {
                     text_detect_cooldown: Duration::minutes(text_detect_cooldown),
-                    discord_token,
                     starboard_reaction_count,
                     starboard_emote_name,
                     starboard_channel_id,
@@ -116,14 +113,9 @@ impl Config {
             .message_response
     }
 
-    pub fn get_token(&self) -> &str {
-        &self.discord_token
-    }
-
     pub fn save(&self) {
         let config_builder = ConfigBuilder {
             text_detect_cooldown: self.text_detect_cooldown.num_minutes(),
-            discord_token: self.discord_token.clone(),
             starboard_reaction_count: self.starboard_reaction_count,
             bot_react_role_id: self.bot_react_role_id,
             starboard_emote_name: self.starboard_emote_name.clone(),
@@ -141,16 +133,10 @@ fn get_default_text_detect_cooldown() -> i64 {
     DEFAULT_TEXT_DETECT_COOLDOWN
 }
 
-fn get_default_discord_token() -> String {
-    std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN")
-}
-
 #[derive(Deserialize, Serialize, PartialEq, Eq, Debug)]
 struct ConfigBuilder {
     #[serde(default = "get_default_text_detect_cooldown")]
     text_detect_cooldown: i64,
-    #[serde(default = "get_default_discord_token")]
-    discord_token: String,
     starboard_reaction_count: u64,
     bot_react_role_id: u64,
     starboard_emote_name: String,
@@ -209,7 +195,6 @@ mod test {
     #[test]
     fn should_deserialize_properly() {
         let test_input = r#"
-discord_token = "test_token_not_real"
 starboard_reaction_count = 3
 starboard_emote_name = "star"
 starboard_channel_id = 123456789109876
