@@ -2,7 +2,6 @@ use std::{path::Path, sync::Arc};
 
 use crate::config::{Config, MessageResponse, MessageResponseKind};
 
-use notify::Watcher;
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::Message;
 use tokio::sync::RwLock;
@@ -28,25 +27,27 @@ impl Data {
         std::thread::spawn(move || {
             let config_path = config_clone.blocking_read().get_config_path().to_owned();
 
-            let notify_config = notify::Config::default()
-                .with_poll_interval(std::time::Duration::from_secs(2))
-                .with_compare_contents(true);
+            use notify::{
+                event::{AccessKind, AccessMode},
+                Event, EventKind, RecursiveMode, Watcher,
+            };
 
-            let mut watcher = notify::PollWatcher::new(
-                move |res| match res {
-                    Ok(_) => {
-                        println!("config changed, reloading...");
+            let mut watcher = notify::recommended_watcher(move |res| match res {
+                Ok(Event {
+                    kind: EventKind::Access(AccessKind::Close(AccessMode::Write)),
+                    ..
+                }) => {
+                    println!("config changed, reloading...");
 
-                        Arc::clone(&config_clone).blocking_write().reload();
-                    }
-                    Err(e) => println!("watch error: {:?}", e),
-                },
-                notify_config,
-            )
+                    Arc::clone(&config_clone).blocking_write().reload();
+                }
+                Err(e) => println!("watch error: {:?}", e),
+                _ => {}
+            })
             .expect("Failed to create file watcher");
 
             watcher
-                .watch(Path::new(&config_path), notify::RecursiveMode::NonRecursive)
+                .watch(Path::new(&config_path), RecursiveMode::NonRecursive)
                 .expect("Failed to watch config file");
 
             // Sleep thread to keep watcher alive

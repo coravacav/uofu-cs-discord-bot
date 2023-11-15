@@ -138,9 +138,9 @@ content = "https://tenor.com/view/society-if-gif-22696824"
 
 [[responses]]
 name = "bad bot"
-ruleset = """
-r (?i)(((fuck)|(stfu)|(bad)).*bot)|(bot.*stfu)
-"""
+ruleset = '''
+r (?i)(((fuck)|(stfu)|(bad)).*bot\b)|(bot\b.*stfu)
+'''
 content = "Hitman dispatched. Do not slander me again."
 
 [[responses]]
