@@ -27,3 +27,6 @@ opt-level = 3
 
 [profile.release.package."*"]
 opt-level = 3
+
+[profile.test.package."*"]
+opt-level = 3
