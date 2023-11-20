@@ -25,3 +25,5 @@ assets/
 
 # important environment variables
 .env
+
+/.vscode/
