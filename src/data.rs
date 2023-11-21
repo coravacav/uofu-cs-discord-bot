@@ -90,7 +90,7 @@ impl Data {
             MessageResponseKind::Text { content } => {
                 reply_target.reply(ctx, content).await?;
             }
-            MessageResponseKind::RandomText { content, .. } => {
+            MessageResponseKind::RandomText { content } => {
                 let response = {
                     let mut rng = rand::thread_rng();
                     content
