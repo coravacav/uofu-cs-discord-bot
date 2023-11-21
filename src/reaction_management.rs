@@ -12,10 +12,7 @@ pub async fn reaction_management(
     reaction: &Reaction,
 ) -> anyhow::Result<()> {
     let message = reaction.message(ctx).await?;
-
-    starboard(ctx, data, &message, reaction).await?;
-
-    Ok(())
+    starboard(ctx, data, &message, reaction).await
 }
 
 pub async fn starboard(
