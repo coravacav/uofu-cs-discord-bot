@@ -56,12 +56,19 @@ pub async fn starboard(
         {
             starboard_channel
                 .send_message(ctx, |m| {
-                    m.content(format!(
-                        "{} \n {} \n {}",
-                        message.content,
-                        message.author,
-                        message.link(),
-                    ))
+                    m.add_embed(|embed| {
+                        embed.description(format!("{}\n{}", message.content, message.link()));
+                        embed.author(|author| {
+                            author.name(&message.author.name).icon_url(
+                                message
+                                    .author
+                                    .avatar_url()
+                                    .as_deref()
+                                    .unwrap_or("https://cdn.discordapp.com/embed/avatars/0.png"),
+                            )
+                        });
+                        embed.timestamp(message.timestamp)
+                    })
                 })
                 .await?;
         }
