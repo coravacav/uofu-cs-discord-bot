@@ -67,7 +67,18 @@ pub async fn starboard(
                                     .unwrap_or("https://cdn.discordapp.com/embed/avatars/0.png"),
                             )
                         });
-                        embed.timestamp(message.timestamp)
+                        embed.timestamp(message.timestamp);
+
+                        if let Some(attachment) = message.attachments.iter().find(|attachment| {
+                            attachment
+                                .content_type
+                                .as_ref()
+                                .is_some_and(|content_type| content_type.starts_with("image"))
+                        }) {
+                            embed.image(&attachment.url);
+                        }
+
+                        embed
                     })
                 })
                 .await?;
