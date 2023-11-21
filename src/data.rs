@@ -4,6 +4,7 @@ use crate::config::{Config, MessageResponse, MessageResponseKind};
 
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::Message;
+use rand::seq::SliceRandom;
 use tokio::sync::RwLock;
 
 pub struct Data {
@@ -86,14 +87,20 @@ impl Data {
         ctx: &serenity::Context,
     ) -> anyhow::Result<()> {
         match message_response {
-            MessageResponseKind::Text { content, .. } => {
+            MessageResponseKind::Text { content } => {
                 reply_target.reply(ctx, content).await?;
             }
             MessageResponseKind::RandomText { content, .. } => {
-                let pick_index = rand::random::<usize>() % content.len();
-                reply_target.reply(ctx, &content[pick_index]).await?;
+                let response = {
+                    let mut rng = rand::thread_rng();
+                    content
+                        .choose(&mut rng)
+                        .expect("The responses list is empty")
+                };
+
+                reply_target.reply(ctx, response).await?;
             }
-            MessageResponseKind::Image { path, .. } => {
+            MessageResponseKind::Image { path } => {
                 reply_target
                     .channel_id
                     .send_message(ctx, |m| {
@@ -103,7 +110,7 @@ impl Data {
                     })
                     .await?;
             }
-            MessageResponseKind::TextAndImage { content, path, .. } => {
+            MessageResponseKind::TextAndImage { content, path } => {
                 reply_target
                     .channel_id
                     .send_message(ctx, |m| {
