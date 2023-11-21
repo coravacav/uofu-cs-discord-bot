@@ -184,13 +184,12 @@ r (?i)pu+rr+
 '''
 content = ["https://tenor.com/view/modern-family-spray-squirt-annoyed-irritated-gif-4445288"]
 
-
 [[responses]]
 name = ":3"
-ruleset = '''
+ruleset = """
 r :3
-'''
-content = ["https://tenor.com/view/modern-family-spray-squirt-annoyed-irritated-gif-4445288", '''
+"""
+content = ["https://tenor.com/view/modern-family-spray-squirt-annoyed-irritated-gif-4445288", """
 Tf is ':3' talk like a person. If I see any more ':3' I am going to smash my head against the wall. What the fuck does it even mean? Wtf do you mean ':3'?
 People use it in the weirdest fucking ways. I used to think it was some quirky smily but people fucking put it anywhere at all? There was this post about depression and the OP wrote ':3' at the end.
 Don't even make me talk about reddit chains but this is the worst, there's like one ':3' in the comments and every other reply in the chain is ':3'
@@ -201,7 +200,7 @@ Like someone goes :3 and every reply is like
 :3
 And aren't redditors supposed to be real people behind the scenes? Why can't you just talk like people? Why do you have to ':3'?
 And don't even talk about discord, literally every other sentence has a ':3' in it.
-TLDR; I fucking hate it, stop using it, or I will start using :4''']
+TLDR; I fucking hate it, stop using it, or I will start using :4"""]
 
 [[responses]]
 name = "chad"
