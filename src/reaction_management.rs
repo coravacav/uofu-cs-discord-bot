@@ -12,10 +12,7 @@ pub async fn reaction_management(
     reaction: &Reaction,
 ) -> anyhow::Result<()> {
     let message = reaction.message(ctx).await?;
-
-    starboard(ctx, data, &message, reaction).await?;
-
-    Ok(())
+    starboard(ctx, data, &message, reaction).await
 }
 
 pub async fn starboard(
@@ -32,7 +29,7 @@ pub async fn starboard(
             .name()
             .to_owned(),
         ReactionType::Custom { id, .. } => id.as_u64().to_string(),
-        _ => "Error".to_string(),
+        _ => "Error".to_owned(),
     };
 
     let reaction_count = message

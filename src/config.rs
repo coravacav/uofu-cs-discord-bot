@@ -240,10 +240,10 @@ content = "literally 1984""#;
         assert_eq!(
             config.responses.first(),
             Some(&MessageResponse {
-                name: Arc::new("1984".to_string()),
+                name: Arc::new("1984".to_owned()),
                 ruleset: fast_ruleset!("r 1234", "!r 4312"),
                 message_response: Arc::new(MessageResponseKind::Text {
-                    content: "literally 1984".to_string(),
+                    content: "literally 1984".to_owned(),
                 }),
                 last_triggered: DateTime::<Utc>::MIN_UTC,
                 ..Default::default()
