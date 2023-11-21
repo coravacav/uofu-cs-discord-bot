@@ -50,10 +50,20 @@ pub async fn starboard(
     if reaction_count >= reaction_count_requirement && &name == stored_name {
         let previous_messages = starboard_channel.messages(ctx, |m| m).await?;
 
-        if !previous_messages
-            .iter()
-            .any(|message| message.content.contains(&message.link()))
-        {
+        let mut send = false;
+        for message in &previous_messages {
+            for embed in &message.embeds {
+                if embed
+                    .description
+                    .as_ref()
+                    .is_some_and(|description| description.contains(&message.link()))
+                {
+                    send = true;
+                }
+            }
+        }
+
+        if send {
             starboard_channel
                 .send_message(ctx, |m| {
                     m.add_embed(|embed| {
