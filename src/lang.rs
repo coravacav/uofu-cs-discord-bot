@@ -91,7 +91,7 @@ fn parse_case(input: &str) -> IResult<&str, Case> {
             Ok::<Case, Error>(Case {
                 negated: negated.is_some(),
                 kind: match kind {
-                    Kind::RegexUnparsed => Kind::Regex(MemoryRegex::new(content.to_string())?),
+                    Kind::RegexUnparsed => Kind::Regex(MemoryRegex::new(content.to_owned())?),
                     Kind::Regex(_) => kind,
                 },
             })
@@ -178,7 +178,7 @@ mod test {
             (
                 "",
                 Case {
-                    kind: Kind::Regex(MemoryRegex::new("1234".to_string()).unwrap()),
+                    kind: Kind::Regex(MemoryRegex::new("1234".to_owned()).unwrap()),
                     negated: true,
                 }
             )
@@ -196,11 +196,11 @@ mod test {
                 "",
                 vec![
                     Case {
-                        kind: Kind::Regex(MemoryRegex::new("1234".to_string()).unwrap()),
+                        kind: Kind::Regex(MemoryRegex::new("1234".to_owned()).unwrap()),
                         negated: true,
                     },
                     Case {
-                        kind: Kind::Regex(MemoryRegex::new("4321".to_string()).unwrap()),
+                        kind: Kind::Regex(MemoryRegex::new("4321".to_owned()).unwrap()),
                         negated: false,
                     },
                 ]
@@ -218,18 +218,18 @@ mod test {
                 Rule {
                     cases: vec![
                         Case {
-                            kind: Kind::Regex(MemoryRegex::new("1234".to_string()).unwrap()),
+                            kind: Kind::Regex(MemoryRegex::new("1234".to_owned()).unwrap()),
                             negated: false,
                         },
                         Case {
-                            kind: Kind::Regex(MemoryRegex::new("4321".to_string()).unwrap()),
+                            kind: Kind::Regex(MemoryRegex::new("4321".to_owned()).unwrap()),
                             negated: true,
                         },
                     ],
                 },
                 Rule {
                     cases: vec![Case {
-                        kind: Kind::Regex(MemoryRegex::new("3333".to_string()).unwrap()),
+                        kind: Kind::Regex(MemoryRegex::new("3333".to_owned()).unwrap()),
                         negated: false,
                     }],
                 },
@@ -243,24 +243,24 @@ mod test {
             Rule {
                 cases: vec![
                     Case {
-                        kind: Kind::Regex(MemoryRegex::new("1234".to_string()).unwrap()),
+                        kind: Kind::Regex(MemoryRegex::new("1234".to_owned()).unwrap()),
                         negated: false,
                     },
                     Case {
-                        kind: Kind::Regex(MemoryRegex::new("4321".to_string()).unwrap()),
+                        kind: Kind::Regex(MemoryRegex::new("4321".to_owned()).unwrap()),
                         negated: true,
                     },
                 ],
             },
             Rule {
                 cases: vec![Case {
-                    kind: Kind::Regex(MemoryRegex::new("3333".to_string()).unwrap()),
+                    kind: Kind::Regex(MemoryRegex::new("3333".to_owned()).unwrap()),
                     negated: false,
                 }],
             },
             Rule {
                 cases: vec![Case {
-                    kind: Kind::Regex(MemoryRegex::new("6969".to_string()).unwrap()),
+                    kind: Kind::Regex(MemoryRegex::new("6969".to_owned()).unwrap()),
                     negated: true,
                 }],
             },
