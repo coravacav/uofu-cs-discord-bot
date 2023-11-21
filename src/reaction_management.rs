@@ -50,7 +50,7 @@ pub async fn starboard(
     if reaction_count >= reaction_count_requirement && &name == stored_name {
         let previous_messages = starboard_channel.messages(ctx, |m| m).await?;
 
-        if previous_messages
+        if !previous_messages
             .iter()
             .any(|message| message.content.contains(&message.link()))
         {
