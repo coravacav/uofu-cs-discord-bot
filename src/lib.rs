@@ -5,6 +5,7 @@ mod event_handler;
 mod lang;
 mod memory_regex;
 mod reaction_management;
+mod starboard;
 mod text_detection;
 
 use anyhow::Context;

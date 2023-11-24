@@ -17,7 +17,7 @@ pub async fn text_detection(
         .has_role(
             ctx,
             message.guild_id.context("should have guild id")?,
-            *data.config.read().await.get_bot_react_role_id(),
+            data.config.read().await.bot_react_role_id,
         )
         .await
         .context("Couldn't get roles")?

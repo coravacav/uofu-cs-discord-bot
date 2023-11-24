@@ -26,7 +26,7 @@ impl Data {
         let config_clone = Arc::clone(&self.config);
 
         std::thread::spawn(move || {
-            let config_path = config_clone.blocking_read().get_config_path().to_owned();
+            let config_path = config_clone.blocking_read().config_path.to_owned();
 
             use notify::{
                 event::{AccessKind, AccessMode},
@@ -72,7 +72,7 @@ impl Data {
     /// Otherwise, return None
     pub async fn find_response<'a>(&'a self, message: &str) -> Option<Arc<MessageResponseKind>> {
         let mut config = self.config.write().await;
-        let global_cooldown = *config.get_global_cooldown();
+        let global_cooldown = config.default_text_detect_cooldown;
 
         config
             .responses
