@@ -14,7 +14,7 @@ pub async fn remove_bot_role(ctx: PoiseContext<'_>) -> anyhow::Result<()> {
         .context("Couldn't get member")?
         .remove_role(
             ctx,
-            RoleId::from(*ctx.data().config.read().await.get_bot_react_role_id()),
+            RoleId::from(ctx.data().config.read().await.bot_react_role_id),
         )
         .await
         .context("Couldn't remove role")?;

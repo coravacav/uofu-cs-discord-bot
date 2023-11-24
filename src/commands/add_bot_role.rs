@@ -14,7 +14,7 @@ pub async fn add_bot_role(ctx: PoiseContext<'_>) -> anyhow::Result<()> {
         .context("Couldn't get member")?
         .add_role(
             ctx,
-            RoleId::from(*ctx.data().config.read().await.get_bot_react_role_id()),
+            RoleId::from(ctx.data().config.read().await.bot_react_role_id),
         )
         .await
         .context("Couldn't add role")?;
