@@ -6,6 +6,8 @@ use serenity::Message;
 use serenity::Reaction;
 use serenity::ReactionType;
 
+use std::collections::HashSet;
+
 pub async fn reaction_management(
     ctx: &serenity::Context,
     data: &Data,
@@ -39,53 +41,56 @@ pub async fn starboard(
         .map_or(0, |reaction| reaction.count);
 
     let config = data.config.read().await;
-    let starboard_cache = data.starboard_cache.read().await;
 
     let reaction_count_requirement = *config.get_starboard_reaction_count();
     let stored_name = config.get_starboard_emote();
     let starboard_channel = ChannelId(*config.get_starboard_channel());
 
-    if reaction_count >= reaction_count_requirement && &name == stored_name {
-        let previous_messages = starboard_channel.messages(ctx, |m| m).await?;
+    if reaction_count >= reaction_count_requirement
+        && &name == stored_name
+        && check_message_cache(data, *message.id.as_u64()).await
+    {
+        starboard_channel
+            .send_message(ctx, |m| {
+                m.add_embed(|embed| {
+                    embed.description(format!("{}\n{}", message.content, message.link()));
+                    embed.author(|author| {
+                        author.name(&message.author.name).icon_url(
+                            message
+                                .author
+                                .avatar_url()
+                                .as_deref()
+                                .unwrap_or("https://cdn.discordapp.com/embed/avatars/0.png"),
+                        )
+                    });
+                    embed.timestamp(message.timestamp);
 
-        if !previous_messages.iter().any(|message| {
-            message.embeds.iter().any(|embed| {
-                embed
-                    .description
-                    .as_ref()
-                    .is_some_and(|description| description.contains(&message.link()))
-            })
-        }) {
-            starboard_channel
-                .send_message(ctx, |m| {
-                    m.add_embed(|embed| {
-                        embed.description(format!("{}\n{}", message.content, message.link()));
-                        embed.author(|author| {
-                            author.name(&message.author.name).icon_url(
-                                message
-                                    .author
-                                    .avatar_url()
-                                    .as_deref()
-                                    .unwrap_or("https://cdn.discordapp.com/embed/avatars/0.png"),
-                            )
-                        });
-                        embed.timestamp(message.timestamp);
+                    if let Some(attachment) = message.attachments.iter().find(|attachment| {
+                        attachment
+                            .content_type
+                            .as_ref()
+                            .is_some_and(|content_type| content_type.starts_with("image"))
+                    }) {
+                        embed.image(&attachment.url);
+                    }
 
-                        if let Some(attachment) = message.attachments.iter().find(|attachment| {
-                            attachment
-                                .content_type
-                                .as_ref()
-                                .is_some_and(|content_type| content_type.starts_with("image"))
-                        }) {
-                            embed.image(&attachment.url);
-                        }
-
-                        embed
-                    })
+                    embed
                 })
-                .await?;
-        }
+            })
+            .await?;
     }
 
     Ok(())
+}
+
+pub async fn check_message_cache(data: &Data, message: u64) -> bool {
+    let mut cache = data.starboard_cache.write().await;
+    if (*cache).contains(&message) {
+        return false;
+    }
+    if (*cache).len() > 20 {
+        (*cache).clear();
+    }
+    (*cache).insert(message);
+    true
 }
