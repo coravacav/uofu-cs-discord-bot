@@ -1,4 +1,4 @@
-use std::{path::Path, sync::Arc};
+use std::{collections::HashSet, path::Path, sync::Arc};
 
 use crate::config::{Config, MessageResponse, MessageResponseKind};
 
@@ -9,13 +9,18 @@ use tokio::sync::RwLock;
 
 pub struct Data {
     pub config: Arc<RwLock<Config>>,
+    pub starboard_cache: Arc<RwLock<HashSet<u64>>>,
 }
 
 impl Data {
     pub fn new(config: Config) -> Data {
         let config = Arc::new(RwLock::new(config));
+        let starboard_cache = Arc::new(RwLock::new(HashSet::new()));
 
-        let data = Data { config };
+        let data = Data {
+            config,
+            starboard_cache,
+        };
 
         data.setup_file_watcher();
 
@@ -33,6 +38,7 @@ impl Data {
                 Event, EventKind, RecursiveMode, Watcher,
             };
 
+            #[allow(unreachable_patterns)]
             let mut watcher = notify::recommended_watcher(move |res| match res {
                 Ok(Event {
                     kind: EventKind::Access(AccessKind::Close(AccessMode::Write)),
