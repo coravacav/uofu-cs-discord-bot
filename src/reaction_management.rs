@@ -6,8 +6,6 @@ use serenity::Message;
 use serenity::Reaction;
 use serenity::ReactionType;
 
-use std::collections::HashSet;
-
 pub async fn reaction_management(
     ctx: &serenity::Context,
     data: &Data,

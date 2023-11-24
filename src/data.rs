@@ -27,6 +27,7 @@ impl Data {
         data
     }
 
+    #[allow(unreachable_code)]
     fn setup_file_watcher(&self) {
         let config_clone = Arc::clone(&self.config);
 
@@ -38,6 +39,7 @@ impl Data {
                 Event, EventKind, RecursiveMode, Watcher,
             };
 
+            #[allow(unreachable_patterns)]
             let mut watcher = notify::recommended_watcher(move |res| match res {
                 Ok(Event {
                     kind: EventKind::Access(AccessKind::Close(AccessMode::Write)),
