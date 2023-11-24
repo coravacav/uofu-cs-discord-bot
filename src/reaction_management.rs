@@ -39,6 +39,7 @@ pub async fn starboard(
         .map_or(0, |reaction| reaction.count);
 
     let config = data.config.read().await;
+    let starboard_cache = data.starboard_cache.read().await;
 
     let reaction_count_requirement = *config.get_starboard_reaction_count();
     let stored_name = config.get_starboard_emote();
