@@ -26,8 +26,7 @@ impl Data {
 
         data
     }
-
-    #[allow(unreachable_code)]
+    
     fn setup_file_watcher(&self) {
         let config_clone = Arc::clone(&self.config);
 
