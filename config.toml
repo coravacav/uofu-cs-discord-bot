@@ -162,8 +162,10 @@ content = ["https://tenor.com/view/horse-horse-react-thanos-meme-gif-26303208", 
 
 [[responses]]
 name = "hey chat"
+cooldown = 300
 ruleset = """
 r (?i)chat
+!r chatgpt
 """
 content = "https://tenor.com/view/xqc-what-xqc-what-xqc-search-gif-25343378"
 
