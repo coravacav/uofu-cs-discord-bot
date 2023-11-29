@@ -28,6 +28,8 @@ content = "TKINTER MENTIONED"
 name = "long ass word bro"
 ruleset = """
 r (?: |^)[a-zA-Z]{15,}(?: |$)
+or
+r (?i)i like your funny words
 """
 content = "https://tenor.com/view/jfk-clone-high-i-like-your-funny-words-magic-man-jack-black-gif-18659433"
 
