@@ -148,7 +148,7 @@ impl MessageResponse {
 
 #[cfg(test)]
 mod test {
-    use crate::fast_ruleset;
+    use crate::{fast_ruleset, starboard::EmoteType};
 
     use super::*;
 
@@ -178,7 +178,9 @@ content = "literally 1984""#;
                 default_text_detect_cooldown: Duration::seconds(45),
                 starboards: vec![Starboard {
                     reaction_count: 3,
-                    emote_name: "star".to_owned(),
+                    emote_type: EmoteType::CustomEmote {
+                        emote_name: "star".to_owned()
+                    },
                     channel_id: 123456789109876,
                 }],
                 bot_react_role_id: 123456789109876,
