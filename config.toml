@@ -178,7 +178,7 @@ r (?i)\bme+o*w\b
 or
 r (?i)[ou]w[ou]
 or
-r \b:3\b
+r :3
 or
 r 喵
 or
