@@ -1,5 +1,5 @@
-use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::ChannelId;
+use poise::serenity_prelude::{self as serenity};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
@@ -13,8 +13,23 @@ pub enum EmoteType {
 pub struct Starboard {
     pub reaction_count: u64,
     pub channel_id: u64,
+    pub ignored_channels: Option<Vec<u64>>,
+    #[serde(default)]
+    pub ignore_posts: bool,
     #[serde(flatten)]
     pub emote_type: EmoteType,
+}
+
+impl Default for Starboard {
+    fn default() -> Self {
+        Self {
+            reaction_count: 1,
+            channel_id: 0,
+            ignored_channels: None,
+            ignore_posts: true,
+            emote_type: EmoteType::AllEmotes { all_emotes: true },
+        }
+    }
 }
 
 impl Starboard {
@@ -32,8 +47,9 @@ impl Starboard {
         ctx: &serenity::Context,
         message_link: &str,
     ) -> anyhow::Result<bool> {
-        let channel_id = ChannelId(self.channel_id);
-        let recent_messages = channel_id.messages(ctx, |m| m).await?;
+        let recent_messages = ChannelId::new(self.channel_id)
+            .messages(ctx, serenity::GetMessages::new())
+            .await?;
 
         let has_already_been_added = recent_messages.iter().any(|message| {
             message.embeds.iter().any(|embed| {
@@ -53,53 +69,51 @@ impl Starboard {
         message: &'a serenity::Message,
         reaction_type: &'a serenity::ReactionType,
     ) -> anyhow::Result<()> {
-        ChannelId(self.channel_id)
-            .send_message(ctx, |new_message| {
-                match reaction_type {
-                    serenity::ReactionType::Unicode(emoji) => {
-                        new_message.content(format!("{}", emoji));
-                    }
-                    serenity::ReactionType::Custom { animated, id, .. } => {
-                        if let Ok(url) = format!(
-                            "https://cdn.discordapp.com/emojis/{}.{}",
-                            id,
-                            if *animated { "gif" } else { "png" }
-                        )
-                        .parse()
-                        {
-                            new_message.add_file(serenity::AttachmentType::Image(url));
-                        }
-                    }
-                    _ => (),
-                };
+        let reply = serenity::CreateMessage::new();
 
-                new_message.add_embed(|embed| {
-                    embed
-                        .description(format!("{}\n{}", message.content, message.link()))
-                        .author(|author| {
-                            author.name(&message.author.name).icon_url(
-                                message
-                                    .author
-                                    .avatar_url()
-                                    .as_deref()
-                                    .unwrap_or("https://cdn.discordapp.com/embed/avatars/0.png"),
-                            )
-                        })
-                        .timestamp(message.timestamp);
+        let reply = match reaction_type {
+            serenity::ReactionType::Unicode(emoji) => reply.content(format!("{}", emoji)),
+            serenity::ReactionType::Custom { animated, id, .. } => reply.add_file(
+                serenity::CreateAttachment::url(
+                    ctx,
+                    &format!(
+                        "https://cdn.discordapp.com/emojis/{}.{}",
+                        id,
+                        if *animated { "gif" } else { "png" }
+                    ),
+                )
+                .await?,
+            ),
+            _ => reply,
+        };
 
-                    if let Some(attachment) = message.attachments.iter().find(|attachment| {
-                        attachment
-                            .content_type
-                            .as_ref()
-                            .is_some_and(|content_type| content_type.starts_with("image"))
-                    }) {
-                        embed.image(&attachment.url)
-                    } else {
-                        embed
-                    }
-                })
-            })
-            .await?;
+        let author = serenity::CreateEmbedAuthor::new(&message.author.name).icon_url(
+            message
+                .author
+                .avatar_url()
+                .as_deref()
+                .unwrap_or("https://cdn.discordapp.com/embed/avatars/0.png"),
+        );
+
+        let embed = serenity::CreateEmbed::new()
+            .description(format!("{}\n{}", message.content, message.link()))
+            .author(author)
+            .timestamp(message.timestamp);
+
+        let embed = if let Some(attachment) = message.attachments.iter().find(|attachment| {
+            attachment
+                .content_type
+                .as_ref()
+                .is_some_and(|content_type| content_type.starts_with("image"))
+        }) {
+            embed.image(&attachment.url)
+        } else {
+            embed
+        };
+
+        let reply = reply.embed(embed);
+
+        ChannelId::new(self.channel_id).send_message(ctx, reply);
 
         Ok(())
     }
@@ -121,7 +135,8 @@ emote_name = "test"
             channel_id: 1,
             emote_type: EmoteType::CustomEmote {
                 emote_name: "test".to_string()
-            }
+            },
+            ..Default::default()
         }
     );
 }
@@ -140,7 +155,8 @@ all_emotes = true
         Starboard {
             reaction_count: 1,
             channel_id: 1,
-            emote_type: EmoteType::AllEmotes { all_emotes: true }
+            emote_type: EmoteType::AllEmotes { all_emotes: true },
+            ..Default::default()
         }
     );
 }

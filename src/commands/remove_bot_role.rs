@@ -6,7 +6,7 @@ use poise::serenity_prelude::RoleId;
 #[poise::command(slash_command, prefix_command, rename = "ignoreme")]
 pub async fn remove_bot_role(ctx: PoiseContext<'_>) -> anyhow::Result<()> {
     let author = ctx.author();
-    let guild = ctx.guild().context("Couldn't get guild")?;
+    let guild = ctx.guild().context("Couldn't get guild")?.clone();
 
     guild
         .member(ctx, author.id)

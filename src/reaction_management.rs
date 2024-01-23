@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::data::Data;
 
-use poise::serenity_prelude as serenity;
+use poise::serenity_prelude::{self as serenity, Channel, ChannelType, Guild, GuildChannel};
 use serenity::{Message, Reaction, ReactionType};
 
 pub async fn reaction_management(
@@ -27,9 +27,18 @@ pub async fn starboard(
             .expect("Default emojis should always be in unicode")
             .name()
             .to_owned(),
-        ReactionType::Custom { id, .. } => id.as_u64().to_string(),
+        ReactionType::Custom { id, .. } => id.to_string(),
         _ => anyhow::bail!("Unknown reaction type"),
     };
+
+    let is_forum = message
+        .channel_id
+        .to_channel(ctx)
+        .await
+        .map(|channel| match channel {
+            Channel::Guild(channel) => channel.kind == ChannelType::Forum,
+            _ => false,
+        });
 
     let reaction_count = message
         .reactions

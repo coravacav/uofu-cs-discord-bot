@@ -1,6 +1,7 @@
 use anyhow::Context;
 use clap::Parser;
 use dotenvy::dotenv;
+use poise::serenity_prelude as serenity;
 use uofu_cs_discord_bot::{config, create_framework};
 
 /// Simple program to greet a person
@@ -21,6 +22,7 @@ async fn main() -> anyhow::Result<()> {
     dotenv().context("Failed to load .env file")?;
 
     let args = Args::parse();
+    let token = std::env::var("DISCORD_TOKEN").context("Expected a discord token")?;
 
     let config = config::Config::create_from_file(&args.config).expect("Failed to load config");
 
@@ -30,5 +32,18 @@ async fn main() -> anyhow::Result<()> {
         return Err(anyhow::anyhow!("Failed to create framework"));
     };
 
-    framework.run().await.context("Failed to start bot")
+    // Old list
+    // | serenity::GatewayIntents::MESSAGE_CONTENT
+    // | serenity::GatewayIntents::GUILD_MEMBERS
+    // | serenity::GatewayIntents::GUILD_MESSAGE_REACTIONS
+    // | serenity::GatewayIntents::GUILD_MESSAGES
+    let client = serenity::ClientBuilder::new(token, serenity::GatewayIntents::all())
+        .framework(framework.build())
+        .await;
+
+    client
+        .context("Failed to start bot (serenity)")?
+        .start()
+        .await
+        .context("Failed to start bot (startup)")
 }

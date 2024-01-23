@@ -103,22 +103,30 @@ impl Data {
             MessageResponseKind::Image { path } => {
                 reply_target
                     .channel_id
-                    .send_message(ctx, |m| {
-                        m.reference_message(reply_target);
-                        m.allowed_mentions(|am| am.replied_user(false));
-                        m.add_file(path.as_str())
-                    })
+                    .send_message(
+                        ctx,
+                        serenity::CreateMessage::new()
+                            .reference_message(reply_target)
+                            .allowed_mentions(
+                                serenity::CreateAllowedMentions::new().replied_user(false),
+                            )
+                            .add_file(serenity::CreateAttachment::path(&path).await?),
+                    )
                     .await?;
             }
             MessageResponseKind::TextAndImage { content, path } => {
                 reply_target
                     .channel_id
-                    .send_message(ctx, |m| {
-                        m.reference_message(reply_target);
-                        m.allowed_mentions(|am| am.replied_user(false));
-                        m.content(content);
-                        m.add_file(path.as_str())
-                    })
+                    .send_message(
+                        ctx,
+                        serenity::CreateMessage::new()
+                            .reference_message(reply_target)
+                            .allowed_mentions(
+                                serenity::CreateAllowedMentions::new().replied_user(false),
+                            )
+                            .content(content)
+                            .add_file(serenity::CreateAttachment::path(&path).await?),
+                    )
                     .await?;
             }
             MessageResponseKind::None => {}

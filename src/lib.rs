@@ -8,7 +8,6 @@ mod reaction_management;
 mod starboard;
 mod text_detection;
 
-use anyhow::Context;
 use config::Config;
 use data::Data;
 use event_handler::event_handler;
@@ -25,14 +24,6 @@ pub async fn create_framework(
             },
             ..Default::default()
         })
-        .token(std::env::var("DISCORD_TOKEN").context("Expected a discord token")?)
-        .intents(
-            serenity::GatewayIntents::non_privileged()
-                | serenity::GatewayIntents::MESSAGE_CONTENT
-                | serenity::GatewayIntents::GUILD_MEMBERS
-                | serenity::GatewayIntents::GUILD_MESSAGE_REACTIONS
-                | serenity::GatewayIntents::GUILD_MESSAGES,
-        )
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_in_guild(

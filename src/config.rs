@@ -182,6 +182,7 @@ content = "literally 1984""#;
                         emote_name: "star".to_owned()
                     },
                     channel_id: 123456789109876,
+                    ..Default::default()
                 }],
                 bot_react_role_id: 123456789109876,
                 responses: vec![MessageResponse {
