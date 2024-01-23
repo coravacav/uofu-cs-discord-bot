@@ -72,7 +72,7 @@ impl Starboard {
         let reply = serenity::CreateMessage::new();
 
         let reply = match reaction_type {
-            serenity::ReactionType::Unicode(emoji) => reply.content(format!("{}", emoji)),
+            serenity::ReactionType::Unicode(emoji) => reply.content(emoji),
             serenity::ReactionType::Custom { animated, id, .. } => reply.add_file(
                 serenity::CreateAttachment::url(
                     ctx,
@@ -113,7 +113,9 @@ impl Starboard {
 
         let reply = reply.embed(embed);
 
-        ChannelId::new(self.channel_id).send_message(ctx, reply);
+        ChannelId::new(self.channel_id)
+            .send_message(ctx, reply)
+            .await?;
 
         Ok(())
     }

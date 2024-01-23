@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::data::Data;
 
-use poise::serenity_prelude::{self as serenity, Channel, ChannelType, Guild, GuildChannel};
+use poise::serenity_prelude::{self as serenity, Channel, ChannelType};
 use serenity::{Message, Reaction, ReactionType};
 
 pub async fn reaction_management(
