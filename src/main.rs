@@ -32,14 +32,16 @@ async fn main() -> anyhow::Result<()> {
         return Err(anyhow::anyhow!("Failed to create framework"));
     };
 
-    // Old list
-    // | serenity::GatewayIntents::MESSAGE_CONTENT
-    // | serenity::GatewayIntents::GUILD_MEMBERS
-    // | serenity::GatewayIntents::GUILD_MESSAGE_REACTIONS
-    // | serenity::GatewayIntents::GUILD_MESSAGES
-    let client = serenity::ClientBuilder::new(token, serenity::GatewayIntents::all())
-        .framework(framework.build())
-        .await;
+    let client = serenity::ClientBuilder::new(
+        token,
+        serenity::GatewayIntents::non_privileged()
+            | serenity::GatewayIntents::MESSAGE_CONTENT
+            | serenity::GatewayIntents::GUILD_MEMBERS
+            | serenity::GatewayIntents::GUILD_MESSAGE_REACTIONS
+            | serenity::GatewayIntents::GUILD_MESSAGES,
+    )
+    .framework(framework.build())
+    .await;
 
     client
         .context("Failed to start bot (serenity)")?
