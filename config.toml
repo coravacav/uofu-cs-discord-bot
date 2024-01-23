@@ -11,11 +11,7 @@ name = "rust"
 ruleset = '''
 r (?i)\brust
 '''
-content = ["RUST MENTIONED :crab: :crab: :crab:", "<@216767618923757568>", "Rust is simply the best programming language. Nothing else can compare. I am namingmy kids Rust and Ferris.", """
-Launch the Polaris,
-the end doesn't scare us
-When will this cease?
-The warheads will all rust in peace!""", "Rust? Oh, you mean the game?"]
+content = ["RUST MENTIONED :crab: :crab: :crab:", "<@216767618923757568>", "Rust is simply the best programming language. Nothing else can compare. I am namingmy kids Rust and Ferris."]
 
 [[responses]]
 name = "tkinter"
@@ -37,6 +33,7 @@ content = "https://tenor.com/view/jfk-clone-high-i-like-your-funny-words-magic-m
 name = "arch"
 ruleset = """
 r (?i)arch
+!r (?i)monarch
 """
 content = "i use arch btw."
 
