@@ -23,6 +23,29 @@ r (?i)tkinter
 content = "TKINTER MENTIONED"
 
 [[responses]]
+name = "revskill"
+ruleset = """
+r (?i)revskill
+or
+r (?i)intelligen(?:ce|t)
+or
+r (?i)high iq
+or
+r (?i)inspirational
+"""
+content = ["> don't thinking in function\n> thinking in program pipe together", "> i can just reading code understand how fast it is"]
+
+[[responses]]
+name = "revskill low hit rate"
+ruleset = """
+r (?i)function
+or
+r (?i)program
+"""
+content = ["> don't thinking in function\n> thinking in program pipe together", "> i can just reading code understand how fast it is"]
+hit_rate = 0.05
+
+[[responses]]
 name = "long ass word bro"
 ruleset = """
 r (?: |^)[a-zA-Z]{15,}(?: |$)
@@ -68,6 +91,15 @@ r <@216767618923757568>
 content = "<@216767618923757568>"
 cooldown = 5
 hit_rate = 0.99
+
+[[responses]]
+name = "ash"
+ruleset = """
+r (?i)poo+p?
+or
+r (?i)fecal
+"""
+content = "<@189572492862423040>"
 
 [[responses]]
 name = "javascript"
