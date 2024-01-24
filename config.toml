@@ -36,6 +36,14 @@ r (?i)inspirational
 content = ["> don't thinking in function\n> thinking in program pipe together", "> i can just reading code understand how fast it is"]
 
 [[responses]]
+name = "lucky"
+hit_rate = 0.0001
+ruleset = """
+r (?i)luck
+"""
+content = "EVERYONE NEEDS TO KNOW THAT THIS PERSON JUST FUCKING HIT A 1 in 1 million roll from saying \"lucky\""
+
+[[responses]]
 name = "revskill low hit rate"
 ruleset = """
 r (?i)function
