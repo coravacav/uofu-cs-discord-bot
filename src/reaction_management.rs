@@ -31,7 +31,8 @@ pub async fn starboard(
         _ => anyhow::bail!("Unknown reaction type"),
     };
 
-    let is_forum = message
+    // TODO add this feature to starboard (it's completely not hooked up right now.)
+    let _is_forum = message
         .channel_id
         .to_channel(ctx)
         .await

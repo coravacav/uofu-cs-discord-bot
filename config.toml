@@ -1,5 +1,6 @@
 default_text_detect_cooldown = 45
 bot_react_role_id = 1173465249823850496
+default_hit_rate = 0.21
 
 [[starboards]]
 all_emotes = true
@@ -65,6 +66,7 @@ r <@216767618923757568>
 """
 content = "<@216767618923757568>"
 cooldown = 5
+hit_rate = 0.99
 
 [[responses]]
 name = "javascript"

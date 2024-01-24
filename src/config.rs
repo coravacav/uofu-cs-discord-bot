@@ -1,6 +1,7 @@
 use anyhow::Context;
 use chrono::Duration;
 use chrono::{DateTime, Utc};
+use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::sync::Arc;
@@ -9,7 +10,7 @@ use crate::lang::Ruleset;
 use crate::starboard::Starboard;
 
 #[serde_as]
-#[derive(Deserialize, Serialize, PartialEq, Eq, Debug)]
+#[derive(Deserialize, Serialize, PartialEq, Debug)]
 pub struct Config {
     #[serde_as(as = "serde_with::DurationSeconds<i64>")]
     #[serde(default = "get_default_text_detect_cooldown")]
@@ -17,6 +18,8 @@ pub struct Config {
     pub starboards: Vec<Starboard>,
     pub bot_react_role_id: u64,
     pub responses: Vec<MessageResponse>,
+    /// How often kingfisher replies to a message.
+    pub default_hit_rate: f64,
 
     #[serde(skip)]
     pub config_path: String,
@@ -101,9 +104,10 @@ pub enum MessageResponseKind {
     },
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Default)]
 pub struct MessageResponse {
     name: Arc<String>,
+    hit_rate: Option<f64>,
     ruleset: Ruleset,
     #[serde(flatten)]
     /// This makes it so it pretends the attributes of the enum are attributes of the struct
@@ -127,6 +131,7 @@ impl MessageResponse {
         &mut self,
         input: &str,
         default_duration: Duration,
+        default_hit_rate: f64,
     ) -> Option<Arc<MessageResponseKind>> {
         let duration = self
             .cooldown
@@ -135,6 +140,15 @@ impl MessageResponse {
 
         if self.ruleset.matches(input) {
             if self.last_triggered <= Utc::now() - duration {
+                let hit_rate = self.hit_rate.unwrap_or(default_hit_rate);
+
+                if rand::random::<f64>() > hit_rate {
+                    println!("{} `{}`", "Miss".red(), self.name);
+                    return None;
+                }
+
+                println!("{} `{}`", "Hit".green(), self.name);
+
                 self.last_triggered = Utc::now();
                 Some(Arc::clone(&self.message_response))
             } else {
@@ -156,6 +170,7 @@ mod test {
     fn should_deserialize_properly() {
         let test_input = r#"
 bot_react_role_id = 123456789109876
+default_hit_rate = 1.0
 
 [[starboards]]
 reaction_count = 3
@@ -184,9 +199,11 @@ content = "literally 1984""#;
                     channel_id: 123456789109876,
                     ..Default::default()
                 }],
+                default_hit_rate: 1.,
                 bot_react_role_id: 123456789109876,
                 responses: vec![MessageResponse {
                     name: Arc::new("1984".to_owned()),
+                    hit_rate: None,
                     ruleset: fast_ruleset!("r 1234\n!r 4312"),
                     message_response: Arc::new(MessageResponseKind::Text {
                         content: "literally 1984".to_owned()
