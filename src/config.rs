@@ -16,6 +16,7 @@ pub struct Config {
     #[serde(default = "get_default_text_detect_cooldown")]
     pub default_text_detect_cooldown: Duration,
     pub starboards: Vec<Starboard>,
+    pub guild_id: u64,
     pub bot_react_role_id: u64,
     pub responses: Vec<MessageResponse>,
     /// How often kingfisher replies to a message.
@@ -171,6 +172,7 @@ mod test {
         let test_input = r#"
 bot_react_role_id = 123456789109876
 default_hit_rate = 1.0
+guild_id = 123456789109876
 
 [[starboards]]
 reaction_count = 3
@@ -190,6 +192,7 @@ content = "literally 1984""#;
         assert_eq!(
             config,
             Config {
+                guild_id: 123456789109876,
                 default_text_detect_cooldown: Duration::seconds(45),
                 starboards: vec![Starboard {
                     reaction_count: 3,

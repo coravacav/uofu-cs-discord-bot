@@ -29,7 +29,7 @@ pub async fn create_framework(
                 poise::builtins::register_in_guild(
                     ctx,
                     &framework.options().commands,
-                    serenity::GuildId::from(1065373537591894086),
+                    serenity::GuildId::from(config.guild_id),
                 )
                 .await?;
                 Ok(Data::new(config))
