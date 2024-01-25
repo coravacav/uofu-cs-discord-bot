@@ -1,5 +1,6 @@
 use crate::data::Data;
 use anyhow::Context;
+use colored::Colorize;
 use poise::serenity_prelude::{self as serenity};
 use serenity::Message;
 
@@ -22,7 +23,7 @@ pub async fn text_detection(
         .await
         .context("Couldn't get roles")?
     {
-        println!("Message {} doesn't have bot react role", message.author);
+        print!("{}", ".".black());
         return Ok(());
     }
 

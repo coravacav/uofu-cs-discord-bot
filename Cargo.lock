@@ -2018,6 +2018,7 @@ dependencies = [
  "emojis",
  "futures",
  "itertools",
+ "lazy_static",
  "nom",
  "notify",
  "poise",

@@ -1,6 +1,8 @@
 use poise::serenity_prelude::ChannelId;
 use poise::serenity_prelude::{self as serenity};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+use std::sync::{Arc, RwLock};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(untagged)]
@@ -9,44 +11,86 @@ pub enum EmoteType {
     CustomEmote { emote_name: String },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Starboard {
     pub reaction_count: u64,
     pub channel_id: u64,
-    pub ignored_channels: Option<Vec<u64>>,
-    #[serde(default)]
-    pub ignore_posts: bool,
+    pub ignored_channel_ids: Option<Vec<u64>>,
     #[serde(flatten)]
     pub emote_type: EmoteType,
+    /// This stores a string hash of the message link
+    #[serde(skip)]
+    pub recently_added_messages: Arc<RwLock<HashSet<String>>>,
 }
+
+impl PartialEq for Starboard {
+    fn eq(&self, other: &Self) -> bool {
+        self.reaction_count == other.reaction_count
+            && self.channel_id == other.channel_id
+            && self.ignored_channel_ids == other.ignored_channel_ids
+            && self.emote_type == other.emote_type
+    }
+}
+
+impl Eq for Starboard {}
 
 impl Default for Starboard {
     fn default() -> Self {
         Self {
             reaction_count: 1,
             channel_id: 0,
-            ignored_channels: None,
-            ignore_posts: true,
+            ignored_channel_ids: None,
             emote_type: EmoteType::AllEmotes { all_emotes: true },
+            recently_added_messages: Arc::new(RwLock::new(HashSet::new())),
         }
     }
 }
 
 impl Starboard {
-    pub async fn does_starboard_apply(&self, reaction_count: u64, emote_name: &str) -> bool {
-        (match &self.emote_type {
-            EmoteType::AllEmotes { .. } => true,
-            EmoteType::CustomEmote {
-                emote_name: starboard_emote_name,
-            } => emote_name == starboard_emote_name,
-        }) && reaction_count >= self.reaction_count
+    pub async fn does_starboard_apply(
+        &self,
+        reaction_count: u64,
+        emote_name: &str,
+        channel_id: u64,
+    ) -> bool {
+        if let Some(ignored_channel_ids) = &self.ignored_channel_ids {
+            if ignored_channel_ids.contains(&channel_id) {
+                return false;
+            }
+        }
+
+        if let EmoteType::CustomEmote {
+            emote_name: specific_emote,
+        } = &self.emote_type
+        {
+            if specific_emote != emote_name {
+                return false;
+            }
+        }
+
+        if reaction_count < self.reaction_count {
+            return false;
+        }
+
+        true
     }
 
     pub async fn does_channel_already_have_reply(
         &self,
         ctx: &serenity::Context,
-        message_link: &str,
+        message: &serenity::Message,
     ) -> anyhow::Result<bool> {
+        let message_link = message.link();
+
+        if self
+            .recently_added_messages
+            .read()
+            .map(|recent_messages| recent_messages.contains(&message_link))
+            .unwrap_or(false)
+        {
+            return Ok(true);
+        }
+
         let recent_messages = ChannelId::new(self.channel_id)
             .messages(ctx, serenity::GetMessages::new())
             .await?;
@@ -56,18 +100,18 @@ impl Starboard {
                 embed
                     .description
                     .as_ref()
-                    .is_some_and(|description| description.contains(message_link))
+                    .is_some_and(|description| description.contains(&message_link))
             })
         });
 
         Ok(has_already_been_added)
     }
 
-    pub async fn generate_reply<'a, 'b>(
-        &'a self,
-        ctx: &'a serenity::Context,
-        message: &'a serenity::Message,
-        reaction_type: &'a serenity::ReactionType,
+    pub async fn generate_reply(
+        &self,
+        ctx: &serenity::Context,
+        message: &serenity::Message,
+        reaction_type: &serenity::ReactionType,
     ) -> anyhow::Result<()> {
         let reply = serenity::CreateMessage::new();
 
@@ -96,7 +140,22 @@ impl Starboard {
         );
 
         let embed = serenity::CreateEmbed::new()
-            .description(format!("{}\n{}", message.content, message.link()))
+            .description(format!(
+                "{}\n{}{}",
+                message.content,
+                message.link(),
+                message
+                    .channel(ctx)
+                    .await
+                    .map(|channel| {
+                        if let serenity::Channel::Guild(channel) = channel {
+                            format!(" ({})", channel.name)
+                        } else {
+                            "".to_string()
+                        }
+                    })
+                    .unwrap_or("".to_string())
+            ))
             .author(author)
             .timestamp(message.timestamp);
 
@@ -117,7 +176,14 @@ impl Starboard {
             .send_message(ctx, reply)
             .await?;
 
-        Ok(())
+        self.recently_added_messages
+            .write()
+            .map(|mut recent_messages| {
+                recent_messages.insert(message.link());
+            })
+            .map_err(|_| {
+                anyhow::anyhow!("Failed to insert message link into recently added messages")
+            })
     }
 }
 

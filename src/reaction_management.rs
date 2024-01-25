@@ -1,8 +1,5 @@
-use std::sync::Arc;
-
 use crate::data::Data;
-
-use poise::serenity_prelude::{self as serenity, Channel, ChannelType};
+use poise::serenity_prelude::{self as serenity};
 use serenity::{Message, Reaction, ReactionType};
 
 pub async fn reaction_management(
@@ -31,16 +28,6 @@ pub async fn starboard(
         _ => anyhow::bail!("Unknown reaction type"),
     };
 
-    // TODO add this feature to starboard (it's completely not hooked up right now.)
-    let _is_forum = message
-        .channel_id
-        .to_channel(ctx)
-        .await
-        .map(|channel| match channel {
-            Channel::Guild(channel) => channel.kind == ChannelType::Forum,
-            _ => false,
-        });
-
     let reaction_count = message
         .reactions
         .iter()
@@ -49,12 +36,13 @@ pub async fn starboard(
 
     let config = data.config.read().await;
 
-    let message_link = Arc::new(message.link());
-
     let futures = config.starboards.iter().map(|starboard| async {
-        if starboard.does_starboard_apply(reaction_count, &name).await {
+        if starboard
+            .does_starboard_apply(reaction_count, &name, message.channel_id.into())
+            .await
+        {
             let has_reply = starboard
-                .does_channel_already_have_reply(ctx, &message_link)
+                .does_channel_already_have_reply(ctx, message)
                 .await;
 
             if !has_reply.unwrap_or(true) {

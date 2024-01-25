@@ -25,3 +25,4 @@ serde_with = { version = "3.4.0", features = ["chrono"] }
 futures = "0.3.29"
 tap = "1.0.1"
 colored = "2.1.0"
+lazy_static = "1.4.0"
