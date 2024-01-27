@@ -14,7 +14,7 @@ name = "rust"
 ruleset = '''
 r (?i)\brust
 '''
-content = ["RUST MENTIONED :crab: :crab: :crab:", "<@216767618923757568>", "Rust is simply the best programming language. Nothing else can compare. I am namingmy kids Rust and Ferris."]
+content = ["RUST MENTIONED :crab: :crab: :crab:", "<@216767618923757568>", "Rust is simply the best programming language. Nothing else can compare. I am naming my kids Rust and Ferris."]
 
 [[responses]]
 name = "tkinter"
