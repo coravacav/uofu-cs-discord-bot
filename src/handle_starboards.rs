@@ -2,16 +2,7 @@ use crate::data::Data;
 use poise::serenity_prelude::{self as serenity};
 use serenity::{Message, Reaction, ReactionType};
 
-pub async fn reaction_management(
-    ctx: &serenity::Context,
-    data: &Data,
-    reaction: &Reaction,
-) -> anyhow::Result<()> {
-    let message = reaction.message(ctx).await?;
-    starboard(ctx, data, &message, reaction).await
-}
-
-pub async fn starboard(
+pub async fn handle_starboards(
     ctx: &serenity::Context,
     data: &Data,
     message: &Message,
@@ -38,19 +29,10 @@ pub async fn starboard(
 
     let futures = config.starboards.iter().map(|starboard| async {
         if starboard
-            .does_starboard_apply(reaction_count, &name, message.channel_id.into())
+            .does_starboard_apply(ctx, message, reaction_count, &name)
             .await
         {
-            let has_reply = starboard
-                .does_channel_already_have_reply(ctx, message)
-                .await;
-
-            if !has_reply.unwrap_or(true) {
-                starboard
-                    .generate_reply(ctx, message, reaction_type)
-                    .await
-                    .ok();
-            }
+            starboard.reply(ctx, message, reaction_type).await.ok();
         }
     });
 

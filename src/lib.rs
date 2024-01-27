@@ -2,9 +2,9 @@ mod commands;
 pub mod config;
 mod data;
 mod event_handler;
+mod handle_starboards;
 mod lang;
 mod memory_regex;
-mod reaction_management;
 mod starboard;
 mod text_detection;
 

@@ -49,53 +49,56 @@ impl Default for Starboard {
 impl Starboard {
     pub async fn does_starboard_apply(
         &self,
+        ctx: &serenity::Context,
+        message: &serenity::Message,
         reaction_count: u64,
         emote_name: &str,
-        channel_id: u64,
     ) -> bool {
-        if let Some(ignored_channel_ids) = &self.ignored_channel_ids {
-            if ignored_channel_ids.contains(&channel_id) {
-                return false;
-            }
-        }
-
-        if let EmoteType::CustomEmote {
-            emote_name: specific_emote,
-        } = &self.emote_type
-        {
-            if specific_emote != emote_name {
-                return false;
-            }
-        }
-
-        if reaction_count < self.reaction_count {
-            return false;
-        }
-
-        true
+        reaction_count >= self.reaction_count
+            && self.is_channel_allowed(message.channel_id.into())
+            && self.is_emote_allowed(emote_name)
+            && self.is_message_unseen(&message.link())
+            && self.is_channel_missing_reply(ctx, message).await
     }
 
-    pub async fn does_channel_already_have_reply(
+    fn is_channel_allowed(&self, channel_id: u64) -> bool {
+        self.ignored_channel_ids
+            .as_ref()
+            .map(|ignored_channel_ids| !ignored_channel_ids.contains(&channel_id))
+            .unwrap_or(true)
+    }
+
+    fn is_emote_allowed(&self, emote_name: &str) -> bool {
+        match &self.emote_type {
+            EmoteType::AllEmotes { .. } => true,
+            EmoteType::CustomEmote {
+                emote_name: allowed_emote_name,
+            } => emote_name == allowed_emote_name,
+        }
+    }
+
+    fn is_message_unseen(&self, message_link: &str) -> bool {
+        self.recently_added_messages
+            .read()
+            .map(|recent_messages| !recent_messages.contains(message_link))
+            .unwrap_or(true)
+    }
+
+    async fn is_channel_missing_reply(
         &self,
         ctx: &serenity::Context,
         message: &serenity::Message,
-    ) -> anyhow::Result<bool> {
+    ) -> bool {
         let message_link = message.link();
 
-        if self
-            .recently_added_messages
-            .read()
-            .map(|recent_messages| recent_messages.contains(&message_link))
-            .unwrap_or(false)
-        {
-            return Ok(true);
-        }
-
-        let recent_messages = ChannelId::new(self.channel_id)
+        let Ok(messages) = ChannelId::new(self.channel_id)
             .messages(ctx, serenity::GetMessages::new())
-            .await?;
+            .await
+        else {
+            return false;
+        };
 
-        let has_already_been_added = recent_messages.iter().any(|message| {
+        let has_already_been_added = messages.iter().any(|message| {
             message.embeds.iter().any(|embed| {
                 embed
                     .description
@@ -104,10 +107,10 @@ impl Starboard {
             })
         });
 
-        Ok(has_already_been_added)
+        !has_already_been_added
     }
 
-    pub async fn generate_reply(
+    pub async fn reply(
         &self,
         ctx: &serenity::Context,
         message: &serenity::Message,
