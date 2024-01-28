@@ -12,7 +12,7 @@ pub struct Args {
     #[arg(short, long, default_value = "false")]
     pub dry_run: bool,
 
-    /// Number of times to greet
+    /// Path to the config file
     #[arg(short, long, default_value_t = String::from("config.toml"))]
     pub config: String,
 }
@@ -43,6 +43,11 @@ async fn main() -> Result<()> {
     )
     .framework(framework.build())
     .await;
+
+    if args.dry_run {
+        println!("Bot setup worked, dry run enabled, exiting");
+        return Ok(());
+    }
 
     client
         .context("Failed to start bot (serenity)")?
