@@ -1,13 +1,12 @@
-use anyhow::Context;
+use crate::lang::Ruleset;
+use crate::starboard::Starboard;
 use chrono::Duration;
 use chrono::{DateTime, Utc};
+use color_eyre::eyre::{Context, Result};
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::sync::Arc;
-
-use crate::lang::Ruleset;
-use crate::starboard::Starboard;
 
 #[serde_as]
 #[derive(Deserialize, Serialize, PartialEq, Debug)]
@@ -28,7 +27,7 @@ pub struct Config {
 
 impl Config {
     /// Fetches the config from the config file in the root directory.
-    pub fn create_from_file(config_path: &str) -> anyhow::Result<Config> {
+    pub fn create_from_file(config_path: &str) -> Result<Config> {
         let file = std::fs::read_to_string(config_path).context("Could not read config file")?;
 
         let config = toml::from_str(&file).context("Could not parse config file")?;

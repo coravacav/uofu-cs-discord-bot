@@ -1,10 +1,9 @@
-use std::{path::Path, sync::Arc};
-
 use crate::config::{Config, MessageResponse, MessageResponseKind};
-
+use color_eyre::eyre::{Error, Result};
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::Message;
 use rand::seq::SliceRandom;
+use std::{path::Path, sync::Arc};
 use tokio::sync::RwLock;
 
 pub struct Data {
@@ -85,7 +84,7 @@ impl Data {
         message_response: &MessageResponseKind,
         reply_target: &Message,
         ctx: &serenity::Context,
-    ) -> anyhow::Result<()> {
+    ) -> Result<()> {
         match message_response {
             MessageResponseKind::Text { content } => {
                 reply_target.reply(ctx, content).await?;
@@ -137,4 +136,4 @@ impl Data {
 }
 
 // User data, which is stored and accessible in all command invocations
-pub type PoiseContext<'a> = poise::Context<'a, Data, anyhow::Error>;
+pub type PoiseContext<'a> = poise::Context<'a, Data, Error>;

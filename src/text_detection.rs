@@ -1,14 +1,9 @@
 use crate::data::Data;
-use anyhow::Context;
-use colored::Colorize;
+use color_eyre::eyre::{Context, OptionExt, Result};
 use poise::serenity_prelude::{self as serenity};
 use serenity::Message;
 
-pub async fn text_detection(
-    ctx: &serenity::Context,
-    data: &Data,
-    message: &Message,
-) -> anyhow::Result<()> {
+pub async fn text_detection(ctx: &serenity::Context, data: &Data, message: &Message) -> Result<()> {
     if message.is_own(ctx) {
         return Ok(());
     }
@@ -17,13 +12,12 @@ pub async fn text_detection(
         .author
         .has_role(
             ctx,
-            message.guild_id.context("should have guild id")?,
+            message.guild_id.ok_or_eyre("should have guild id")?,
             data.config.read().await.bot_react_role_id,
         )
         .await
         .context("Couldn't get roles")?
     {
-        print!("{}", ".".black());
         return Ok(());
     }
 

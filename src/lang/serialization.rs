@@ -1,6 +1,5 @@
-use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
-
 use super::{parse, Kind, Ruleset};
+use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
 
 struct RulesetVisitor {}
 

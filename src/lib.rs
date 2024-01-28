@@ -8,14 +8,13 @@ mod memory_regex;
 mod starboard;
 mod text_detection;
 
+use color_eyre::eyre::{Error, Result};
 use config::Config;
 use data::Data;
 use event_handler::event_handler;
 use poise::serenity_prelude as serenity;
 
-pub async fn create_framework(
-    config: Config,
-) -> anyhow::Result<poise::FrameworkBuilder<Data, anyhow::Error>> {
+pub async fn create_framework(config: Config) -> Result<poise::FrameworkBuilder<Data, Error>> {
     Ok(poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: commands::get_commands(),

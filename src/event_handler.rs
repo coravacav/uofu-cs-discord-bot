@@ -1,13 +1,13 @@
-use poise::serenity_prelude as serenity;
-
 use crate::{data::Data, handle_starboards::handle_starboards, text_detection::text_detection};
+use color_eyre::eyre::{Error, Result};
+use poise::serenity_prelude as serenity;
 
 pub async fn event_handler(
     ctx: &serenity::Context,
     event: &serenity::FullEvent,
-    framework: poise::FrameworkContext<'_, Data, anyhow::Error>,
+    framework: poise::FrameworkContext<'_, Data, Error>,
     _data: &Data,
-) -> anyhow::Result<()> {
+) -> Result<()> {
     match event {
         serenity::FullEvent::Message { new_message } => {
             text_detection(ctx, framework.user_data, new_message).await

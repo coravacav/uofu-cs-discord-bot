@@ -1,3 +1,4 @@
+use color_eyre::eyre::{eyre, Result};
 use poise::serenity_prelude::ChannelId;
 use poise::serenity_prelude::{self as serenity};
 use serde::{Deserialize, Serialize};
@@ -115,7 +116,7 @@ impl Starboard {
         ctx: &serenity::Context,
         message: &serenity::Message,
         reaction_type: &serenity::ReactionType,
-    ) -> anyhow::Result<()> {
+    ) -> Result<()> {
         let reply = serenity::CreateMessage::new();
 
         let reply = match reaction_type {
@@ -184,9 +185,7 @@ impl Starboard {
             .map(|mut recent_messages| {
                 recent_messages.insert(message.link());
             })
-            .map_err(|_| {
-                anyhow::anyhow!("Failed to insert message link into recently added messages")
-            })
+            .map_err(|_| eyre!("Failed to insert message link into recently added messages"))
     }
 }
 

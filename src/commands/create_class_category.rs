@@ -1,6 +1,5 @@
 use crate::data::PoiseContext;
-
-use anyhow::Context;
+use color_eyre::eyre::{Context, OptionExt, Result};
 use poise::serenity_prelude::{self as serenity};
 use serenity::{ChannelType, PermissionOverwrite, PermissionOverwriteType, Permissions};
 
@@ -8,8 +7,8 @@ use serenity::{ChannelType, PermissionOverwrite, PermissionOverwriteType, Permis
 pub async fn create_class_category(
     ctx: PoiseContext<'_>,
     #[description = "The class number, eg. for CS2420 put in \"2420\""] number: u32,
-) -> anyhow::Result<()> {
-    let guild = ctx.guild().context("Couldn't get guild")?.clone();
+) -> Result<()> {
+    let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.clone();
     let channels = guild.channels(ctx).await?;
 
     let number_string = number.to_string();

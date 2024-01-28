@@ -1,5 +1,5 @@
-use anyhow::Context;
 use clap::Parser;
+use color_eyre::eyre::{bail, Context, Result};
 use dotenvy::dotenv;
 use poise::serenity_prelude as serenity;
 use uofu_cs_discord_bot::{config, create_framework};
@@ -18,8 +18,9 @@ pub struct Args {
 }
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> Result<()> {
     dotenv().context("Failed to load .env file")?;
+    color_eyre::install()?;
 
     let args = Args::parse();
     let token = std::env::var("DISCORD_TOKEN").context("Expected a discord token")?;
@@ -29,7 +30,7 @@ async fn main() -> anyhow::Result<()> {
     let framework = create_framework(config).await;
 
     let Ok(framework) = framework else {
-        return Err(anyhow::anyhow!("Failed to create framework"));
+        bail!("Failed to create framework");
     };
 
     let client = serenity::ClientBuilder::new(

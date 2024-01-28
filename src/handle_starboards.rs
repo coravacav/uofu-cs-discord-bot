@@ -1,4 +1,5 @@
 use crate::data::Data;
+use color_eyre::eyre::{bail, eyre, Result};
 use poise::serenity_prelude::{self as serenity};
 use serenity::{Message, Reaction, ReactionType};
 
@@ -7,16 +8,16 @@ pub async fn handle_starboards(
     data: &Data,
     message: &Message,
     reaction: &Reaction,
-) -> anyhow::Result<()> {
+) -> Result<()> {
     let reaction_type = &reaction.emoji;
 
     let name = match reaction_type {
         ReactionType::Unicode(string) => emojis::get(string)
-            .ok_or_else(|| anyhow::anyhow!("Default emojis should always be in unicode {string}"))?
+            .ok_or_else(|| eyre!("Default emojis should always be in unicode {string}"))?
             .name()
             .to_owned(),
         ReactionType::Custom { id, .. } => id.to_string(),
-        _ => anyhow::bail!("Unknown reaction type"),
+        _ => bail!("Unknown reaction type"),
     };
 
     let reaction_count = message
