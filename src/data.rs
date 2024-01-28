@@ -1,5 +1,5 @@
-use crate::config::{Config, MessageResponse, MessageResponseKind};
-use color_eyre::eyre::{Error, Result};
+use crate::config::{Config, MessageResponseKind};
+use color_eyre::eyre::{Error, OptionExt, Result};
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::Message;
 use rand::seq::SliceRandom;
@@ -57,11 +57,6 @@ impl Data {
         });
     }
 
-    /// Register a new response type for messages matching a regular expression pattern
-    pub fn register(&mut self, response: MessageResponse) {
-        self.config.blocking_write().add_response(response);
-    }
-
     /// Reload the configuration file and update the responses hash map accordingly
     pub fn reload(&self) {
         self.config.blocking_write().reload();
@@ -90,12 +85,9 @@ impl Data {
                 reply_target.reply(ctx, content).await?;
             }
             MessageResponseKind::RandomText { content } => {
-                let response = {
-                    let mut rng = rand::thread_rng();
-                    content
-                        .choose(&mut rng)
-                        .expect("The responses list is empty")
-                };
+                let response = content
+                    .choose(&mut rand::thread_rng())
+                    .ok_or_eyre("The responses list is empty")?;
 
                 reply_target.reply(ctx, response).await?;
             }

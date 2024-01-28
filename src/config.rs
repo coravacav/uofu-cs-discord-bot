@@ -45,38 +45,10 @@ impl Config {
         }
     }
 
-    /// Updates config with the new cooldown, and updates the cooldown as well
-    pub fn update_cooldown(&mut self, cooldown: Duration) {
-        self.default_text_detect_cooldown = cooldown;
+    pub fn save(&self) -> Result<()> {
+        let toml = toml::to_string(&self).context("Could not serialize config")?;
 
-        self.save();
-    }
-
-    /// Adds a response to the config file and the config.
-    pub fn add_response(&mut self, response: MessageResponse) {
-        self.responses.push(response);
-        self.save();
-    }
-
-    /// Removes a response from the config file and the config.
-    pub fn remove_response(&mut self, name: String) {
-        self.responses.retain(|response| *response.name != name);
-        self.save();
-    }
-
-    pub fn get_response(&self, name: &str) -> &MessageResponseKind {
-        &self
-            .responses
-            .iter()
-            .find(|response| *response.name == name)
-            .expect("Could not find response with name")
-            .message_response
-    }
-
-    pub fn save(&self) {
-        let toml = toml::to_string(&self).expect("Could not serialize config");
-
-        std::fs::write(&self.config_path, toml).expect("Could not write to config");
+        std::fs::write(&self.config_path, toml).context("Could not save config")
     }
 }
 
