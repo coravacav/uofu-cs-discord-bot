@@ -12,7 +12,7 @@ pub async fn handle_starboards(
 
     let name = match reaction_type {
         ReactionType::Unicode(string) => emojis::get(string)
-            .expect("Default emojis should always be in unicode")
+            .ok_or_else(|| anyhow::anyhow!("Default emojis should always be in unicode {string}"))?
             .name()
             .to_owned(),
         ReactionType::Custom { id, .. } => id.to_string(),
