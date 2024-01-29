@@ -1,7 +1,7 @@
 use crate::lang::ruleset::Ruleset;
 use crate::starboard::Starboard;
-use chrono::Duration;
 use chrono::{DateTime, Utc};
+use chrono::{Duration, Local};
 use color_eyre::eyre::{Context, Result};
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
@@ -123,12 +123,14 @@ impl RegisteredResponse {
             if self.last_triggered <= Utc::now() - duration {
                 let hit_rate = self.hit_rate.unwrap_or(default_hit_rate);
 
+                let now = Local::now().format("%Y-%m-%d %H:%M:%S");
+
                 if rand::random::<f64>() > hit_rate {
-                    println!("{} `{}`", "Miss".red(), self.name);
+                    println!("{now} {} `{}`", "Miss".red(), self.name);
                     return None;
                 }
 
-                println!("{} `{}`", "Hit".green(), self.name);
+                println!("{now} {} `{}`", "Hit".green(), self.name);
 
                 self.last_triggered = Utc::now();
                 Some(Arc::clone(&self.message_response))
