@@ -26,6 +26,3 @@ tap = "1.0.1"
 colored = "2.1.0"
 lazy_static = "1.4.0"
 color-eyre = "0.6"
-
-[profile.dev.package.backtrace]
-opt-level = 3

@@ -69,13 +69,12 @@ impl AppState {
         message: &str,
         message_link: &str,
     ) -> Option<Arc<ResponseKind>> {
-        let mut config = self.config.write().await;
-        let global_cooldown = config.default_text_detect_cooldown;
-        let default_hit_rate = config.default_hit_rate;
+        let config = self.config.read().await;
 
-        config.responses.iter_mut().find_map(|response| {
-            response.is_valid_response(message, global_cooldown, default_hit_rate, message_link)
-        })
+        config
+            .responses
+            .iter()
+            .find_map(|response| response.is_valid_response(message, &config, message_link))
     }
 
     pub async fn run_action(

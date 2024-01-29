@@ -6,7 +6,7 @@ use color_eyre::eyre::{Context, Result};
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 #[serde_as]
 #[derive(Deserialize, Serialize, PartialEq, Debug)]
@@ -27,6 +27,9 @@ pub struct Config {
     pub responses: Vec<RegisteredResponse>,
     /// How often kingfisher replies to a message.
     pub default_hit_rate: f64,
+    /// Verbatim text to skip the hit rate check.
+    /// Intentionally only a single string to prevent having to check a lot of different strings.
+    pub skip_hit_rate_text: String,
     /// The path to the config file.
     /// This is to allow for saving / reloading the config.
     #[serde(skip)]
@@ -80,7 +83,7 @@ pub enum ResponseKind {
     TextAndImage { content: String, path: String },
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Default)]
+#[derive(Deserialize, Serialize, Clone, Debug, Default)]
 pub struct RegisteredResponse {
     /// The name of the response. Used only for logging.
     name: Arc<String>,
@@ -96,44 +99,62 @@ pub struct RegisteredResponse {
     /// Per response storage of when the response was last triggered.
     #[serde(skip)]
     #[serde(default = "default_time")]
-    last_triggered: DateTime<Utc>,
+    last_triggered: Arc<Mutex<DateTime<Utc>>>,
     /// Cooldown in seconds.
     ///
     /// Overrides the default cooldown.
     cooldown: Option<i64>,
 }
 
-fn default_time() -> DateTime<Utc> {
-    DateTime::<Utc>::MIN_UTC
+impl PartialEq for RegisteredResponse {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+            && self.hit_rate == other.hit_rate
+            && self.ruleset == other.ruleset
+            && self.message_response == other.message_response
+            && self.cooldown == other.cooldown
+    }
+}
+
+fn default_time() -> Arc<Mutex<DateTime<Utc>>> {
+    Arc::new(Mutex::new(DateTime::<Utc>::MIN_UTC))
 }
 
 impl RegisteredResponse {
     pub fn is_valid_response(
-        &mut self,
+        &self,
         input: &str,
-        default_duration: Duration,
-        default_hit_rate: f64,
+        config: &Config,
         message_link: &str,
     ) -> Option<Arc<ResponseKind>> {
+        let global_cooldown = config.default_text_detect_cooldown;
+        let default_hit_rate = config.default_hit_rate;
+        let skip_hit_rate_text = &config.skip_hit_rate_text;
+
         let duration = self
             .cooldown
             .map(Duration::seconds)
-            .unwrap_or(default_duration);
+            .unwrap_or(global_cooldown);
 
         if self.ruleset.matches(input) {
-            if self.last_triggered <= Utc::now() - duration {
+            let mut last_triggered = match self.last_triggered.lock() {
+                Ok(guard) => guard,
+                Err(poisoned) => poisoned.into_inner(),
+            };
+
+            if *last_triggered <= Utc::now() - duration {
                 let hit_rate = self.hit_rate.unwrap_or(default_hit_rate);
 
                 let now = Local::now().format("%Y-%m-%d %H:%M:%S");
 
-                if rand::random::<f64>() > hit_rate {
+                if rand::random::<f64>() > hit_rate && !input.contains(skip_hit_rate_text) {
                     println!("{now} {} `{}` {message_link}", "Miss".red(), self.name);
                     return None;
                 }
 
                 println!("{now} {} `{}` {message_link}", "Hit ".green(), self.name);
 
-                self.last_triggered = Utc::now();
+                *last_triggered = Utc::now();
                 Some(Arc::clone(&self.message_response))
             } else {
                 None
@@ -194,10 +215,11 @@ content = "literally 1984""#;
                     message_response: Arc::new(ResponseKind::Text {
                         content: "literally 1984".to_owned()
                     }),
-                    last_triggered: DateTime::<Utc>::MIN_UTC,
+                    last_triggered: Arc::new(Mutex::new(DateTime::<Utc>::MIN_UTC)),
                     cooldown: None,
                 }],
                 config_path: "".to_owned(),
+                skip_hit_rate_text: "".to_owned(),
             }
         );
     }
