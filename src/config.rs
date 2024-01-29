@@ -130,7 +130,7 @@ impl RegisteredResponse {
                     return None;
                 }
 
-                println!("{now} {} `{}`", "Hit".green(), self.name);
+                println!("{now} {} `{}`", "Hit ".green(), self.name);
 
                 self.last_triggered = Utc::now();
                 Some(Arc::clone(&self.message_response))
