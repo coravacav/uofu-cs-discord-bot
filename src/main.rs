@@ -4,7 +4,7 @@ use dotenvy::dotenv;
 use poise::serenity_prelude as serenity;
 use uofu_cs_discord_bot::{config, create_framework};
 
-/// Simple program to greet a person
+/// The cli arguments for the bot
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
@@ -24,7 +24,6 @@ async fn main() -> Result<()> {
 
     let args = Args::parse();
     let token = std::env::var("DISCORD_TOKEN").context("Expected a discord token")?;
-
     let config = config::Config::create_from_file(&args.config).context("Failed to load config")?;
 
     let framework = create_framework(config).await;

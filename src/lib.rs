@@ -4,7 +4,6 @@ mod data;
 mod event_handler;
 mod handle_starboards;
 mod lang;
-mod memory_regex;
 mod starboard;
 mod text_detection;
 
@@ -14,6 +13,9 @@ use data::Data;
 use event_handler::event_handler;
 use poise::serenity_prelude as serenity;
 
+/// Create the framework for the bot.
+///
+/// Split from the main function so that the main function can focus on cli arguments and starting
 pub async fn create_framework(config: Config) -> Result<poise::FrameworkBuilder<Data, Error>> {
     Ok(poise::Framework::builder()
         .options(poise::FrameworkOptions {

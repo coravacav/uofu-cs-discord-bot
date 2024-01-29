@@ -1,4 +1,4 @@
-use crate::lang::Ruleset;
+use crate::lang::ruleset::Ruleset;
 use crate::starboard::Starboard;
 use chrono::Duration;
 use chrono::{DateTime, Utc};
