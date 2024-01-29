@@ -149,10 +149,9 @@ impl RegisteredResponse {
                 let hit_rate = self.hit_rate.unwrap_or(default_hit_rate);
 
                 let now = Local::now().format("%Y-%m-%d %H:%M:%S");
+                let miss = rand::random::<f64>() > hit_rate;
 
-                if rand::random::<f64>() > hit_rate
-                    || (!self.unskippable && !input.contains(skip_hit_rate_text))
-                {
+                if miss && (self.unskippable || !input.contains(skip_hit_rate_text)) {
                     println!("{now} {} `{}` {message_link}", "Miss".red(), self.name);
                     return None;
                 }
