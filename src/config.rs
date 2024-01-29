@@ -113,6 +113,7 @@ impl RegisteredResponse {
         input: &str,
         default_duration: Duration,
         default_hit_rate: f64,
+        message_link: &str,
     ) -> Option<Arc<ResponseKind>> {
         let duration = self
             .cooldown
@@ -126,11 +127,11 @@ impl RegisteredResponse {
                 let now = Local::now().format("%Y-%m-%d %H:%M:%S");
 
                 if rand::random::<f64>() > hit_rate {
-                    println!("{now} {} `{}`", "Miss".red(), self.name);
+                    println!("{now} {} `{}` {message_link}", "Miss".red(), self.name);
                     return None;
                 }
 
-                println!("{now} {} `{}`", "Hit ".green(), self.name);
+                println!("{now} {} `{}` {message_link}", "Hit ".green(), self.name);
 
                 self.last_triggered = Utc::now();
                 Some(Arc::clone(&self.message_response))
