@@ -1,4 +1,4 @@
-use crate::config::{Config, MessageResponseKind};
+use crate::config::{Config, ResponseKind};
 use color_eyre::eyre::{Error, OptionExt, Result};
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::Message;
@@ -6,15 +6,15 @@ use rand::seq::SliceRandom;
 use std::{path::Path, sync::Arc};
 use tokio::sync::RwLock;
 
-pub struct Data {
+pub struct AppState {
     pub config: Arc<RwLock<Config>>,
 }
 
-impl Data {
-    pub fn new(config: Config) -> Data {
+impl AppState {
+    pub fn new(config: Config) -> AppState {
         let config = Arc::new(RwLock::new(config));
 
-        let data = Data { config };
+        let data = AppState { config };
 
         data.setup_file_watcher();
 
@@ -64,7 +64,7 @@ impl Data {
 
     /// If the message contents match any pattern, return the name of the response type.
     /// Otherwise, return None
-    pub async fn find_response<'a>(&'a self, message: &str) -> Option<Arc<MessageResponseKind>> {
+    pub async fn find_response<'a>(&'a self, message: &str) -> Option<Arc<ResponseKind>> {
         let mut config = self.config.write().await;
         let global_cooldown = config.default_text_detect_cooldown;
         let default_hit_rate = config.default_hit_rate;
@@ -76,22 +76,22 @@ impl Data {
 
     pub async fn run_action(
         &self,
-        message_response: &MessageResponseKind,
+        message_response: &ResponseKind,
         reply_target: &Message,
         ctx: &serenity::Context,
     ) -> Result<()> {
         match message_response {
-            MessageResponseKind::Text { content } => {
+            ResponseKind::Text { content } => {
                 reply_target.reply(ctx, content).await?;
             }
-            MessageResponseKind::RandomText { content } => {
+            ResponseKind::RandomText { content } => {
                 let response = content
                     .choose(&mut rand::thread_rng())
                     .ok_or_eyre("The responses list is empty")?;
 
                 reply_target.reply(ctx, response).await?;
             }
-            MessageResponseKind::Image { path } => {
+            ResponseKind::Image { path } => {
                 reply_target
                     .channel_id
                     .send_message(
@@ -105,7 +105,7 @@ impl Data {
                     )
                     .await?;
             }
-            MessageResponseKind::TextAndImage { content, path } => {
+            ResponseKind::TextAndImage { content, path } => {
                 reply_target
                     .channel_id
                     .send_message(
@@ -120,7 +120,7 @@ impl Data {
                     )
                     .await?;
             }
-            MessageResponseKind::None => {}
+            ResponseKind::None => {}
         }
 
         Ok(())
@@ -128,4 +128,4 @@ impl Data {
 }
 
 // User data, which is stored and accessible in all command invocations
-pub type PoiseContext<'a> = poise::Context<'a, Data, Error>;
+pub type PoiseContext<'a> = poise::Context<'a, AppState, Error>;

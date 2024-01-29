@@ -9,14 +9,14 @@ mod text_detection;
 
 use color_eyre::eyre::{Error, Result};
 use config::Config;
-use data::Data;
+use data::AppState;
 use event_handler::event_handler;
 use poise::serenity_prelude as serenity;
 
 /// Create the framework for the bot.
 ///
 /// Split from the main function so that the main function can focus on cli arguments and starting
-pub async fn create_framework(config: Config) -> Result<poise::FrameworkBuilder<Data, Error>> {
+pub async fn create_framework(config: Config) -> Result<poise::FrameworkBuilder<AppState, Error>> {
     Ok(poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: commands::get_commands(),
@@ -33,7 +33,7 @@ pub async fn create_framework(config: Config) -> Result<poise::FrameworkBuilder<
                     serenity::GuildId::from(config.guild_id),
                 )
                 .await?;
-                Ok(Data::new(config))
+                Ok(AppState::new(config))
             })
         }))
 }

@@ -1,9 +1,13 @@
-use crate::data::Data;
+use crate::data::AppState;
 use color_eyre::eyre::{Context, OptionExt, Result};
 use poise::serenity_prelude::{self as serenity};
 use serenity::Message;
 
-pub async fn text_detection(ctx: &serenity::Context, data: &Data, message: &Message) -> Result<()> {
+pub async fn text_detection(
+    ctx: &serenity::Context,
+    data: &AppState,
+    message: &Message,
+) -> Result<()> {
     if message.is_own(ctx) {
         return Ok(());
     }

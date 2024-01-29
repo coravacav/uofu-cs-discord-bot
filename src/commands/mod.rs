@@ -9,7 +9,7 @@ use create_class_category::create_class_category;
 use register::register;
 use remove_bot_role::remove_bot_role;
 
-pub fn get_commands() -> Vec<poise::Command<crate::data::Data, Error>> {
+pub fn get_commands() -> Vec<poise::Command<crate::data::AppState, Error>> {
     vec![
         register(),
         create_class_category(),

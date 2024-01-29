@@ -11,16 +11,24 @@ use std::sync::Arc;
 #[serde_as]
 #[derive(Deserialize, Serialize, PartialEq, Debug)]
 pub struct Config {
+    /// The default cooldown for text detection.
+    ///
+    /// This can be overridden by the `cooldown` field in a response.
     #[serde_as(as = "serde_with::DurationSeconds<i64>")]
     #[serde(default = "get_default_text_detect_cooldown")]
     pub default_text_detect_cooldown: Duration,
+    /// The starboards that kingfisher will listen for / update.
     pub starboards: Vec<Starboard>,
+    /// The id of the guild the bot is in.
     pub guild_id: u64,
+    /// The role id of the bot react role.
     pub bot_react_role_id: u64,
-    pub responses: Vec<MessageResponse>,
+    /// What possible replies kingfisher can make.
+    pub responses: Vec<RegisteredResponse>,
     /// How often kingfisher replies to a message.
     pub default_hit_rate: f64,
-
+    /// The path to the config file.
+    /// This is to allow for saving / reloading the config.
     #[serde(skip)]
     pub config_path: String,
 }
@@ -58,39 +66,40 @@ fn get_default_text_detect_cooldown() -> Duration {
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq, Default)]
 #[serde(untagged)]
-pub enum MessageResponseKind {
+pub enum ResponseKind {
+    /// There is no response.
     #[default]
     None,
-    Text {
-        content: String,
-    },
-    RandomText {
-        content: Vec<String>,
-    },
-    Image {
-        path: String,
-    },
-    TextAndImage {
-        content: String,
-        path: String,
-    },
+    /// A text response.
+    Text { content: String },
+    /// A random text response.
+    RandomText { content: Vec<String> },
+    /// An image response.
+    Image { path: String },
+    /// A text and image response.
+    TextAndImage { content: String, path: String },
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Default)]
-pub struct MessageResponse {
+pub struct RegisteredResponse {
+    /// The name of the response. Used only for logging.
     name: Arc<String>,
+    /// The chance that the response will be triggered.
+    ///
+    /// Overrides the default hit rate.
     hit_rate: Option<f64>,
+    /// Under what rules the response should be triggered.
     ruleset: Ruleset,
-    #[serde(flatten)]
     /// This makes it so it pretends the attributes of the enum are attributes of the struct
-    message_response: Arc<MessageResponseKind>,
-
-    /// This is not serialized, and is instead set to the current time when the config is loaded.
+    #[serde(flatten)]
+    message_response: Arc<ResponseKind>,
+    /// Per response storage of when the response was last triggered.
     #[serde(skip)]
     #[serde(default = "default_time")]
     last_triggered: DateTime<Utc>,
-
-    /// Cooldown in seconds
+    /// Cooldown in seconds.
+    ///
+    /// Overrides the default cooldown.
     cooldown: Option<i64>,
 }
 
@@ -98,13 +107,13 @@ fn default_time() -> DateTime<Utc> {
     DateTime::<Utc>::MIN_UTC
 }
 
-impl MessageResponse {
+impl RegisteredResponse {
     pub fn is_valid_response(
         &mut self,
         input: &str,
         default_duration: Duration,
         default_hit_rate: f64,
-    ) -> Option<Arc<MessageResponseKind>> {
+    ) -> Option<Arc<ResponseKind>> {
         let duration = self
             .cooldown
             .map(Duration::seconds)
@@ -175,11 +184,11 @@ content = "literally 1984""#;
                 }],
                 default_hit_rate: 1.,
                 bot_react_role_id: 123456789109876,
-                responses: vec![MessageResponse {
+                responses: vec![RegisteredResponse {
                     name: Arc::new("1984".to_owned()),
                     hit_rate: None,
                     ruleset: fast_ruleset!("r 1234\n!r 4312"),
-                    message_response: Arc::new(MessageResponseKind::Text {
+                    message_response: Arc::new(ResponseKind::Text {
                         content: "literally 1984".to_owned()
                     }),
                     last_triggered: DateTime::<Utc>::MIN_UTC,

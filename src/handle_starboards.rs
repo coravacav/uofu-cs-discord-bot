@@ -1,11 +1,11 @@
-use crate::data::Data;
+use crate::data::AppState;
 use color_eyre::eyre::{bail, eyre, Result};
 use poise::serenity_prelude::{self as serenity};
 use serenity::{Message, Reaction, ReactionType};
 
 pub async fn handle_starboards(
     ctx: &serenity::Context,
-    data: &Data,
+    data: &AppState,
     message: &Message,
     reaction: &Reaction,
 ) -> Result<()> {
