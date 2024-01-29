@@ -36,11 +36,11 @@ jobs:
             - name: Install rust
               uses: dtolnay/rust-toolchain@stable
             - name: Build Docs
-              run: cargo doc --no-deps --document-private-items --target 'docs'
+              run: cargo doc --no-deps --document-private-items
             - name: Upload artifact
               uses: actions/upload-pages-artifact@v3
               with:
-                  path: 'docs'
+                  path: 'target/doc/uofu_cs_discord_bot'
             - name: Deploy to GitHub Pages
               id: deployment
               uses: actions/deploy-pages@v4
