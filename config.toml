@@ -44,6 +44,7 @@ ruleset = """
 r (?i)luck
 """
 content = "EVERYONE NEEDS TO KNOW THAT THIS PERSON JUST FUCKING HIT A 1 in 1 million roll from saying \"lucky\""
+unskippable=true
 
 [[responses]]
 name = "revskill low hit rate"

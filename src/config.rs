@@ -104,6 +104,9 @@ pub struct RegisteredResponse {
     ///
     /// Overrides the default cooldown.
     cooldown: Option<i64>,
+    /// Whether or not the response can be skipped via the `skip_hit_rate_text` config option.
+    #[serde(default)]
+    unskippable: bool,
 }
 
 impl PartialEq for RegisteredResponse {
@@ -147,7 +150,9 @@ impl RegisteredResponse {
 
                 let now = Local::now().format("%Y-%m-%d %H:%M:%S");
 
-                if rand::random::<f64>() > hit_rate && !input.contains(skip_hit_rate_text) {
+                if rand::random::<f64>() > hit_rate
+                    || (!self.unskippable && !input.contains(skip_hit_rate_text))
+                {
                     println!("{now} {} `{}` {message_link}", "Miss".red(), self.name);
                     return None;
                 }
@@ -177,6 +182,7 @@ mod test {
 bot_react_role_id = 123456789109876
 default_hit_rate = 1.0
 guild_id = 123456789109876
+skip_hit_rate_text = "kf please"
 
 [[starboards]]
 reaction_count = 3
@@ -217,9 +223,10 @@ content = "literally 1984""#;
                     }),
                     last_triggered: Arc::new(Mutex::new(DateTime::<Utc>::MIN_UTC)),
                     cooldown: None,
+                    unskippable: false,
                 }],
                 config_path: "".to_owned(),
-                skip_hit_rate_text: "".to_owned(),
+                skip_hit_rate_text: "kf please".to_owned(),
             }
         );
     }
