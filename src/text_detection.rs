@@ -1,4 +1,4 @@
-use crate::data::AppState;
+use crate::{config::ReactRole, data::AppState};
 use color_eyre::eyre::{Context, OptionExt, Result};
 use poise::serenity_prelude::{self as serenity};
 use serenity::Message;
@@ -12,7 +12,22 @@ pub async fn text_detection(
         return Ok(());
     }
 
-    if !message
+    let author_id: u64 = message.author.id.into();
+
+    let author_has_role = data
+        .config
+        .read()
+        .await
+        .bot_react_role_members
+        .iter()
+        .find(|member| matches!(member, ReactRole { user_id, .. } if *user_id == author_id))
+        .map(|member| member.react);
+
+    if let Some(false) = author_has_role {
+        return Ok(());
+    }
+
+    let author_has_role = message
         .author
         .has_role(
             ctx,
@@ -20,10 +35,16 @@ pub async fn text_detection(
             data.config.read().await.bot_react_role_id,
         )
         .await
-        .context("Couldn't get roles")?
-    {
-        return Ok(());
-    }
+        .context("Couldn't get roles")?;
+
+    data.config
+        .write()
+        .await
+        .bot_react_role_members
+        .push(ReactRole {
+            user_id: author_id,
+            react: author_has_role,
+        });
 
     if let Some(message_response) = data.find_response(&message.content, &message.link()).await {
         data.run_action(&message_response, message, ctx).await?;

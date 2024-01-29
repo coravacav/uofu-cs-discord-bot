@@ -1,5 +1,6 @@
 use crate::{data::AppState, handle_starboards::handle_starboards, text_detection::text_detection};
 use color_eyre::eyre::{Error, Result};
+use colored::Colorize;
 use poise::serenity_prelude as serenity;
 
 pub async fn event_handler(
@@ -20,6 +21,10 @@ pub async fn event_handler(
         } => {
             let message = reaction.message(ctx).await?;
             handle_starboards(ctx, framework.user_data, &message, reaction).await
+        }
+        serenity::FullEvent::Ratelimit { data } => {
+            println!("{} {:?}", "Ratelimited:".yellow(), data);
+            Ok(())
         }
         _ => Ok(()),
     }

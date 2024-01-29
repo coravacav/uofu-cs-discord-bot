@@ -18,6 +18,25 @@ pub async fn add_bot_role(ctx: PoiseContext<'_>) -> Result<()> {
         .await
         .context("Couldn't add role")?;
 
+    let members = &mut ctx
+        .framework()
+        .user_data
+        .config
+        .write()
+        .await
+        .bot_react_role_members;
+
+    let author_id = author.id.into();
+
+    members.retain(
+        |member| matches!(member, crate::config::ReactRole { user_id, .. } if user_id != &author_id),
+    );
+
+    members.push(crate::config::ReactRole {
+        user_id: author_id,
+        react: true,
+    });
+
     ctx.say("Added role!").await?;
 
     Ok(())

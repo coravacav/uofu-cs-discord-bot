@@ -8,8 +8,14 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::sync::{Arc, Mutex};
 
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
+pub struct ReactRole {
+    pub react: bool,
+    pub user_id: u64,
+}
+
 #[serde_as]
-#[derive(Deserialize, Serialize, PartialEq, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Config {
     /// The default cooldown for text detection.
     ///
@@ -34,6 +40,39 @@ pub struct Config {
     /// This is to allow for saving / reloading the config.
     #[serde(skip)]
     pub config_path: String,
+    /// Our own cache of members with the bot react role.
+    /// This may be rate limiting us, so we cache it.
+    #[serde(skip)]
+    pub bot_react_role_members: Vec<ReactRole>,
+}
+
+impl PartialEq for Config {
+    fn eq(&self, other: &Self) -> bool {
+        self.default_text_detect_cooldown == other.default_text_detect_cooldown
+            && self.starboards == other.starboards
+            && self.guild_id == other.guild_id
+            && self.bot_react_role_id == other.bot_react_role_id
+            && self.responses == other.responses
+            && self.default_hit_rate == other.default_hit_rate
+            && self.skip_hit_rate_text == other.skip_hit_rate_text
+            && self.config_path == other.config_path
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            default_text_detect_cooldown: get_default_text_detect_cooldown(),
+            starboards: vec![],
+            guild_id: 0,
+            bot_react_role_id: 0,
+            responses: vec![],
+            default_hit_rate: 1.,
+            skip_hit_rate_text: "".to_owned(),
+            config_path: "".to_owned(),
+            bot_react_role_members: vec![],
+        }
+    }
 }
 
 impl Config {
@@ -83,7 +122,7 @@ pub enum ResponseKind {
     TextAndImage { content: String, path: String },
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug, Default)]
+#[derive(Deserialize, Serialize, Debug, Default)]
 pub struct RegisteredResponse {
     /// The name of the response. Used only for logging.
     name: Arc<String>,
@@ -99,7 +138,7 @@ pub struct RegisteredResponse {
     /// Per response storage of when the response was last triggered.
     #[serde(skip)]
     #[serde(default = "default_time")]
-    last_triggered: Arc<Mutex<DateTime<Utc>>>,
+    last_triggered: Mutex<DateTime<Utc>>,
     /// Cooldown in seconds.
     ///
     /// Overrides the default cooldown.
@@ -119,8 +158,8 @@ impl PartialEq for RegisteredResponse {
     }
 }
 
-fn default_time() -> Arc<Mutex<DateTime<Utc>>> {
-    Arc::new(Mutex::new(DateTime::<Utc>::MIN_UTC))
+fn default_time() -> Mutex<DateTime<Utc>> {
+    Mutex::new(DateTime::<Utc>::MIN_UTC)
 }
 
 impl RegisteredResponse {
@@ -211,7 +250,6 @@ content = "literally 1984""#;
                     channel_id: 123456789109876,
                     ..Default::default()
                 }],
-                default_hit_rate: 1.,
                 bot_react_role_id: 123456789109876,
                 responses: vec![RegisteredResponse {
                     name: Arc::new("1984".to_owned()),
@@ -220,12 +258,12 @@ content = "literally 1984""#;
                     message_response: Arc::new(ResponseKind::Text {
                         content: "literally 1984".to_owned()
                     }),
-                    last_triggered: Arc::new(Mutex::new(DateTime::<Utc>::MIN_UTC)),
+                    last_triggered: Mutex::new(DateTime::<Utc>::MIN_UTC),
                     cooldown: None,
                     unskippable: false,
                 }],
-                config_path: "".to_owned(),
                 skip_hit_rate_text: "kf please".to_owned(),
+                ..Default::default()
             }
         );
     }

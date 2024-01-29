@@ -3,7 +3,7 @@ use poise::serenity_prelude::ChannelId;
 use poise::serenity_prelude::{self as serenity};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use std::sync::{Arc, RwLock};
+use std::sync::RwLock;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(untagged)]
@@ -21,7 +21,7 @@ pub struct Starboard {
     pub emote_type: EmoteType,
     /// This stores a string hash of the message link
     #[serde(skip)]
-    pub recently_added_messages: Arc<RwLock<HashSet<String>>>,
+    pub recently_added_messages: RwLock<HashSet<String>>,
 }
 
 impl PartialEq for Starboard {
@@ -42,7 +42,7 @@ impl Default for Starboard {
             channel_id: 0,
             ignored_channel_ids: None,
             emote_type: EmoteType::AllEmotes { all_emotes: true },
-            recently_added_messages: Arc::new(RwLock::new(HashSet::new())),
+            recently_added_messages: RwLock::new(HashSet::new()),
         }
     }
 }
