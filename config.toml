@@ -39,7 +39,7 @@ content = ["> don't thinking in function\n> thinking in program pipe together", 
 
 [[responses]]
 name = "lucky"
-hit_rate = 0.0001
+hit_rate = 0.000001
 ruleset = """
 r (?i)luck
 """
