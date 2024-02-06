@@ -8,14 +8,26 @@ skip_hit_rate_text = "KINGFISHER PLEASE"
 all_emotes = true
 channel_id = 1171176750819053589
 reaction_count = 5
-ignored_channel_ids = [1103414812312088677, 1187117571267371102, 1105673759974764614, 1105673781307002990, 1197245734790111262, 1137075190136836115, 1065374254742372422]
+ignored_channel_ids = [
+    1103414812312088677,
+    1187117571267371102,
+    1105673759974764614,
+    1105673781307002990,
+    1197245734790111262,
+    1137075190136836115,
+    1065374254742372422,
+]
 
 [[responses]]
 name = "rust"
 ruleset = '''
 r (?i)\brust
 '''
-content = ["RUST MENTIONED :crab: :crab: :crab:", "<@216767618923757568>", "Rust is simply the best programming language. Nothing else can compare. I am naming my kids Rust and Ferris."]
+content = [
+    "RUST MENTIONED :crab: :crab: :crab:",
+    "<@216767618923757568>",
+    "Rust is simply the best programming language. Nothing else can compare. I am naming my kids Rust and Ferris.",
+]
 
 [[responses]]
 name = "tkinter"
@@ -35,7 +47,11 @@ r (?i)high iq
 or
 r (?i)inspirational
 """
-content = ["> don't thinking in function\n> thinking in program pipe together", "> i can just reading code understand how fast it is"]
+content = [
+    "> don't thinking in function\n> thinking in program pipe together",
+    "> i can just reading code understand how fast it is",
+    "> What is a variable. If you can answer that quesiton, you can learn any language in 1 year.\n> Unlearn everything and relearn from that question.\n> It contains secrets of how programming language works.",
+]
 
 [[responses]]
 name = "lucky"
@@ -44,7 +60,7 @@ ruleset = """
 r (?i)luck
 """
 content = "EVERYONE NEEDS TO KNOW THAT THIS PERSON JUST FUCKING HIT A 1 in 1 million roll from saying \"lucky\""
-unskippable=true
+unskippable = true
 
 [[responses]]
 name = "revskill low hit rate"
@@ -53,7 +69,10 @@ r (?i)function
 or
 r (?i)program
 """
-content = ["> don't thinking in function\n> thinking in program pipe together", "> i can just reading code understand how fast it is"]
+content = [
+    "> don't thinking in function\n> thinking in program pipe together",
+    "> i can just reading code understand how fast it is",
+]
 hit_rate = 0.05
 
 [[responses]]
@@ -78,7 +97,10 @@ name = "goop"
 ruleset = """
 r (?i)goop
 """
-content = ["https://tenor.com/view/gunge-gunged-slime-slimed-dunk-gif-21115557", "https://tenor.com/view/goop-goop-house-jello-gif-23114313"]
+content = [
+    "https://tenor.com/view/gunge-gunged-slime-slimed-dunk-gif-21115557",
+    "https://tenor.com/view/goop-goop-house-jello-gif-23114313",
+]
 
 [[responses]]
 name = "1984"
@@ -174,7 +196,11 @@ name = "MY UNDERWEAR IS STAINED WITH AMONG US"
 ruleset = """
 r (?i)among.*us
 """
-content = ["https://tenor.com/view/among-us-stop-posting-about-among-us-sus-amogus-sussy-gif-20696860", "https://tenor.com/view/kriziebizie-krizziebuoy-magmastuff-magstok-pootisman-gif-1255252459385296217", "https://tenor.com/view/among-us-gif-19075770"]
+content = [
+    "https://tenor.com/view/among-us-stop-posting-about-among-us-sus-amogus-sussy-gif-20696860",
+    "https://tenor.com/view/kriziebizie-krizziebuoy-magmastuff-magstok-pootisman-gif-1255252459385296217",
+    "https://tenor.com/view/among-us-gif-19075770",
+]
 
 [[responses]]
 name = "society"
@@ -203,7 +229,13 @@ ruleset = """
 r (?i):.*k+o+p+t+a+.*:
 !r <:kopta_1:1166893677617090642><:kopta_2:1166893728619831397><:kopta_3:1166893843283710052><:kopta_4:1166893878910124032>
 """
-content = ["https://tenor.com/view/horse-horse-react-thanos-meme-gif-26303208", "https://tenor.com/view/thanos-point-face-with-monocle-this-man-react-him-gif-26503600", "https://tenor.com/view/this-man-above-me-part_alternation_mark-gif-26966077", "https://tenor.com/view/lobster-react-him-lobster-react-thanos-gif-26859688", "https://tenor.com/view/discord-gif-27442765"]
+content = [
+    "https://tenor.com/view/horse-horse-react-thanos-meme-gif-26303208",
+    "https://tenor.com/view/thanos-point-face-with-monocle-this-man-react-him-gif-26503600",
+    "https://tenor.com/view/this-man-above-me-part_alternation_mark-gif-26966077",
+    "https://tenor.com/view/lobster-react-him-lobster-react-thanos-gif-26859688",
+    "https://tenor.com/view/discord-gif-27442765",
+]
 
 [[responses]]
 name = "hey chat"
@@ -233,7 +265,9 @@ r (?i)mrr+[pb]
 or
 r (?i)pu+rr+
 '''
-content = ["https://tenor.com/view/modern-family-spray-squirt-annoyed-irritated-gif-4445288"]
+content = [
+    "https://tenor.com/view/modern-family-spray-squirt-annoyed-irritated-gif-4445288",
+]
 
 [[responses]]
 name = "chad"
@@ -244,7 +278,11 @@ r (?i)grind
 or
 r (?i)based
 """
-content = ["https://tenor.com/view/gentleman-giga-chad-sigma-male-gif-25702945", "https://tenor.com/view/mujikcboro-seriymujik-gif-24361533", "https://tenor.com/view/gigachad-chad-gif-20773266"]
+content = [
+    "https://tenor.com/view/gentleman-giga-chad-sigma-male-gif-25702945",
+    "https://tenor.com/view/mujikcboro-seriymujik-gif-24361533",
+    "https://tenor.com/view/gigachad-chad-gif-20773266",
+]
 
 [[responses]]
 name = "um ackshually"
