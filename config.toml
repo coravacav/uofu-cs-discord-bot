@@ -48,9 +48,36 @@ or
 r (?i)inspirational
 """
 content = [
-    "> don't thinking in function\n> thinking in program pipe together",
+    """
+> don't thinking in function
+> thinking in program pipe together
+""",
     "> i can just reading code understand how fast it is",
-    "> What is a variable. If you can answer that quesiton, you can learn any language in 1 year.\n> Unlearn everything and relearn from that question.\n> It contains secrets of how programming language works.",
+    """
+I think Rust language should be renamed to Oxy.
+because ocean is >> russian
+> WHo do you want to become ? Ocean, or Russian ?
+""",
+    """
+> What is a variable. If you can answer that quesiton, you can learn any language in 1 year.
+> Unlearn everything and relearn from that question.
+> It contains secrets of how programming language works.
+""",
+    """
+> western music has some modes: Ionian, Dorian, Phrygian, Lydian, Mixolydian, Aeolian, and Locrian
+> So you get logerian
+> It's a hybrid between a talent programmer who lacks experience
+""",
+    """
+> But ability to hack depends mostly on which food you eat.
+""",
+    """
+> You'll become a better React dev by learning ASM.
+> So, you learnt the ASM, but still have no idea on how to manage React state ?
+> That means you still not learnt ASM yet.
+> I mean, manage state in ASM is harder than in Redux.
+> So if you can do it well in ASM, so you can easily do it in React.
+""",
 ]
 
 [[responses]]
@@ -70,8 +97,36 @@ or
 r (?i)program
 """
 content = [
-    "> don't thinking in function\n> thinking in program pipe together",
+    """
+> don't thinking in function
+> thinking in program pipe together
+""",
     "> i can just reading code understand how fast it is",
+    """
+I think Rust language should be renamed to Oxy.
+because ocean is >> russian
+> WHo do you want to become ? Ocean, or Russian ?
+""",
+    """
+> What is a variable. If you can answer that quesiton, you can learn any language in 1 year.
+> Unlearn everything and relearn from that question.
+> It contains secrets of how programming language works.
+""",
+    """
+> western music has some modes: Ionian, Dorian, Phrygian, Lydian, Mixolydian, Aeolian, and Locrian
+> So you get logerian
+> It's a hybrid between a talent programmer who lacks experience
+""",
+    """
+> But ability to hack depends mostly on which food you eat.
+""",
+    """
+> You'll become a better React dev by learning ASM.
+> So, you learnt the ASM, but still have no idea on how to manage React state ?
+> That means you still not learnt ASM yet.
+> I mean, manage state in ASM is harder than in Redux.
+> So if you can do it well in ASM, so you can easily do it in React.
+""",
 ]
 hit_rate = 0.05
 
@@ -178,7 +233,7 @@ content = "https://tenor.com/view/fog-fog-horn-spongebob-the-fog-scary-gif-25590
 [[responses]]
 name = "subway surfers"
 ruleset = """
-r (?i)((subway surfers)|(attention))
+r (?i)((subway surfers)|(attention))    
 or
 r (?i)attention
 """

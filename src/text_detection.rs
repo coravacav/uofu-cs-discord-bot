@@ -1,9 +1,8 @@
-use std::io::Read;
-
 use crate::{config::ReactRole, data::AppState};
 use color_eyre::eyre::{Context, OptionExt, Result};
 use poise::serenity_prelude::{self as serenity};
 use serenity::Message;
+
 pub async fn text_detection(
     ctx: &serenity::Context,
     data: &AppState,
