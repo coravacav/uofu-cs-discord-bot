@@ -71,12 +71,22 @@ because ocean is >> russian
     """
 > But ability to hack depends mostly on which food you eat.
 """,
+    "> The thin man are fear of everything, that's why he live longer than the fat man.",
     """
 > You'll become a better React dev by learning ASM.
 > So, you learnt the ASM, but still have no idea on how to manage React state ?
 > That means you still not learnt ASM yet.
 > I mean, manage state in ASM is harder than in Redux.
 > So if you can do it well in ASM, so you can easily do it in React.
+""",
+    """
+It's a quiz-type interview.
+Not an IQ type.
+They can't assess if you can fit the job or not based on those questions.
+So in the end, what they get is monkeys.
+Those who know everything but can't do anything.```c#
+class Human implement Learnable``` not ```c#
+class Human inherit Monkey```
 """,
 ]
 
@@ -120,12 +130,22 @@ because ocean is >> russian
     """
 > But ability to hack depends mostly on which food you eat.
 """,
+    "> The thin man are fear of everything, that's why he live longer than the fat man.",
     """
 > You'll become a better React dev by learning ASM.
 > So, you learnt the ASM, but still have no idea on how to manage React state ?
 > That means you still not learnt ASM yet.
 > I mean, manage state in ASM is harder than in Redux.
 > So if you can do it well in ASM, so you can easily do it in React.
+""",
+    """
+It's a quiz-type interview.
+Not an IQ type.
+They can't assess if you can fit the job or not based on those questions.
+So in the end, what they get is monkeys.
+Those who know everything but can't do anything.```c#
+class Human implement Learnable``` not ```c#
+class Human inherit Monkey```
 """,
 ]
 hit_rate = 0.05
