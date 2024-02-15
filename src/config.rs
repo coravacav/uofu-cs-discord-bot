@@ -36,6 +36,9 @@ pub struct Config {
     /// Verbatim text to skip the hit rate check.
     /// Intentionally only a single string to prevent having to check a lot of different strings.
     pub skip_hit_rate_text: String,
+    /// Verbatim text to skip the duration check.
+    /// Intentionally only a single string to prevent having to check a lot of different strings.
+    pub skip_duration_text: String,
     /// The path to the config file.
     /// This is to allow for saving / reloading the config.
     #[serde(skip)]
@@ -65,6 +68,7 @@ impl Default for Config {
             default_text_detect_cooldown: get_default_text_detect_cooldown(),
             starboards: vec![],
             guild_id: 0,
+            skip_duration_text: "".to_owned(),
             bot_react_role_id: 0,
             responses: vec![],
             default_hit_rate: 1.,
@@ -184,7 +188,9 @@ impl RegisteredResponse {
                 Err(poisoned) => poisoned.into_inner(),
             };
 
-            if *last_triggered <= Utc::now() - duration {
+            if *last_triggered <= Utc::now() - duration
+                || input.contains(&config.skip_duration_text)
+            {
                 let hit_rate = self.hit_rate.unwrap_or(default_hit_rate);
 
                 let now = Local::now().format("%Y-%m-%d %H:%M:%S");
