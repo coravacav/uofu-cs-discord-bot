@@ -89,6 +89,11 @@ Those who know everything but can't do anything.```js
 class Human implement Learnable``` not ```js
 class Human inherit Monkey```
 """,
+    """
+> You dereference a pointer.
+> No.
+> You depointer a reference.
+""",
 ]
 
 [[responses]]
@@ -147,6 +152,11 @@ So in the end, what they get is monkeys.
 Those who know everything but can't do anything.```js
 class Human implement Learnable``` not ```js
 class Human inherit Monkey```
+""",
+    """
+> You dereference a pointer.
+> No.
+> You depointer a reference.
 """,
 ]
 hit_rate = 0.05
