@@ -9,7 +9,7 @@ pub async fn event_handler(
     framework: poise::FrameworkContext<'_, AppState, Error>,
     _data: &AppState,
 ) -> Result<()> {
-    match event {
+    if let Err(e) = match event {
         serenity::FullEvent::Message { new_message } => {
             text_detection(ctx, framework.user_data, new_message).await
         }
@@ -27,5 +27,9 @@ pub async fn event_handler(
             Ok(())
         }
         _ => Ok(()),
+    } {
+        eprintln!("{}: {:?}", "Error in event handler".red(), e);
     }
+
+    Ok(())
 }

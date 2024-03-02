@@ -1,5 +1,5 @@
 use crate::data::AppState;
-use color_eyre::eyre::{bail, eyre, Result};
+use color_eyre::eyre::{bail, Result};
 use poise::serenity_prelude::{self as serenity};
 use serenity::{Message, Reaction, ReactionType};
 
@@ -13,9 +13,8 @@ pub async fn handle_starboards(
 
     let name = match reaction_type {
         ReactionType::Unicode(string) => emojis::get(string)
-            .ok_or_else(|| eyre!("Default emojis should always be in unicode {string}"))?
-            .name()
-            .to_owned(),
+            .map(|emoji| emoji.name().to_owned())
+            .unwrap_or(string.to_owned()),
         ReactionType::Custom { id, .. } => id.to_string(),
         _ => bail!("Unknown reaction type"),
     };
