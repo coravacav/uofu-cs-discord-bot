@@ -28,6 +28,20 @@ pub async fn handle_starboards(
     let config = data.config.read().await;
 
     let futures = config.starboards.iter().map(|starboard| async {
+        let starboard_name = serenity::ChannelId::from(starboard.channel_id)
+            .name(ctx)
+            .await
+            .unwrap_or(format!(
+                "!! Unknown starboard (id = {})",
+                starboard.channel_id
+            ));
+
+        tracing::event!(
+            tracing::Level::TRACE,
+            "checking starboard {}",
+            starboard_name
+        );
+
         if starboard
             .does_starboard_apply(ctx, message, reaction_count, &name)
             .await

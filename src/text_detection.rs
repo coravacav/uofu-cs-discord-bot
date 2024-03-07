@@ -12,6 +12,10 @@ pub async fn text_detection(
         return Ok(());
     }
 
+    if message.author.bot {
+        return Ok(());
+    }
+
     let author_id: u64 = message.author.id.into();
 
     let author_has_role = data
@@ -24,15 +28,24 @@ pub async fn text_detection(
         .map(|member| member.react);
 
     if let Some(false) = author_has_role {
+        let author_name = &message.author.name;
+
+        tracing::event!(
+            tracing::Level::DEBUG,
+            "User {} doesn't have the bot react role",
+            author_name
+        );
+
         return Ok(());
     }
 
+    let bot_react_role_id = data.config.read().await.bot_react_role_id;
     let author_has_role = message
         .author
         .has_role(
             ctx,
             message.guild_id.ok_or_eyre("should have guild id")?,
-            data.config.read().await.bot_react_role_id,
+            bot_react_role_id,
         )
         .await
         .context("Couldn't get roles")?;

@@ -1,6 +1,5 @@
 use crate::{data::AppState, handle_starboards::handle_starboards, text_detection::text_detection};
 use color_eyre::eyre::{Error, Result};
-use colored::Colorize;
 use poise::serenity_prelude as serenity;
 
 pub async fn event_handler(
@@ -11,24 +10,45 @@ pub async fn event_handler(
 ) -> Result<()> {
     if let Err(e) = match event {
         serenity::FullEvent::Message { new_message } => {
+            let message_text = &new_message.content;
+            let message_link = &new_message.link();
+
+            tracing::trace!("message {} received {}", message_text, message_link);
+
             text_detection(ctx, framework.user_data, new_message).await
         }
         serenity::FullEvent::ReactionAdd {
             add_reaction: reaction,
-        }
-        | serenity::FullEvent::ReactionRemove {
-            removed_reaction: reaction,
         } => {
             let message = reaction.message(ctx).await?;
+
+            if tracing::event_enabled!(tracing::Level::TRACE) {
+                let reaction_text = match reaction.emoji {
+                    serenity::ReactionType::Unicode(ref string) => emojis::get(string)
+                        .map(|emoji| emoji.name().to_owned())
+                        .unwrap_or(string.to_owned()),
+                    serenity::ReactionType::Custom { id, .. } => id.to_string(),
+                    _ => format!("{:?}", reaction.emoji),
+                };
+
+                let message_text = &message.content;
+
+                tracing::trace!(
+                    "reaction {:?} added to message {:?}",
+                    reaction_text,
+                    message_text
+                );
+            }
+
             handle_starboards(ctx, framework.user_data, &message, reaction).await
         }
         serenity::FullEvent::Ratelimit { data } => {
-            println!("{} {:?}", "Ratelimited:".yellow(), data);
+            tracing::warn!("Ratelimited: {:?}", data);
             Ok(())
         }
         _ => Ok(()),
     } {
-        eprintln!("{}: {:?}", "Error in event handler".red(), e);
+        tracing::error!("Error in event handler: {:?}", e);
     }
 
     Ok(())

@@ -1,9 +1,10 @@
-use color_eyre::eyre::{eyre, Result};
+use color_eyre::eyre::Result;
+use parking_lot::RwLock;
 use poise::serenity_prelude::ChannelId;
 use poise::serenity_prelude::{self as serenity};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use std::sync::RwLock;
+use tap::Tap;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(untagged)]
@@ -48,6 +49,7 @@ impl Default for Starboard {
 }
 
 impl Starboard {
+    #[tracing::instrument(skip(self, ctx, message), fields(message_link = %message.link()))]
     pub async fn does_starboard_apply(
         &self,
         ctx: &serenity::Context,
@@ -55,11 +57,29 @@ impl Starboard {
         reaction_count: u64,
         emote_name: &str,
     ) -> bool {
-        reaction_count >= self.reaction_count
+        let check = self.enough_reactions(reaction_count)
             && self.is_channel_allowed(message.channel_id.into())
             && self.is_emote_allowed(emote_name)
             && self.is_message_unseen(&message.link())
-            && self.is_channel_missing_reply(ctx, message).await
+            && self.is_channel_missing_reply(ctx, message).await;
+
+        let check_msg = if check { "applies" } else { "does not apply" };
+        tracing::info!("starboard {}", check_msg);
+
+        check
+    }
+
+    fn enough_reactions(&self, reaction_count: u64) -> bool {
+        (reaction_count >= self.reaction_count).tap(|check| {
+            let check = if *check { "enough" } else { "not enough" };
+
+            tracing::info!(
+                "reaction_count {} is {} (needed {})",
+                reaction_count,
+                check,
+                self.reaction_count
+            );
+        })
     }
 
     fn is_channel_allowed(&self, channel_id: u64) -> bool {
@@ -67,6 +87,10 @@ impl Starboard {
             .as_ref()
             .map(|ignored_channel_ids| !ignored_channel_ids.contains(&channel_id))
             .unwrap_or(true)
+            .tap(|check| {
+                let check = if *check { "allowed" } else { "disallowed" };
+                tracing::info!("channel_id {} is {}", channel_id, check);
+            })
     }
 
     fn is_emote_allowed(&self, emote_name: &str) -> bool {
@@ -76,13 +100,17 @@ impl Starboard {
                 emote_name: allowed_emote_name,
             } => emote_name == allowed_emote_name,
         }
+        .tap(|check| {
+            let check = if *check { "allowed" } else { "disallowed" };
+            tracing::info!("emote_name {} is {}", emote_name, check);
+        })
     }
 
     fn is_message_unseen(&self, message_link: &str) -> bool {
-        self.recently_added_messages
-            .read()
-            .map(|recent_messages| !recent_messages.contains(message_link))
-            .unwrap_or(true)
+        (!self.recently_added_messages.read().contains(message_link)).tap(|check| {
+            let check = if *check { "seen" } else { "unseen" };
+            tracing::info!("message_link {} is {}", message_link, check);
+        })
     }
 
     async fn is_channel_missing_reply(
@@ -108,7 +136,12 @@ impl Starboard {
             })
         });
 
-        !has_already_been_added
+        let check = !has_already_been_added;
+
+        check.tap(|check| {
+            let check = if *check { "missing" } else { "already added" };
+            tracing::info!("message_link {} is {}", message_link, check);
+        })
     }
 
     pub async fn reply(
@@ -180,12 +213,9 @@ impl Starboard {
             .send_message(ctx, reply)
             .await?;
 
-        self.recently_added_messages
-            .write()
-            .map(|mut recent_messages| {
-                recent_messages.insert(message.link());
-            })
-            .map_err(|_| eyre!("Failed to insert message link into recently added messages"))
+        self.recently_added_messages.write().insert(message.link());
+
+        Ok(())
     }
 }
 

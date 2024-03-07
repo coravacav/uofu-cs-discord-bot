@@ -5,6 +5,7 @@ use poise::serenity_prelude::Message;
 use rand::seq::SliceRandom;
 use std::{path::Path, sync::Arc};
 use tokio::sync::RwLock;
+use tracing::{event, Level};
 
 pub struct AppState {
     pub config: Arc<RwLock<Config>>,
@@ -37,11 +38,11 @@ impl AppState {
                     kind: EventKind::Access(AccessKind::Close(AccessMode::Write)),
                     ..
                 }) => {
-                    println!("config changed, reloading...");
+                    event!(Level::INFO, "config changed, reloading...");
 
-                    Arc::clone(&config_clone).blocking_write().reload();
+                    config_clone.blocking_write().reload();
                 }
-                Err(e) => println!("watch error: {:?}", e),
+                Err(e) => event!(Level::ERROR, "watch error: {:?}", e),
                 _ => {}
             })
             .expect("Failed to create file watcher");
@@ -55,11 +56,6 @@ impl AppState {
                 std::thread::sleep(std::time::Duration::MAX);
             }
         });
-    }
-
-    /// Reload the configuration file and update the responses hash map accordingly
-    pub fn reload(&self) {
-        self.config.blocking_write().reload();
     }
 
     /// If the message contents match any pattern, return the name of the response type.

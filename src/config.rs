@@ -3,10 +3,11 @@ use crate::starboard::Starboard;
 use chrono::{DateTime, Utc};
 use chrono::{Duration, Local};
 use color_eyre::eyre::{Context, Result};
-use colored::Colorize;
+use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
-use std::sync::{Arc, Mutex};
+use serde_with::{serde_as, DurationSeconds};
+use std::sync::Arc;
+use tracing::{event, Level};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
 pub struct ReactRole {
@@ -24,7 +25,7 @@ pub struct Config {
     #[serde(default = "get_default_text_detect_cooldown")]
     pub default_text_detect_cooldown: Duration,
     /// The starboards that kingfisher will listen for / update.
-    pub starboards: Vec<Starboard>,
+    pub starboards: Vec<Arc<Starboard>>,
     /// The id of the guild the bot is in.
     pub guild_id: u64,
     /// The role id of the bot react role.
@@ -126,6 +127,7 @@ pub enum ResponseKind {
     TextAndImage { content: String, path: String },
 }
 
+#[serde_as]
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct RegisteredResponse {
     /// The name of the response. Used only for logging.
@@ -146,7 +148,8 @@ pub struct RegisteredResponse {
     /// Cooldown in seconds.
     ///
     /// Overrides the default cooldown.
-    cooldown: Option<i64>,
+    #[serde_as(as = "Option<DurationSeconds<i64>>")]
+    cooldown: Option<Duration>,
     /// Whether or not the response can be skipped via the `skip_hit_rate_text` config option.
     #[serde(default)]
     unskippable: bool,
@@ -170,38 +173,31 @@ impl RegisteredResponse {
     pub fn is_valid_response(
         &self,
         input: &str,
-        config: &Config,
+        Config {
+            default_text_detect_cooldown: global_cooldown,
+            skip_hit_rate_text,
+            default_hit_rate: global_hit_rate,
+            skip_duration_text,
+            ..
+        }: &Config,
         message_link: &str,
     ) -> Option<Arc<ResponseKind>> {
-        let global_cooldown = config.default_text_detect_cooldown;
-        let default_hit_rate = config.default_hit_rate;
-        let skip_hit_rate_text = &config.skip_hit_rate_text;
-
-        let duration = self
-            .cooldown
-            .map(Duration::seconds)
-            .unwrap_or(global_cooldown);
-
         if self.ruleset.matches(input) {
-            let mut last_triggered = match self.last_triggered.lock() {
-                Ok(guard) => guard,
-                Err(poisoned) => poisoned.into_inner(),
-            };
+            let mut last_triggered = self.last_triggered.lock();
+            let duration = self.cooldown.unwrap_or(*global_cooldown);
 
-            if *last_triggered <= Utc::now() - duration
-                || input.contains(&config.skip_duration_text)
-            {
-                let hit_rate = self.hit_rate.unwrap_or(default_hit_rate);
+            if *last_triggered <= Utc::now() - duration || input.contains(skip_duration_text) {
+                let hit_rate = self.hit_rate.unwrap_or(*global_hit_rate);
 
                 let now = Local::now().format("%Y-%m-%d %H:%M:%S");
                 let miss = rand::random::<f64>() > hit_rate;
 
                 if miss && (self.unskippable || !input.contains(skip_hit_rate_text)) {
-                    println!("{now} {} `{}` {message_link}", "Miss".red(), self.name);
+                    event!(Level::INFO, "Miss `{}` {} {}", self.name, message_link, now);
                     return None;
                 }
 
-                println!("{now} {} `{}` {message_link}", "Hit ".green(), self.name);
+                event!(Level::INFO, "Hit `{}` {} {}", self.name, message_link, now);
 
                 *last_triggered = Utc::now();
                 Some(Arc::clone(&self.message_response))
@@ -248,14 +244,14 @@ content = "literally 1984""#;
             Config {
                 guild_id: 123456789109876,
                 default_text_detect_cooldown: Duration::seconds(45),
-                starboards: vec![Starboard {
+                starboards: vec![Arc::new(Starboard {
                     reaction_count: 3,
                     emote_type: EmoteType::CustomEmote {
                         emote_name: "star".to_owned()
                     },
                     channel_id: 123456789109876,
                     ..Default::default()
-                }],
+                })],
                 bot_react_role_id: 123456789109876,
                 responses: vec![RegisteredResponse {
                     name: Arc::new("1984".to_owned()),

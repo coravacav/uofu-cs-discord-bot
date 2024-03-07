@@ -2,6 +2,7 @@ use clap::Parser;
 use color_eyre::eyre::{bail, Context, Result};
 use dotenvy::dotenv;
 use poise::serenity_prelude as serenity;
+use tracing_subscriber::util::SubscriberInitExt;
 use uofu_cs_discord_bot::{config, create_framework};
 
 /// The cli arguments for the bot
@@ -21,6 +22,15 @@ pub struct Args {
 async fn main() -> Result<()> {
     dotenv().context("Failed to load .env file")?;
     color_eyre::install()?;
+
+    tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .compact()
+        .with_file(true)
+        .with_line_number(true)
+        .with_target(false)
+        .finish()
+        .init();
 
     let args = Args::parse();
     let token = std::env::var("DISCORD_TOKEN").context("Expected a discord token")?;

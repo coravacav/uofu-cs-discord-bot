@@ -26,3 +26,7 @@ tap = "1.0.1"
 colored = "2.1.0"
 lazy_static = "1.4.0"
 color-eyre = "0.6"
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt"] }
+tracing-log = "0.2.0"
+parking_lot = "0.12.1"
