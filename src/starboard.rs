@@ -4,7 +4,6 @@ use poise::serenity_prelude::ChannelId;
 use poise::serenity_prelude::{self as serenity};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use tap::Tap;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(untagged)]
@@ -58,6 +57,7 @@ impl Starboard {
         emote_name: &str,
     ) -> bool {
         let check = self.enough_reactions(reaction_count)
+            && self.is_message_recent(&message.timestamp)
             && self.is_channel_allowed(message.channel_id.into())
             && self.is_emote_allowed(emote_name)
             && self.is_message_unseen(&message.link())
@@ -70,47 +70,66 @@ impl Starboard {
     }
 
     fn enough_reactions(&self, reaction_count: u64) -> bool {
-        (reaction_count >= self.reaction_count).tap(|check| {
-            let check = if *check { "enough" } else { "not enough" };
+        let check = reaction_count >= self.reaction_count;
+        let check_text = if check { "enough" } else { "not enough" };
 
-            tracing::info!(
-                "reaction_count {} is {} (needed {})",
-                reaction_count,
-                check,
-                self.reaction_count
-            );
-        })
+        tracing::info!(
+            "reaction_count {} is {} (needed {})",
+            reaction_count,
+            check_text,
+            self.reaction_count
+        );
+
+        check
+    }
+
+    fn is_message_recent(&self, message_timestamp: &serenity::Timestamp) -> bool {
+        // check that it's newer than 1 week old
+        let message_timestamp = message_timestamp.unix_timestamp();
+        let check =
+            message_timestamp > (chrono::Utc::now() - chrono::Duration::weeks(1)).timestamp();
+
+        let check_text = if check { "new enough" } else { "too old" };
+
+        tracing::info!("message is {}", check_text);
+
+        check
     }
 
     fn is_channel_allowed(&self, channel_id: u64) -> bool {
-        self.ignored_channel_ids
+        let check = self
+            .ignored_channel_ids
             .as_ref()
             .map(|ignored_channel_ids| !ignored_channel_ids.contains(&channel_id))
-            .unwrap_or(true)
-            .tap(|check| {
-                let check = if *check { "allowed" } else { "disallowed" };
-                tracing::info!("channel_id {} is {}", channel_id, check);
-            })
+            .unwrap_or(true);
+
+        let check_text = if check { "allowed" } else { "disallowed" };
+        tracing::info!("channel_id {} is {}", channel_id, check_text);
+
+        check
     }
 
     fn is_emote_allowed(&self, emote_name: &str) -> bool {
-        match &self.emote_type {
+        let check = match &self.emote_type {
             EmoteType::AllEmotes { .. } => true,
             EmoteType::CustomEmote {
                 emote_name: allowed_emote_name,
             } => emote_name == allowed_emote_name,
-        }
-        .tap(|check| {
-            let check = if *check { "allowed" } else { "disallowed" };
-            tracing::info!("emote_name {} is {}", emote_name, check);
-        })
+        };
+
+        let check_text = if check { "allowed" } else { "disallowed" };
+        tracing::info!("emote_name {} is {}", emote_name, check_text);
+
+        check
     }
 
     fn is_message_unseen(&self, message_link: &str) -> bool {
-        (!self.recently_added_messages.read().contains(message_link)).tap(|check| {
-            let check = if *check { "seen" } else { "unseen" };
-            tracing::info!("message_link {} is {}", message_link, check);
-        })
+        let check = !self.recently_added_messages.read().contains(message_link);
+
+        let check_text = if check { "seen" } else { "unseen" };
+        tracing::info!("message_link {} is {}", message_link, check_text);
+
+        check
     }
 
     async fn is_channel_missing_reply(
@@ -138,10 +157,10 @@ impl Starboard {
 
         let check = !has_already_been_added;
 
-        check.tap(|check| {
-            let check = if *check { "missing" } else { "already added" };
-            tracing::info!("message_link {} is {}", message_link, check);
-        })
+        let check_text = if check { "missing" } else { "already added" };
+        tracing::info!("message_link {} is {}", message_link, check_text);
+
+        check
     }
 
     pub async fn reply(
