@@ -189,6 +189,18 @@ content = [
 ]
 
 [[responses]]
+name = "matlab"
+ruleset = """
+r (?i)matlab
+"""
+content = [
+    "https://tenor.com/view/goatee-disappointed-disappointment-no-nope-gif-12411002",
+    "https://tenor.com/view/tim-gunn-eww-gross-yuck-meme-disgusting-sticks-tongue-out-gif-25378754",
+    "https://tenor.com/view/what-could-be-worse-than-that-marie-winter-wentworth-worst-of-all-this-is-the-lowest-point-gif-23007250",
+    "https://tenor.com/view/smarter-every-day-destin-matlab-plywood-gif-23620056",
+]
+
+[[responses]]
 name = "1984"
 ruleset = """
 r (?i)1984
