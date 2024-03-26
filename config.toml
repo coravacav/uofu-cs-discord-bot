@@ -224,15 +224,6 @@ cooldown = 5
 hit_rate = 0.99
 
 [[responses]]
-name = "ash"
-ruleset = """
-r (?i)poo+p?
-or
-r (?i)fecal
-"""
-content = "<@189572492862423040>"
-
-[[responses]]
 name = "javascript"
 ruleset = '''
 r (?i)javascript

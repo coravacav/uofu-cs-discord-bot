@@ -83,11 +83,14 @@ impl Starboard {
         check
     }
 
+    const ONE_WEEK: chrono::TimeDelta = match chrono::TimeDelta::try_weeks(1) {
+        Some(time_check) => time_check,
+        None => panic!("Failed to create time check"),
+    };
+
     fn is_message_recent(&self, message_timestamp: &serenity::Timestamp) -> bool {
-        // check that it's newer than 1 week old
         let message_timestamp = message_timestamp.unix_timestamp();
-        let check =
-            message_timestamp > (chrono::Utc::now() - chrono::Duration::weeks(1)).timestamp();
+        let check = message_timestamp > (chrono::Utc::now() - Self::ONE_WEEK).timestamp();
 
         let check_text = if check { "new enough" } else { "too old" };
 

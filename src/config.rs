@@ -107,8 +107,11 @@ impl Config {
     }
 }
 
-fn get_default_text_detect_cooldown() -> Duration {
-    Duration::seconds(45)
+const fn get_default_text_detect_cooldown() -> Duration {
+    match chrono::TimeDelta::try_seconds(45) {
+        Some(duration) => duration,
+        None => panic!("Could not create default text detect cooldown"),
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq, Default)]
@@ -243,7 +246,7 @@ content = "literally 1984""#;
             config,
             Config {
                 guild_id: 123456789109876,
-                default_text_detect_cooldown: Duration::seconds(45),
+                default_text_detect_cooldown: get_default_text_detect_cooldown(),
                 starboards: vec![Arc::new(Starboard {
                     reaction_count: 3,
                     emote_type: EmoteType::CustomEmote {

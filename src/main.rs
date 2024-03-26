@@ -58,6 +58,8 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
+    tracing::info!("Starting bot");
+
     client
         .context("Failed to start bot (serenity)")?
         .start()
