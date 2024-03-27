@@ -1,6 +1,6 @@
 use crate::data::PoiseContext;
 use color_eyre::eyre::{Context, ContextCompat, Result};
-use poise::serenity_prelude::{self as serenity};
+use poise::{serenity_prelude as serenity, CreateReply};
 
 #[poise::command(slash_command, prefix_command)]
 pub async fn timeout(
@@ -36,7 +36,19 @@ pub async fn timeout(
         .await
         .context("Failed to edit member")?;
 
-    tracing::info!("{} timed out until {}", author.tag(), timeout_end);
+    tracing::info!(
+        "{} timed out until {} ({})",
+        author.tag(),
+        timeout_end,
+        time_text
+    );
+
+    ctx.send(
+        CreateReply::default()
+            .ephemeral(true)
+            .content(format!("Timed out until {}", timeout_end)),
+    )
+    .await?;
 
     Ok(())
 }

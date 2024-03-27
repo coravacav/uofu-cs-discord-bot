@@ -3,7 +3,7 @@ use color_eyre::eyre::{Context, OptionExt, Result};
 use poise::serenity_prelude::{self as serenity};
 use serenity::{ChannelType, PermissionOverwrite, PermissionOverwriteType, Permissions};
 
-#[poise::command(slash_command)]
+#[poise::command(slash_command, required_permissions = "MANAGE_CHANNELS")]
 pub async fn create_class_category(
     ctx: PoiseContext<'_>,
     #[description = "The class number, eg. for CS2420 put in \"2420\""] number: u32,
