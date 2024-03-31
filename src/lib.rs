@@ -26,6 +26,7 @@ pub async fn create_framework(config: Config) -> Result<poise::FrameworkBuilder<
             on_error: |error| {
                 async fn on_error(error: poise::FrameworkError<'_, AppState, Error>) {
                     tracing::error!("{}", error);
+                    dbg!(error);
                 }
 
                 Box::pin(on_error(error))

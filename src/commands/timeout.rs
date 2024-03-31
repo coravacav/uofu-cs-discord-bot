@@ -9,8 +9,8 @@ use poise::{
 pub async fn timeout(
     ctx: PoiseContext<'_>,
     #[description = "The amount of time to time yourself out, like '1h' or '3m'"] time_text: String,
-    #[description = "Whether to announce how long you'll be timed out in the same channel you timed yourself out."]
-    announce: Option<bool>,
+    #[description = "Hide the announcement of how long you'll be timed out"]
+    hide_notification: Option<bool>,
 ) -> Result<()> {
     tracing::trace!("timeout command");
 
@@ -61,39 +61,41 @@ pub async fn timeout(
         .await?;
     }
 
-    if let Some(true) = announce {
-        if time < std::time::Duration::from_secs(3) {
-            return Ok(());
-        }
-
-        let reply_handle = ctx
-            .say(format!(
-                "{} has timed themselves out. They will return <t:{}:R>",
-                author.mention(),
-                // Snippet to get nick < global name < name
-                // guild_id
-                //     .member(ctx, author.id)
-                //     .await?
-                //     .nick
-                //     .unwrap_or_else(|| {
-                //         author
-                //             .global_name
-                //             .clone()
-                //             .unwrap_or_else(|| author.name.clone())
-                //     }),
-                timeout_end.timestamp()
-            ))
-            .await?;
-
-        tracing::trace!("Announced timeout");
-
-        tokio::time::sleep(time - std::time::Duration::from_secs(1)).await;
-
-        reply_handle
-            .delete(ctx)
-            .await
-            .context("Failed to delete message")?;
+    if let Some(true) = hide_notification {
+        return Ok(());
     }
+
+    if time < std::time::Duration::from_secs(3) {
+        return Ok(());
+    }
+
+    let reply_handle = ctx
+        .say(format!(
+            "{} has timed themselves out. They will return <t:{}:R>",
+            author.mention(),
+            // Snippet to get nick < global name < name
+            // guild_id
+            //     .member(ctx, author.id)
+            //     .await?
+            //     .nick
+            //     .unwrap_or_else(|| {
+            //         author
+            //             .global_name
+            //             .clone()
+            //             .unwrap_or_else(|| author.name.clone())
+            //     }),
+            timeout_end.timestamp()
+        ))
+        .await?;
+
+    tracing::trace!("Announced timeout");
+
+    tokio::time::sleep(time - std::time::Duration::from_secs(1)).await;
+
+    reply_handle
+        .delete(ctx)
+        .await
+        .context("Failed to delete message")?;
 
     Ok(())
 }
