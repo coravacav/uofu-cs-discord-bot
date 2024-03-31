@@ -10,53 +10,47 @@ use tracing::{event, Level};
 #[derive(Debug)]
 pub struct AppState {
     pub config: Arc<RwLock<Config>>,
+    /// Config file watcher that refreshes the config if it changes
+    ///
+    /// Attached to the AppState to keep the watcher alive
+    _watcher: notify::RecommendedWatcher,
 }
 
 impl AppState {
     pub fn new(config: Config) -> AppState {
         let config = Arc::new(RwLock::new(config));
 
-        let data = AppState { config };
+        let config_path = config.blocking_read().config_path.to_owned();
 
-        data.setup_file_watcher();
+        use notify::{
+            event::{AccessKind, AccessMode},
+            Event, EventKind, RecursiveMode, Watcher,
+        };
 
-        data
-    }
+        let config_clone = Arc::clone(&config);
 
-    fn setup_file_watcher(&self) {
-        let config_clone = Arc::clone(&self.config);
+        let mut watcher = notify::recommended_watcher(move |res| match res {
+            Ok(Event {
+                kind: EventKind::Access(AccessKind::Close(AccessMode::Write)),
+                ..
+            }) => {
+                event!(Level::INFO, "config changed, reloading...");
 
-        std::thread::spawn(move || {
-            let config_path = config_clone.blocking_read().config_path.to_owned();
-
-            use notify::{
-                event::{AccessKind, AccessMode},
-                Event, EventKind, RecursiveMode, Watcher,
-            };
-
-            let mut watcher = notify::recommended_watcher(move |res| match res {
-                Ok(Event {
-                    kind: EventKind::Access(AccessKind::Close(AccessMode::Write)),
-                    ..
-                }) => {
-                    event!(Level::INFO, "config changed, reloading...");
-
-                    config_clone.blocking_write().reload();
-                }
-                Err(e) => event!(Level::ERROR, "watch error: {:?}", e),
-                _ => {}
-            })
-            .expect("Failed to create file watcher");
-
-            watcher
-                .watch(Path::new(&config_path), RecursiveMode::NonRecursive)
-                .expect("Failed to watch config file");
-
-            // Sleep thread to keep watcher alive
-            loop {
-                std::thread::sleep(std::time::Duration::MAX);
+                config_clone.blocking_write().reload();
             }
-        });
+            Err(e) => event!(Level::ERROR, "watch error: {:?}", e),
+            _ => {}
+        })
+        .expect("Failed to create file watcher");
+
+        watcher
+            .watch(Path::new(&config_path), RecursiveMode::NonRecursive)
+            .expect("Failed to watch config file");
+
+        AppState {
+            config,
+            _watcher: watcher,
+        }
     }
 
     /// If the message contents match any pattern, return the name of the response type.
@@ -71,7 +65,7 @@ impl AppState {
         config
             .responses
             .iter()
-            .find_map(|response| response.is_valid_response(message, &config, message_link))
+            .find_map(|response| response.find_valid_response(message, &config, message_link))
     }
 
     pub async fn run_action(

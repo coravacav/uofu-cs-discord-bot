@@ -7,7 +7,6 @@ use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DurationSeconds};
 use std::sync::Arc;
-use tracing::{event, Level};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
 pub struct ReactRole {
@@ -131,10 +130,10 @@ pub enum ResponseKind {
 }
 
 #[serde_as]
-#[derive(Deserialize, Serialize, Debug, Default)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct RegisteredResponse {
     /// The name of the response. Used only for logging.
-    name: Arc<String>,
+    name: Arc<str>,
     /// The chance that the response will be triggered.
     ///
     /// Overrides the default hit rate.
@@ -169,47 +168,58 @@ impl PartialEq for RegisteredResponse {
 }
 
 fn default_time() -> Mutex<DateTime<Utc>> {
-    Mutex::new(DateTime::<Utc>::MIN_UTC)
+    DateTime::<Utc>::MIN_UTC.into()
 }
 
 impl RegisteredResponse {
-    pub fn is_valid_response(
+    pub fn find_valid_response(
         &self,
         input: &str,
         Config {
             default_text_detect_cooldown: global_cooldown,
             skip_hit_rate_text,
-            default_hit_rate: global_hit_rate,
+            default_hit_rate,
             skip_duration_text,
             ..
         }: &Config,
         message_link: &str,
     ) -> Option<Arc<ResponseKind>> {
-        if self.ruleset.matches(input) {
-            let mut last_triggered = self.last_triggered.lock();
-            let duration = self.cooldown.unwrap_or(*global_cooldown);
-
-            if *last_triggered <= Utc::now() - duration || input.contains(skip_duration_text) {
-                let hit_rate = self.hit_rate.unwrap_or(*global_hit_rate);
-
-                let now = Local::now().format("%Y-%m-%d %H:%M:%S");
-                let miss = rand::random::<f64>() > hit_rate;
-
-                if miss && (self.unskippable || !input.contains(skip_hit_rate_text)) {
-                    event!(Level::INFO, "Miss `{}` {} {}", self.name, message_link, now);
-                    return None;
-                }
-
-                event!(Level::INFO, "Hit `{}` {} {}", self.name, message_link, now);
-
-                *last_triggered = Utc::now();
-                Some(Arc::clone(&self.message_response))
-            } else {
-                None
-            }
-        } else {
-            None
+        if !self.ruleset.matches(input) {
+            return None;
         }
+
+        let mut last_triggered = self.last_triggered.lock();
+        let duration = self.cooldown.unwrap_or(*global_cooldown);
+        let time_since_last_triggered = Utc::now() - *last_triggered;
+        let allowed = time_since_last_triggered > duration;
+        let bypass = input.contains(skip_duration_text);
+
+        if allowed && !bypass {
+            tracing::info!(
+                "Cooldown `{}` {} remaining {}",
+                self.name,
+                message_link,
+                duration
+            );
+
+            return None;
+        }
+
+        let now = Local::now().format("%Y-%m-%d %H:%M:%S");
+        let hit_rate = self.hit_rate.unwrap_or(*default_hit_rate);
+        let miss = rand::random::<f64>() > hit_rate;
+        let bypass = self.unskippable || !input.contains(skip_hit_rate_text);
+
+        if miss && !bypass {
+            tracing::info!("Miss `{}` {} {}", self.name, message_link, now);
+            return None;
+        }
+
+        tracing::info!("Hit `{}` {} {}", self.name, message_link, now);
+
+        *last_triggered = Utc::now();
+
+        Some(Arc::clone(&self.message_response))
     }
 }
 
@@ -257,7 +267,7 @@ content = "literally 1984""#;
                 })],
                 bot_react_role_id: 123456789109876,
                 responses: vec![RegisteredResponse {
-                    name: Arc::new("1984".to_owned()),
+                    name: "1984".into(),
                     hit_rate: None,
                     ruleset: fast_ruleset!("r 1234\n!r 4312"),
                     message_response: Arc::new(ResponseKind::Text {
