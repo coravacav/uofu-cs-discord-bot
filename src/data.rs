@@ -18,9 +18,8 @@ pub struct AppState {
 
 impl AppState {
     pub fn new(config: Config) -> AppState {
+        let config_path = config.config_path.to_owned();
         let config = Arc::new(RwLock::new(config));
-
-        let config_path = config.blocking_read().config_path.to_owned();
 
         use notify::{
             event::{AccessKind, AccessMode},

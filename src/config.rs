@@ -189,17 +189,17 @@ impl RegisteredResponse {
         }
 
         let mut last_triggered = self.last_triggered.lock();
-        let duration = self.cooldown.unwrap_or(*global_cooldown);
+        let cooldown = self.cooldown.unwrap_or(*global_cooldown);
         let time_since_last_triggered = Utc::now() - *last_triggered;
-        let allowed = time_since_last_triggered > duration;
-        let bypass = input.contains(skip_duration_text);
+        let allowed = time_since_last_triggered > cooldown;
+        let blocked = !input.contains(skip_duration_text);
 
-        if allowed && !bypass {
+        if !allowed && blocked {
             tracing::info!(
                 "Cooldown `{}` {} remaining {}",
                 self.name,
                 message_link,
-                duration
+                cooldown - time_since_last_triggered
             );
 
             return None;
@@ -208,9 +208,9 @@ impl RegisteredResponse {
         let now = Local::now().format("%Y-%m-%d %H:%M:%S");
         let hit_rate = self.hit_rate.unwrap_or(*default_hit_rate);
         let miss = rand::random::<f64>() > hit_rate;
-        let bypass = self.unskippable || !input.contains(skip_hit_rate_text);
+        let blocked = self.unskippable || !input.contains(skip_hit_rate_text);
 
-        if miss && !bypass {
+        if miss && blocked {
             tracing::info!("Miss `{}` {} {}", self.name, message_link, now);
             return None;
         }
