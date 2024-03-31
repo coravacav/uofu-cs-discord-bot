@@ -33,7 +33,8 @@ async fn main() -> Result<()> {
         .init();
 
     let args = Args::parse();
-    let token = std::env::var("DISCORD_TOKEN").context("Expected a discord token")?;
+    let token =
+        std::env::var("DISCORD_TOKEN").context("Expected a discord token environment variable")?;
     let config = config::Config::create_from_file(&args.config).context("Failed to load config")?;
 
     let framework = create_framework(config).await;

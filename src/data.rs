@@ -7,6 +7,7 @@ use std::{path::Path, sync::Arc};
 use tokio::sync::RwLock;
 use tracing::{event, Level};
 
+#[derive(Debug)]
 pub struct AppState {
     pub config: Arc<RwLock<Config>>,
 }

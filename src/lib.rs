@@ -23,6 +23,13 @@ pub async fn create_framework(config: Config) -> Result<poise::FrameworkBuilder<
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(ctx, event, framework, data))
             },
+            on_error: |error| {
+                async fn on_error(error: poise::FrameworkError<'_, AppState, Error>) {
+                    tracing::error!("Error: {:?}", error);
+                }
+
+                Box::pin(on_error(error))
+            },
             ..Default::default()
         })
         .setup(|ctx, _ready, framework| {
