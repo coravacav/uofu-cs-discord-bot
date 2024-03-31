@@ -70,16 +70,6 @@ pub async fn create_class_category(
         .await
         .context("Couldn't create general channel")?;
 
-    guild
-        .create_channel(
-            ctx,
-            serenity::CreateChannel::new(format!("{}-assignment-discussion", number_string))
-                .kind(ChannelType::Text)
-                .category(category.id),
-        )
-        .await
-        .context("Couldn't create assignment discussion channel")?;
-
     ctx.say("Success!").await?;
     Ok(())
 }
