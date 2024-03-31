@@ -62,7 +62,7 @@ pub async fn timeout(
     }
 
     if let Some(true) = announce {
-        if time < std::time::Duration::from_secs(1) {
+        if time < std::time::Duration::from_secs(5) {
             return Ok(());
         }
 
