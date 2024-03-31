@@ -62,6 +62,10 @@ pub async fn timeout(
     }
 
     if let Some(true) = announce {
+        if time < std::time::Duration::from_secs(1) {
+            return Ok(());
+        }
+
         let reply_handle = ctx
             .say(format!(
                 "{} has timed themselves out. They will return <t:{}:R>",
