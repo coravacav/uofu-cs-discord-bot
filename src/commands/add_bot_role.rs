@@ -5,7 +5,7 @@ use poise::serenity_prelude::RoleId;
 #[poise::command(slash_command, prefix_command, rename = "reactme")]
 pub async fn add_bot_role(ctx: PoiseContext<'_>) -> Result<()> {
     let author = ctx.author();
-    let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.clone();
+    let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
     let role_id = RoleId::from(ctx.data().config.read().await.bot_react_role_id);
 
     guild

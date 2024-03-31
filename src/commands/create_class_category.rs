@@ -8,7 +8,7 @@ pub async fn create_class_category(
     ctx: PoiseContext<'_>,
     #[description = "The class number, eg. for CS2420 put in \"2420\""] number: u32,
 ) -> Result<()> {
-    let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.clone();
+    let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
     let channels = guild.channels(ctx).await?;
 
     let number_string = number.to_string();
@@ -43,7 +43,7 @@ pub async fn create_class_category(
                     PermissionOverwrite {
                         allow: Permissions::empty(),
                         deny: Permissions::all(),
-                        kind: PermissionOverwriteType::Role(guild.id.everyone_role()),
+                        kind: PermissionOverwriteType::Role(guild.everyone_role()),
                     },
                 ]),
         )
