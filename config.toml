@@ -8,7 +8,7 @@ skip_duration_text = "HIT ME BABY ONE MORE TIME"
 [[starboards]]
 all_emotes = true
 channel_id = 1171176750819053589
-reaction_count = 5
+reaction_count = 6
 ignored_channel_ids = [
     1103414812312088677,
     1187117571267371102,
@@ -28,6 +28,15 @@ content = [
     "RUST MENTIONED :crab: :crab: :crab:",
     "<@216767618923757568>",
     "Rust is simply the best programming language. Nothing else can compare. I am naming my kids Rust and Ferris.",
+]
+
+[[responses]]
+name = "physics"
+ruleset = '''
+r (?i)\bphysics
+'''
+content = [
+    "<@237717840818470913>",
 ]
 
 [[responses]]
