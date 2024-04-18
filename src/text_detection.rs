@@ -1,5 +1,5 @@
 use crate::{config::ReactRole, data::AppState};
-use color_eyre::eyre::{Context, OptionExt, Result};
+use color_eyre::eyre::{OptionExt, Result, WrapErr};
 use poise::serenity_prelude::{self as serenity};
 use serenity::Message;
 
@@ -48,7 +48,7 @@ pub async fn text_detection(
             bot_react_role_id,
         )
         .await
-        .context("Couldn't get roles")?;
+        .wrap_err("Couldn't get roles")?;
 
     data.config
         .write()

@@ -1,5 +1,5 @@
 use crate::data::PoiseContext;
-use color_eyre::eyre::{Context, ContextCompat, Result};
+use color_eyre::eyre::{ContextCompat, Result, WrapErr};
 use poise::{
     serenity_prelude::{self as serenity, Mentionable},
     CreateReply,
@@ -30,7 +30,7 @@ pub async fn timeout(
 
     let timeout_end = chrono::Utc::now() + time;
 
-    let guild_id = ctx.guild_id().context("No guild ID?")?;
+    let guild_id = ctx.guild_id().wrap_err("No guild ID?")?;
 
     let Ok(_) = guild_id
         .edit_member(
@@ -39,7 +39,7 @@ pub async fn timeout(
             serenity::EditMember::new().disable_communication_until(timeout_end.to_rfc3339()),
         )
         .await
-        .context("Failed to edit member")
+        .wrap_err("Failed to edit member")
     else {
         ctx.say("Failed to time out! Ur too powerful :(").await?;
         return Ok(());
@@ -95,7 +95,7 @@ pub async fn timeout(
     reply_handle
         .delete(ctx)
         .await
-        .context("Failed to delete message")?;
+        .wrap_err("Failed to delete message")?;
 
     Ok(())
 }

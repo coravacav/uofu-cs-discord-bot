@@ -1,5 +1,5 @@
 use crate::data::PoiseContext;
-use color_eyre::eyre::{Context, OptionExt, Result};
+use color_eyre::eyre::{OptionExt, Result, WrapErr};
 use poise::serenity_prelude::RoleId;
 
 #[poise::command(slash_command, prefix_command, rename = "ignoreme")]
@@ -11,10 +11,10 @@ pub async fn remove_bot_role(ctx: PoiseContext<'_>) -> Result<()> {
     guild
         .member(ctx, author.id)
         .await
-        .context("Couldn't get member")?
+        .wrap_err("Couldn't get member")?
         .remove_role(ctx, role_id)
         .await
-        .context("Couldn't remove role")?;
+        .wrap_err("Couldn't remove role")?;
 
     {
         let members = &mut ctx

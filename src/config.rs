@@ -2,7 +2,7 @@ use crate::lang::ruleset::Ruleset;
 use crate::starboard::Starboard;
 use chrono::{DateTime, Utc};
 use chrono::{Duration, Local};
-use color_eyre::eyre::{Context, Result};
+use color_eyre::eyre::{Result, WrapErr};
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DurationSeconds};
@@ -82,9 +82,9 @@ impl Default for Config {
 impl Config {
     /// Fetches the config from the config file in the root directory.
     pub fn create_from_file(config_path: &str) -> Result<Config> {
-        let file = std::fs::read_to_string(config_path).context("Could not read config file")?;
+        let file = std::fs::read_to_string(config_path).wrap_err("Could not read config file")?;
 
-        let config = toml::from_str(&file).context("Could not parse config file")?;
+        let config = toml::from_str(&file).wrap_err("Could not parse config file")?;
 
         Ok(Config {
             config_path: config_path.to_owned(),
@@ -100,9 +100,9 @@ impl Config {
     }
 
     pub fn save(&self) -> Result<()> {
-        let toml = toml::to_string(&self).context("Could not serialize config")?;
+        let toml = toml::to_string(&self).wrap_err("Could not serialize config")?;
 
-        std::fs::write(&self.config_path, toml).context("Could not save config")
+        std::fs::write(&self.config_path, toml).wrap_err("Could not save config")
     }
 }
 

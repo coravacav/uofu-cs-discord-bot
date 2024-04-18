@@ -1,5 +1,5 @@
 use crate::data::PoiseContext;
-use color_eyre::eyre::{Context, OptionExt, Result};
+use color_eyre::eyre::{OptionExt, Result, WrapErr};
 use poise::serenity_prelude::RoleId;
 
 #[poise::command(slash_command, prefix_command, rename = "reactme")]
@@ -11,10 +11,10 @@ pub async fn add_bot_role(ctx: PoiseContext<'_>) -> Result<()> {
     guild
         .member(ctx, author.id)
         .await
-        .context("Couldn't get member")?
+        .wrap_err("Couldn't get member")?
         .add_role(ctx, role_id)
         .await
-        .context("Couldn't add role")?;
+        .wrap_err("Couldn't add role")?;
     {
         let members = &mut ctx
             .framework()

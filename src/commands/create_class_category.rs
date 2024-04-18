@@ -1,5 +1,5 @@
 use crate::data::PoiseContext;
-use color_eyre::eyre::{Context, OptionExt, Result};
+use color_eyre::eyre::{OptionExt, Result, WrapErr};
 use poise::serenity_prelude::{self as serenity};
 use serenity::{ChannelType, PermissionOverwrite, PermissionOverwriteType, Permissions};
 
@@ -27,7 +27,7 @@ pub async fn create_class_category(
                 .name(format!("CS {}", number_string)),
         )
         .await
-        .context("Couldn't create role")?;
+        .wrap_err("Couldn't create role")?;
 
     let category = guild
         .create_channel(
@@ -48,7 +48,7 @@ pub async fn create_class_category(
                 ]),
         )
         .await
-        .context("Couldn't create category")?;
+        .wrap_err("Couldn't create category")?;
 
     guild
         .create_channel(
@@ -58,7 +58,7 @@ pub async fn create_class_category(
                 .category(category.id),
         )
         .await
-        .context("Couldn't create resources channel")?;
+        .wrap_err("Couldn't create resources channel")?;
 
     guild
         .create_channel(
@@ -68,7 +68,7 @@ pub async fn create_class_category(
                 .category(category.id),
         )
         .await
-        .context("Couldn't create general channel")?;
+        .wrap_err("Couldn't create general channel")?;
 
     ctx.say("Success!").await?;
     Ok(())

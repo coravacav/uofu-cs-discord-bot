@@ -1,5 +1,5 @@
 use clap::Parser;
-use color_eyre::eyre::{bail, Context, Result};
+use color_eyre::eyre::{bail, Result, WrapErr};
 use dotenvy::dotenv;
 use poise::serenity_prelude as serenity;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -20,7 +20,7 @@ pub struct Args {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    dotenv().context("Failed to load .env file")?;
+    dotenv().wrap_err("Failed to load .env file")?;
     color_eyre::install()?;
 
     tracing_subscriber::fmt()
@@ -34,8 +34,9 @@ async fn main() -> Result<()> {
 
     let args = Args::parse();
     let token =
-        std::env::var("DISCORD_TOKEN").context("Expected a discord token environment variable")?;
-    let config = config::Config::create_from_file(&args.config).context("Failed to load config")?;
+        std::env::var("DISCORD_TOKEN").wrap_err("Expected a discord token environment variable")?;
+    let config =
+        config::Config::create_from_file(&args.config).wrap_err("Failed to load config")?;
 
     let framework = create_framework(config).await;
 
@@ -62,8 +63,8 @@ async fn main() -> Result<()> {
     tracing::info!("Starting bot");
 
     client
-        .context("Failed to start bot (serenity)")?
+        .wrap_err("Failed to start bot (serenity)")?
         .start()
         .await
-        .context("Failed to start bot (startup)")
+        .wrap_err("Failed to start bot (startup)")
 }
