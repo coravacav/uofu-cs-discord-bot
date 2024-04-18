@@ -19,15 +19,31 @@ struct Course {
 
 // For now we are only going to fetch the data once at the start of the bot.
 static COURSES: OnceLock<CourseList> = OnceLock::new();
+const U_OF_U_COURSE_API_ID: &str = "6529bbfa1170af001cdefde1";
 
 #[poise::command(slash_command, prefix_command, rename = "catalog")]
 pub async fn course_catalog(ctx: PoiseContext<'_>, course_id: String) -> Result<()> {
     ctx.defer().await?;
 
+    let mut course_id = course_id
+        .to_lowercase()
+        .chars()
+        .filter(|c| c.is_alphanumeric())
+        .collect::<String>();
+
+    if course_id.is_empty() {
+        ctx.reply("Please provide a valid course id").await?;
+        return Ok(());
+    }
+
+    if course_id.chars().next().unwrap().is_numeric() {
+        course_id = format!("cs{}", course_id);
+    }
+
     let courses = COURSES.get_or_init(|| {
-        reqwest::blocking::get(
-            "https://utah.kuali.co/api/v1/catalog/courses/6529bbfa1170af001cdefde1",
-        )
+        reqwest::blocking::get(format!(
+            "https://utah.kuali.co/api/v1/catalog/courses/{U_OF_U_COURSE_API_ID}"
+        ))
         .map(|body| body.json().unwrap_or_default())
         .unwrap_or_default()
     });
@@ -41,9 +57,10 @@ pub async fn course_catalog(ctx: PoiseContext<'_>, course_id: String) -> Result<
     let Some(course) = courses
         .0
         .iter()
-        .find(|course| course.course_id == course_id)
+        .find(|course| course.course_id.to_lowercase() == course_id)
     else {
-        ctx.reply("Could not find a course with that id!").await?;
+        ctx.reply(format!("Could not find a course with id {}", course_id))
+            .await?;
         return Ok(());
     };
 
@@ -54,6 +71,11 @@ pub async fn course_catalog(ctx: PoiseContext<'_>, course_id: String) -> Result<
             .embed(
                 serenity::CreateEmbed::new()
                     .title(format!("{} - {}", course.course_id, course.title))
+                    .description(
+                        get_description(&course.pid)
+                            .await
+                            .unwrap_or(String::from("Could not get description")),
+                    )
                     .url(course_url),
             )
             .reply(true),
@@ -61,4 +83,26 @@ pub async fn course_catalog(ctx: PoiseContext<'_>, course_id: String) -> Result<
     .await?;
 
     Ok(())
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[non_exhaustive]
+struct CourseInformation {
+    description: String,
+}
+
+async fn get_description(course_pid: &str) -> Result<String> {
+    let data_url = format!(
+        "https://utah.kuali.co/api/v1/catalog/course/{}/{}",
+        U_OF_U_COURSE_API_ID, course_pid
+    );
+
+    dbg!(&data_url);
+
+    let course_data: CourseInformation = reqwest::get(data_url).await?.json().await?;
+
+    let description = course_data.description;
+
+    Ok(description.to_string())
 }
