@@ -1,4 +1,4 @@
-use crate::data::PoiseContext;
+use crate::{data::PoiseContext, utils::GetRelativeTimestamp};
 use color_eyre::eyre::{ContextCompat, Result, WrapErr};
 use poise::{
     serenity_prelude::{self as serenity, Mentionable},
@@ -65,13 +65,14 @@ pub async fn timeout(
         return Ok(());
     }
 
+    // Skip the notification if the timeout is less than 3 seconds to avoid flickering
     if time < std::time::Duration::from_secs(3) {
         return Ok(());
     }
 
     let reply_handle = ctx
         .say(format!(
-            "{} has timed themselves out. They will return <t:{}:R>",
+            "{} has timed themselves out. They will return {}",
             author.mention(),
             // Snippet to get nick < global name < name
             // guild_id
@@ -84,7 +85,7 @@ pub async fn timeout(
             //             .clone()
             //             .unwrap_or_else(|| author.name.clone())
             //     }),
-            timeout_end.timestamp()
+            timeout_end.discord_relative_timestamp(),
         ))
         .await?;
 

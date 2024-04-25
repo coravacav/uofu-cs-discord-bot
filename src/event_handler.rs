@@ -1,6 +1,10 @@
-use crate::{data::AppState, handle_starboards::handle_starboards, text_detection::text_detection};
+use crate::{
+    commands::lynch::handle_lynching, data::AppState, handle_starboards::handle_starboards,
+    text_detection::text_detection,
+};
 use color_eyre::eyre::{Error, Result};
 use poise::serenity_prelude as serenity;
+use tap::Pipe;
 
 pub async fn event_handler(
     ctx: &serenity::Context,
@@ -40,7 +44,15 @@ pub async fn event_handler(
                 );
             }
 
-            handle_starboards(ctx, framework.user_data, &message, reaction).await
+            tokio::join!(
+                handle_lynching(ctx, &message),
+                handle_starboards(ctx, framework.user_data, &message, reaction)
+            )
+            .pipe(|(err1, err2)| match (err1, err2) {
+                (Err(e), _) => Err(e),
+                (_, Err(e)) => Err(e),
+                _ => Ok(()),
+            })
         }
         serenity::FullEvent::Ratelimit { data } => {
             tracing::warn!("Ratelimited: {:?}", data);

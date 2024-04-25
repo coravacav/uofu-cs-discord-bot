@@ -48,7 +48,7 @@ impl Default for Starboard {
 }
 
 impl Starboard {
-    #[tracing::instrument(skip(self, ctx, message), fields(message_link = %message.link()))]
+    #[tracing::instrument(level = "trace", skip(self, ctx, message), fields(message_link = %message.link()))]
     pub async fn does_starboard_apply(
         &self,
         ctx: &serenity::Context,
@@ -61,10 +61,11 @@ impl Starboard {
             && self.is_channel_allowed(message.channel_id.into())
             && self.is_emote_allowed(emote_name)
             && self.is_message_unseen(&message.link())
+            && self.is_message_a_lynch(message).await
             && self.is_channel_missing_reply(ctx, message).await;
 
         let check_msg = if check { "applies" } else { "does not apply" };
-        tracing::info!("starboard {}", check_msg);
+        tracing::trace!("starboard {}", check_msg);
 
         check
     }
@@ -73,7 +74,7 @@ impl Starboard {
         let check = reaction_count >= self.reaction_count;
         let check_text = if check { "enough" } else { "not enough" };
 
-        tracing::info!(
+        tracing::trace!(
             "reaction_count {} is {} (needed {})",
             reaction_count,
             check_text,
@@ -94,7 +95,7 @@ impl Starboard {
 
         let check_text = if check { "new enough" } else { "too old" };
 
-        tracing::info!("message is {}", check_text);
+        tracing::trace!("message is {}", check_text);
 
         check
     }
@@ -107,7 +108,7 @@ impl Starboard {
             .unwrap_or(true);
 
         let check_text = if check { "allowed" } else { "disallowed" };
-        tracing::info!("channel_id {} is {}", channel_id, check_text);
+        tracing::trace!("channel_id {} is {}", channel_id, check_text);
 
         check
     }
@@ -121,7 +122,7 @@ impl Starboard {
         };
 
         let check_text = if check { "allowed" } else { "disallowed" };
-        tracing::info!("emote_name {} is {}", emote_name, check_text);
+        tracing::trace!("emote_name {} is {}", emote_name, check_text);
 
         check
     }
@@ -130,9 +131,16 @@ impl Starboard {
         let check = !self.recently_added_messages.read().contains(message_link);
 
         let check_text = if check { "seen" } else { "unseen" };
-        tracing::info!("message_link {} is {}", message_link, check_text);
+        tracing::trace!("message_link {} is {}", message_link, check_text);
 
         check
+    }
+
+    async fn is_message_a_lynch(&self, message: &serenity::Message) -> bool {
+        use crate::commands::lynch::{LYNCH_KNOWN_MESSAGE_PORTION, LYNCH_MAP};
+
+        !LYNCH_MAP.lock().await.contains_key(&message.id)
+            && !message.content.starts_with(LYNCH_KNOWN_MESSAGE_PORTION)
     }
 
     async fn is_channel_missing_reply(
@@ -161,7 +169,7 @@ impl Starboard {
         let check = !has_already_been_added;
 
         let check_text = if check { "missing" } else { "already added" };
-        tracing::info!("message_link {} is {}", message_link, check_text);
+        tracing::trace!("message_link {} is {}", message_link, check_text);
 
         check
     }

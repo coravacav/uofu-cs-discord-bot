@@ -6,8 +6,10 @@ mod handle_starboards;
 mod lang;
 mod starboard;
 mod text_detection;
+mod utils;
 
 use color_eyre::eyre::{Error, Result};
+use commands::lynch::update_interval;
 use config::Config;
 use data::AppState;
 use event_handler::event_handler;
@@ -34,6 +36,8 @@ pub async fn create_framework(config: Config) -> Result<poise::FrameworkBuilder<
             ..Default::default()
         })
         .setup(|ctx, _ready, framework| {
+            tokio::spawn(async { update_interval().await });
+
             Box::pin(async move {
                 poise::builtins::register_in_guild(
                     ctx,

@@ -98,8 +98,6 @@ async fn get_description(course_pid: &str) -> Result<String> {
         U_OF_U_COURSE_API_ID, course_pid
     );
 
-    dbg!(&data_url);
-
     let course_data: CourseInformation = reqwest::get(data_url).await?.json().await?;
 
     let description = course_data.description;
