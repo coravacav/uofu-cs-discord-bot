@@ -4,3 +4,7 @@ members = [
     "bot",
     "bot-lib"
 ]
+
+[profile.release]
+debug = 0
+incremental = true
