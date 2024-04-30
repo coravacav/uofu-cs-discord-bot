@@ -214,11 +214,11 @@ impl RegisteredResponse {
         let blocked = self.unskippable || !input.contains(skip_hit_rate_text);
 
         if miss && blocked {
-            tracing::info!("Miss `{}` {} {}", self.name, message_link, now);
+            tracing::debug!("Miss `{}` {} {}", self.name, message_link, now);
             return None;
         }
 
-        tracing::info!("Hit `{}` {} {}", self.name, message_link, now);
+        tracing::debug!("Hit `{}` {} {}", self.name, message_link, now);
 
         *last_triggered = Utc::now();
 
