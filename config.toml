@@ -6,7 +6,7 @@ skip_hit_rate_text = "KINGFISHER PLEASE"
 skip_duration_text = "HIT ME BABY ONE MORE TIME"
 
 help_text = """
-[KingFisher](<https://github.com/coravacav/uofu-cs-discord-bot>) is a opportunistic comedian (RNG) that was written in [Rust](<https://doc.rust-lang.org/book/>) (the greatest language) for this server (of nerds).
+[KingFisher](<https://github.com/coravacav/uofu-cs-discord-bot>) is an opportunistic comedian (RNG) that was written in [Rust](<https://doc.rust-lang.org/book/>) (the greatest language) for this server (of nerds).
 ### Commands:
 - `/help`: Display this help message.
 - `/catalog <course_id>`: Get information about a course. Either add a prefix like MATH2240 or CS will be assumed.
