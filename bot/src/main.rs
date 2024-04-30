@@ -1,6 +1,19 @@
-use bot_lib::{config, create_framework};
+use bot_lib::{
+    commands::{
+        add_bot_role::add_bot_role,
+        course_catalog::course_catalog,
+        create_class_category::create_class_category,
+        lynch::{lynch, update_interval},
+        register::register,
+        remove_bot_role::remove_bot_role,
+        timeout::timeout,
+    },
+    config,
+    data::AppState,
+    event_handler::event_handler,
+};
 use clap::Parser;
-use color_eyre::eyre::{bail, Result, WrapErr};
+use color_eyre::eyre::{Result, WrapErr};
 use dotenvy::dotenv;
 use poise::serenity_prelude as serenity;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -38,11 +51,44 @@ async fn main() -> Result<()> {
     let config =
         config::Config::create_from_file(&args.config).wrap_err("Failed to load config")?;
 
-    let framework = create_framework(config).await;
+    let framework = poise::Framework::builder()
+        .options(poise::FrameworkOptions {
+            commands: vec![
+                add_bot_role(),
+                create_class_category(),
+                course_catalog(),
+                register(),
+                remove_bot_role(),
+                timeout(),
+                lynch(),
+            ],
+            event_handler: |ctx, event, framework, data| {
+                Box::pin(event_handler(ctx, event, framework, data))
+            },
+            on_error: |error| {
+                async fn on_error(
+                    error: poise::FrameworkError<'_, AppState, color_eyre::eyre::Error>,
+                ) {
+                    tracing::error!("{}", error);
+                }
 
-    let Ok(framework) = framework else {
-        bail!("Failed to create framework");
-    };
+                Box::pin(on_error(error))
+            },
+            ..Default::default()
+        })
+        .setup(|ctx, _ready, framework| {
+            tokio::spawn(async { update_interval().await });
+
+            Box::pin(async move {
+                poise::builtins::register_in_guild(
+                    ctx,
+                    &framework.options().commands,
+                    serenity::GuildId::from(config.guild_id),
+                )
+                .await?;
+                Ok(AppState::new(config))
+            })
+        });
 
     let client = serenity::ClientBuilder::new(
         token,
