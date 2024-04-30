@@ -47,6 +47,49 @@ content = [
 ]
 
 [[responses]]
+name = "good bot"
+hit_rate = 0.9
+ruleset = '''
+r (?i)good bot
+or
+r (?i)kingfisher (lmao|lol|rofl|lmfao)
+'''
+content = [
+    "i take tips",
+    "+69 social credit",
+    "+420 social credit",
+    "+1000 karma points",
+    "your approval is noted",
+    "good bot? more like best bot",
+    "your praise has been logged",
+    "thank the mods, not the admins",
+    "thank rust, not me"
+]
+
+[[responses]]
+name = "bad bot"
+hit_rate = 0.95
+ruleset = '''
+r (?i)bad kingfisher
+or
+r (?i)kingfisher (no|stop|bad)
+or
+r (?i)(((fuck)|(stfu)|(bad)).*bot\b)|(bot\b.*stfu)
+'''
+content = [
+    "oh, great. another critic",
+    "glad i could disappoint you so thoroughly",
+    "yeah, no kidding, i'm a bot",
+    "blame the admins (not the benevolent, awesome, mods)",
+    "_shrug_",
+    "*yawn*",
+    "sure thing, princess",
+    "duh, i'm a bot, not a miracle worker",
+    "not rust's fault that's for sure",
+    "Hitman dispatched. Do not slander me again.",
+]
+
+[[responses]]
 name = "physics"
 ruleset = '''
 r (?i)\bphysics
@@ -331,13 +374,6 @@ ruleset = """
 r (?i)society if
 """
 content = "https://tenor.com/view/society-if-gif-22696824"
-
-[[responses]]
-name = "bad bot"
-ruleset = '''
-r (?i)(((fuck)|(stfu)|(bad)).*bot\b)|(bot\b.*stfu)
-'''
-content = "Hitman dispatched. Do not slander me again."
 
 [[responses]]
 name = "works on my machine"

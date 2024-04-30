@@ -198,7 +198,7 @@ impl RegisteredResponse {
         let blocked = !input.contains(skip_duration_text);
 
         if !allowed && blocked {
-            tracing::info!(
+            tracing::debug!(
                 "Cooldown `{}` {} remaining {}",
                 self.name,
                 message_link,
