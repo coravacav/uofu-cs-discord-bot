@@ -1,9 +1,9 @@
+use bot_lib::{config, create_framework};
 use clap::Parser;
 use color_eyre::eyre::{bail, Result, WrapErr};
 use dotenvy::dotenv;
 use poise::serenity_prelude as serenity;
 use tracing_subscriber::util::SubscriberInitExt;
-use uofu_cs_discord_bot::{config, create_framework};
 
 /// The cli arguments for the bot
 #[derive(Parser, Debug)]

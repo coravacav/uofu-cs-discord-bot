@@ -164,6 +164,51 @@ dependencies = [
 ]
 
 [[package]]
+name = "bot"
+version = "0.1.0"
+dependencies = [
+ "bot-lib",
+ "clap",
+ "color-eyre",
+ "dotenvy",
+ "poise",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "bot-lib"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "color-eyre",
+ "colored",
+ "dashmap",
+ "emojis",
+ "fundu",
+ "futures",
+ "itertools",
+ "lazy_static",
+ "nom",
+ "notify",
+ "parking_lot",
+ "poise",
+ "rand",
+ "regex",
+ "reqwest 0.12.3",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "tap",
+ "tokio",
+ "tokio-stream",
+ "toml",
+ "tracing",
+ "tracing-log",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2579,40 +2624,6 @@ name = "untrusted"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
-
-[[package]]
-name = "uofu-cs-discord-bot"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "clap",
- "color-eyre",
- "colored",
- "dashmap",
- "dotenvy",
- "emojis",
- "fundu",
- "futures",
- "itertools",
- "lazy_static",
- "nom",
- "notify",
- "parking_lot",
- "poise",
- "rand",
- "regex",
- "reqwest 0.12.3",
- "serde",
- "serde_json",
- "serde_with",
- "tap",
- "tokio",
- "tokio-stream",
- "toml",
- "tracing",
- "tracing-log",
- "tracing-subscriber",
-]
 
 [[package]]
 name = "url"
