@@ -5,6 +5,19 @@ guild_id = 1065373537591894086
 skip_hit_rate_text = "KINGFISHER PLEASE"
 skip_duration_text = "HIT ME BABY ONE MORE TIME"
 
+help_text = """
+[KingFisher](<https://github.com/coravacav/uofu-cs-discord-bot>) is a opportunistic comedian (RNG) that was written in [Rust](<https://doc.rust-lang.org/book/>) (the greatest language) for this server (of nerds).
+### Commands:
+- `/help`: Display this help message.
+- `/catalog <course_id>`: Get information about a course. Either add a prefix like MATH2240 or CS will be assumed.
+- `/reactme`: Allow KingFisher automatic reactions to reply to your messages (including luck)
+- `/ignoreme`: Disallow KingFisher automatic reactions to reply to your messages
+- `/lynch <user>`: Lynch a user with the Bot React role. 6 yays or nays needed, yay for them, nay for you. You have 90 seconds.
+- `/timeout <duration>`: Timeout yourself for a parsable duration (e.g. 1d, 1h, 1m). Discord sets a limit at 4 weeks.
+
+KingFisher also sometimes really likes to react to messages. That's why he replies sometimes (21% rate, unless you're pinging Stefan or typing "luck").
+"""
+
 [[starboards]]
 all_emotes = true
 channel_id = 1171176750819053589
@@ -38,6 +51,15 @@ r (?i)\bphysics
 '''
 content = [
     "<@237717840818470913>",
+]
+
+[[responses]]
+name = "india"
+ruleset = '''
+r (?i)\bindia
+'''
+content = [
+    "<@444895960577998860>",
 ]
 
 [[responses]]

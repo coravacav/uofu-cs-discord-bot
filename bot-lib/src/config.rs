@@ -27,6 +27,8 @@ pub struct Config {
     pub starboards: Vec<Arc<Starboard>>,
     /// The id of the guild the bot is in.
     pub guild_id: u64,
+    /// The help text for the bot. `/help`
+    pub help_text: Option<Arc<String>>,
     /// The role id of the bot react role.
     pub bot_react_role_id: u64,
     /// What possible replies kingfisher can make.
@@ -69,6 +71,7 @@ impl Default for Config {
             starboards: vec![],
             guild_id: 0,
             skip_duration_text: "".to_owned(),
+            help_text: None,
             bot_react_role_id: 0,
             responses: vec![],
             default_hit_rate: 1.,

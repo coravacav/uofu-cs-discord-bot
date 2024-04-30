@@ -3,6 +3,7 @@ use bot_lib::{
         add_bot_role::add_bot_role,
         course_catalog::course_catalog,
         create_class_category::create_class_category,
+        help::help,
         lynch::{lynch, update_interval},
         register::register,
         remove_bot_role::remove_bot_role,
@@ -55,6 +56,7 @@ async fn main() -> Result<()> {
         .options(poise::FrameworkOptions {
             commands: vec![
                 add_bot_role(),
+                help(),
                 create_class_category(),
                 course_catalog(),
                 register(),
