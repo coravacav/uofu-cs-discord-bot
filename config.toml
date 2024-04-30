@@ -16,6 +16,8 @@ help_text = """
 - `/timeout <duration>`: Timeout yourself for a parsable duration (e.g. 1d, 1h, 1m). Discord sets a limit at 4 weeks.
 
 KingFisher also sometimes really likes to react to messages. That's why he replies sometimes (21% rate, unless you're pinging Stefan or typing "luck").
+
+There is a way to force KingFisher to reply to a message. Add "KINGFISHER PLEASE" somewhere in the message to bypass the % chance. Add "HIT ME BABY ONE MORE TIME" to bypass the cooldown.
 """
 
 [[starboards]]
