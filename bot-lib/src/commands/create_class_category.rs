@@ -1,7 +1,9 @@
 use crate::data::PoiseContext;
 use color_eyre::eyre::{OptionExt, Result, WrapErr};
 use poise::serenity_prelude::{self as serenity};
-use serenity::{ChannelType, PermissionOverwrite, PermissionOverwriteType, Permissions};
+use serenity::{ChannelType, PermissionOverwrite, PermissionOverwriteType, Permissions, RoleId};
+
+const MOD_ROLE_ID: RoleId = RoleId::new(1192863993883279532);
 
 #[poise::command(slash_command, required_permissions = "MANAGE_CHANNELS")]
 pub async fn create_class_category(
@@ -39,6 +41,11 @@ pub async fn create_class_category(
                         allow: Permissions::VIEW_CHANNEL,
                         deny: Permissions::empty(),
                         kind: PermissionOverwriteType::Role(role.id),
+                    },
+                    PermissionOverwrite {
+                        allow: Permissions::VIEW_CHANNEL,
+                        deny: Permissions::empty(),
+                        kind: PermissionOverwriteType::Role(MOD_ROLE_ID),
                     },
                     PermissionOverwrite {
                         allow: Permissions::empty(),
