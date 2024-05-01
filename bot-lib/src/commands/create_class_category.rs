@@ -42,7 +42,7 @@ pub async fn create_class_category(
                     },
                     PermissionOverwrite {
                         allow: Permissions::empty(),
-                        deny: Permissions::all(),
+                        deny: Permissions::VIEW_CHANNEL,
                         kind: PermissionOverwriteType::Role(guild.everyone_role()),
                     },
                 ]),
