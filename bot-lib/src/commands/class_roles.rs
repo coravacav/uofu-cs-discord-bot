@@ -1,7 +1,7 @@
 use crate::data::PoiseContext;
 use color_eyre::eyre::{OptionExt, Result, WrapErr};
 
-#[poise::command(slash_command, prefix_command, rename = "join_class")]
+#[poise::command(slash_command, prefix_command, rename = "join_class", ephemeral = true)]
 pub async fn add_class_role(
     ctx: PoiseContext<'_>,
     #[description = "The class number, eg. for CS2420 put in \"2420\""] number: u32,
@@ -11,7 +11,7 @@ pub async fn add_class_role(
     let roles = guild.roles(ctx).await?;
 
     let role_name = format!("CS {}", number);
-    let Some((role_id, _role)) = roles.iter().find(|x| x.1.name.contains(&role_name)) else {
+    let Some((role_id, _)) = roles.iter().find(|x| x.1.name.contains(&role_name)) else {
         ctx.say("Couldn't find the class!").await?;
         return Ok(());
     };
@@ -29,7 +29,7 @@ pub async fn add_class_role(
     Ok(())
 }
 
-#[poise::command(slash_command, prefix_command, rename = "leave_class")]
+#[poise::command(slash_command, prefix_command, rename = "leave_class", ephemeral = true)]
 pub async fn remove_class_role(
     ctx: PoiseContext<'_>,
     #[description = "The class number, eg. for CS2420 put in \"2420\""] number: u32,
@@ -39,7 +39,7 @@ pub async fn remove_class_role(
     let roles = guild.roles(ctx).await?;
 
     let role_name = format!("CS {}", number);
-    let Some((role_id, _role)) = roles.iter().find(|x| x.1.name.contains(&role_name)) else {
+    let Some((role_id, _)) = roles.iter().find(|x| x.1.name.contains(&role_name)) else {
         ctx.say("Couldn't find the class!").await?;
         return Ok(());
     };

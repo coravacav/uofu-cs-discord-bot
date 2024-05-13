@@ -31,7 +31,7 @@ pub async fn delete_class_category(
         }
     });
 
-    let Some((role_id, _role)) = roles.iter().find(|x| x.1.name.contains(&category_and_role_name)) else {
+    let Some((role_id, _)) = roles.iter().find(|x| x.1.name.contains(&category_and_role_name)) else {
         ctx.say("Couldn't find the role!").await?;
         return Ok(());
     };

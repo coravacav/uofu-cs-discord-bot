@@ -2,7 +2,7 @@ use crate::data::PoiseContext;
 use color_eyre::eyre::{OptionExt, Result, WrapErr};
 use poise::serenity_prelude::{self as serenity};
 use regex::Regex;
-use serenity::{ChannelType};
+use serenity::ChannelType;
 
 pub async fn reset_class_category_backend(ctx: PoiseContext<'_>, number: u32) -> Result<()> {
     let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
