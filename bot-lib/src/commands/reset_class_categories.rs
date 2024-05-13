@@ -1,7 +1,7 @@
 use crate::data::PoiseContext;
 use color_eyre::eyre::{OptionExt, Result, WrapErr};
-use poise::serenity_prelude::{self as serenity, ChannelId, GuildChannel};
-use serenity::{ChannelType, PermissionOverwrite, PermissionOverwriteType, Permissions, RoleId};
+use poise::serenity_prelude::{self as serenity};
+use serenity::{ChannelType, RoleId};
 use regex::Regex;
 
 const MOD_ROLE_ID: RoleId = RoleId::new(1192863993883279532);
@@ -15,7 +15,7 @@ pub async fn reset_class_category_backend(
 
     let number_string = number.to_string();
     let general_channel_name = number_string + "-general";
-    let Some ((general_channel_id, general_channel)) = channels.iter().find(|x| {
+    let Some ((_general_channel_id, general_channel)) = channels.iter().find(|x| {
         x.1.name.contains(&general_channel_name)
     }) else {ctx.say("Couldn't find the general channel!").await?; return Ok(());};
 
