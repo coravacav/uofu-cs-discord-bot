@@ -3,6 +3,7 @@ use bot_lib::{
         add_bot_role::add_bot_role,
         course_catalog::course_catalog,
         create_class_category::create_class_category,
+        delete_class_category::delete_class_category,
         reset_class_categories::{reset_class_category, reset_class_categories},
         help::help,
         lynch::{lynch, update_interval},
@@ -66,6 +67,7 @@ async fn main() -> Result<()> {
                 lynch(),
                 reset_class_category(),
                 reset_class_categories(),
+                delete_class_category(),
             ],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(ctx, event, framework, data))
