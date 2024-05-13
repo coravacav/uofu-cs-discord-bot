@@ -23,26 +23,6 @@ pub async fn add_class_role(
         .add_role(ctx, role_id)
         .await
         .wrap_err("Couldn't add role")?;
-    {
-        let members = &mut ctx
-            .framework()
-            .user_data
-            .config
-            .write()
-            .await
-            .bot_react_role_members;
-
-        let author_id = author.id.into();
-
-        members.retain(
-            |member| matches!(member, crate::config::ReactRole { user_id, .. } if user_id != &author_id),
-        );
-
-        members.push(crate::config::ReactRole {
-            user_id: author_id,
-            react: true,
-        });
-    }
 
     ctx.say("Joined class!").await?;
 
@@ -71,27 +51,6 @@ pub async fn remove_class_role(
         .remove_role(ctx, role_id)
         .await
         .wrap_err("Couldn't remove role")?;
-
-    {
-        let members = &mut ctx
-            .framework()
-            .user_data
-            .config
-            .write()
-            .await
-            .bot_react_role_members;
-
-        let author_id = author.id.into();
-
-        members.retain(
-            |member| matches!(member, crate::config::ReactRole { user_id, .. } if user_id != &author_id),
-        );
-
-        members.push(crate::config::ReactRole {
-            user_id: author_id,
-            react: false,
-        });
-    }
 
     ctx.say("Left class!").await?;
 

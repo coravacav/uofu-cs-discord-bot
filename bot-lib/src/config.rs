@@ -64,6 +64,7 @@ impl PartialEq for Config {
             && self.default_hit_rate == other.default_hit_rate
             && self.skip_hit_rate_text == other.skip_hit_rate_text
             && self.config_path == other.config_path
+            && self.class_categories == other.class_categories
     }
 }
 
