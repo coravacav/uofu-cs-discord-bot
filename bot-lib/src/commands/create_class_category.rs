@@ -8,6 +8,7 @@ const MOD_ROLE_ID: RoleId = RoleId::new(1192863993883279532);
 #[poise::command(
     slash_command,
     required_permissions = "MANAGE_CHANNELS",
+    description_localized("en-US", "Creates a class category")
 )]
 pub async fn create_class_category(
     ctx: PoiseContext<'_>,

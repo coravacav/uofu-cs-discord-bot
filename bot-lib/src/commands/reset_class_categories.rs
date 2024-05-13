@@ -58,6 +58,10 @@ pub async fn reset_class_category_backend(ctx: PoiseContext<'_>, number: u32) ->
 #[poise::command(
     slash_command,
     required_permissions = "MANAGE_CHANNELS",
+    description_localized(
+        "en-US",
+        "Resets a class category (clears the general channel, removes the role from everyone)"
+    )
 )]
 pub async fn reset_class_category(
     ctx: PoiseContext<'_>,
@@ -71,6 +75,7 @@ pub async fn reset_class_category(
 #[poise::command(
     slash_command,
     required_permissions = "MANAGE_CHANNELS",
+    description_localized("en-US", "Resets all class categories")
 )]
 pub async fn reset_class_categories(ctx: PoiseContext<'_>) -> Result<()> {
     let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
