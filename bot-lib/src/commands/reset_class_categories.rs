@@ -42,11 +42,11 @@ pub async fn reset_class_category_backend(ctx: PoiseContext<'_>, number: u32) ->
         .await
         .wrap_err("Couldn't create general channel")?;
 
-    let memebrs_with_role = members
+    let members_with_role = members
         .iter()
         .filter(|member| member.roles.contains(role_id));
 
-    for member in memebrs_with_role {
+    for member in members_with_role {
         member.remove_role(ctx, role_id).await?;
     }
 
