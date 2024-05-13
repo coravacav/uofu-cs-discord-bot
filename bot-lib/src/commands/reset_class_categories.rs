@@ -83,7 +83,7 @@ pub async fn reset_class_categories(ctx: PoiseContext<'_>) -> Result<()> {
 
     let removed_categories = channels
         .iter()
-        .map(|channel| (&channel.1.name).to_string())
+        .map(|channel| channel.1.name.to_string())
         .filter(|name| general_channel_pattern.is_match(name))
         .map(|name| {
             name[0..4]

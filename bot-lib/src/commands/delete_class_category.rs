@@ -25,7 +25,7 @@ pub async fn delete_class_category(
         };
 
     let children_channels = channels.iter().filter(|x| {
-        return match x.1.parent_id {
+        match x.1.parent_id {
             Some(parent) => parent.eq(category_channel_id),
             None => false,
         }
