@@ -10,6 +10,7 @@ use bot_lib::{
         register::register,
         remove_bot_role::remove_bot_role,
         timeout::timeout,
+        class_roles::{add_class_role, remove_class_role},
     },
     config,
     data::AppState,
@@ -68,6 +69,8 @@ async fn main() -> Result<()> {
                 reset_class_category(),
                 reset_class_categories(),
                 delete_class_category(),
+                add_class_role(),
+                remove_class_role()
             ],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(ctx, event, framework, data))

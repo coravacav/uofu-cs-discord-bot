@@ -8,3 +8,4 @@ pub mod remove_bot_role;
 pub mod timeout;
 pub mod reset_class_categories;
 pub mod delete_class_category;
+pub mod class_roles;
