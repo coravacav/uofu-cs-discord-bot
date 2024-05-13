@@ -12,12 +12,19 @@ pub async fn reset_class_category_backend(
 ) -> Result<()> {
     let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
     let channels = guild.channels(ctx).await?;
-
+    let roles = guild.roles(ctx).await?;
+    let members  = guild.members(ctx, None, None).await?;
     let number_string = number.to_string();
-    let general_channel_name = number_string + "-general";
+
+    let general_channel_name = format!("{}-general", &number_string);
     let Some ((_general_channel_id, general_channel)) = channels.iter().find(|x| {
         x.1.name.contains(&general_channel_name)
     }) else {ctx.say("Couldn't find the general channel!").await?; return Ok(());};
+
+    let role_name = format!("CS {}", number_string);
+    let Some((role_id, _role)) = roles.iter().find(|x| {
+        x.1.name.contains(&role_name)
+    }) else {ctx.say("Couldn't find the role!").await?; return Ok(());};
 
     let category_id = general_channel.parent_id.expect("Couldn't get category ID!");
 
@@ -32,6 +39,15 @@ pub async fn reset_class_category_backend(
         )
         .await
         .wrap_err("Couldn't create general channel")?;
+
+
+    let memebrs_with_role = members.iter().filter(|member| {
+        member.roles.contains(role_id)
+    });
+
+    for member in memebrs_with_role {
+        member.remove_role(ctx, role_id).await?;
+    }
 
     Ok(())
 }
