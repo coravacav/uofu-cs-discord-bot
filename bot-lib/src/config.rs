@@ -4,10 +4,10 @@ use chrono::{DateTime, Utc};
 use chrono::{Duration, Local};
 use color_eyre::eyre::{Result, WrapErr};
 use parking_lot::Mutex;
+use poise::serenity_prelude::ChannelId;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DurationSeconds};
 use std::sync::Arc;
-use poise::serenity_prelude::ChannelId;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
 pub struct ReactRole {

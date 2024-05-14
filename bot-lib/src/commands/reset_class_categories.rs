@@ -1,4 +1,4 @@
-use crate::commands::find_channels;
+use crate::commands::{get_channels, get_role};
 use crate::data::PoiseContext;
 use color_eyre::eyre::{OptionExt, Result, WrapErr};
 use poise::serenity_prelude::{self as serenity};
@@ -7,17 +7,12 @@ use serenity::ChannelType;
 
 pub async fn reset_class_category_backend(ctx: PoiseContext<'_>, number: u32) -> Result<()> {
     let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
-    let roles = guild.roles(ctx).await?;
     let members = guild.members(ctx, None, None).await?;
 
     let general_channel_name = format!("{}-general", number);
-    let general_channel = &find_channels(ctx, guild, Regex::new(&general_channel_name)?).await?[0];
+    let general_channel = &get_channels(ctx, guild, Regex::new(&general_channel_name)?).await?[0];
 
-    let role_name = format!("CS {}", number);
-    let Some((role_id, _role)) = roles.iter().find(|x| x.1.name.contains(&role_name)) else {
-        ctx.say("Couldn't find the role!").await?;
-        return Ok(());
-    };
+    let role_id = get_role(ctx, number).await?;
 
     let category_id = general_channel
         .parent_id
@@ -37,7 +32,7 @@ pub async fn reset_class_category_backend(ctx: PoiseContext<'_>, number: u32) ->
 
     let members_with_role = members
         .iter()
-        .filter(|member| member.roles.contains(role_id));
+        .filter(|member| member.roles.contains(&role_id));
 
     for member in members_with_role {
         member.remove_role(ctx, role_id).await?;
@@ -70,7 +65,7 @@ pub async fn reset_class_category(
 )]
 pub async fn reset_class_categories(ctx: PoiseContext<'_>) -> Result<()> {
     let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
-    let removed_categories = find_channels(ctx, guild, Regex::new(r"\d{4}-general").unwrap())
+    let removed_categories = get_channels(ctx, guild, Regex::new(r"\d{4}-general").unwrap())
         .await?
         .into_iter()
         .map(|channel| {

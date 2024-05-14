@@ -1,4 +1,4 @@
-use crate::commands::find_channels;
+use crate::commands::{get_channels, get_role};
 use crate::data::PoiseContext;
 use color_eyre::eyre::{OptionExt, Result};
 use regex::Regex;
@@ -14,11 +14,10 @@ pub async fn delete_class_category(
 ) -> Result<()> {
     let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
     let channels = guild.channels(ctx).await?;
-    let roles = guild.roles(ctx).await?;
     let number_string = number.to_string();
 
     let category_and_role_name = format!("CS {}", &number_string);
-    let category_channel = &find_channels(
+    let category_channel = &get_channels(
         ctx,
         guild,
         Regex::new(&format!("^{}$", category_and_role_name))?,
@@ -30,13 +29,7 @@ pub async fn delete_class_category(
         None => false,
     });
 
-    let Some((role_id, _)) = roles
-        .iter()
-        .find(|x| x.1.name.contains(&category_and_role_name))
-    else {
-        ctx.say("Couldn't find the role!").await?;
-        return Ok(());
-    };
+    let role_id = get_role(ctx, number).await?;
 
     category_channel.delete(ctx).await?;
     for channel in children_channels {
