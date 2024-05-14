@@ -14,9 +14,8 @@ pub async fn delete_class_category(
 ) -> Result<()> {
     let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
     let channels = guild.channels(ctx).await?;
-    let number_string = number.to_string();
 
-    let category_and_role_name = format!("CS {}", &number_string);
+    let category_and_role_name = format!("CS {}", number);
     let category_channel = &get_channels(
         ctx,
         guild,
