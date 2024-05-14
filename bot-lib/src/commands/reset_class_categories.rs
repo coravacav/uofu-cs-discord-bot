@@ -1,3 +1,4 @@
+use crate::commands::find_channels;
 use crate::data::PoiseContext;
 use color_eyre::eyre::{OptionExt, Result, WrapErr};
 use poise::serenity_prelude::{self as serenity};
@@ -6,21 +7,13 @@ use serenity::ChannelType;
 
 pub async fn reset_class_category_backend(ctx: PoiseContext<'_>, number: u32) -> Result<()> {
     let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
-    let channels = guild.channels(ctx).await?;
     let roles = guild.roles(ctx).await?;
     let members = guild.members(ctx, None, None).await?;
-    let number_string = number.to_string();
 
-    let general_channel_name = format!("{}-general", &number_string);
-    let Some((_general_channel_id, general_channel)) = channels
-        .iter()
-        .find(|x| x.1.name.contains(&general_channel_name))
-    else {
-        ctx.say("Couldn't find the general channel!").await?;
-        return Ok(());
-    };
+    let general_channel_name = format!("{}-general", number);
+    let general_channel = &find_channels(ctx, guild, Regex::new(&general_channel_name)?).await?[0];
 
-    let role_name = format!("CS {}", number_string);
+    let role_name = format!("CS {}", number);
     let Some((role_id, _role)) = roles.iter().find(|x| x.1.name.contains(&role_name)) else {
         ctx.say("Couldn't find the role!").await?;
         return Ok(());
@@ -77,20 +70,14 @@ pub async fn reset_class_category(
 )]
 pub async fn reset_class_categories(ctx: PoiseContext<'_>) -> Result<()> {
     let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
-    let channels = guild.channels(ctx).await?;
-
-    let general_channel_pattern = Regex::new(r"\d{4}-general").unwrap();
-
-    let removed_categories = channels
-        .iter()
-        .map(|channel| channel.1.name.to_string())
-        .filter(|name| general_channel_pattern.is_match(name))
-        .map(|name| {
-            name[0..4]
+    let removed_categories = find_channels(ctx, guild, Regex::new(r"\d{4}-general").unwrap())
+        .await?
+        .into_iter()
+        .map(|channel| {
+            channel.name[0..4]
                 .parse::<u32>()
                 .expect("Parse error on class category name")
-        })
-        .collect::<Vec<u32>>();
+        });
 
     for category in removed_categories {
         reset_class_category_backend(ctx, category).await?;

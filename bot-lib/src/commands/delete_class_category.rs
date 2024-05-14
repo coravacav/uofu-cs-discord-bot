@@ -1,5 +1,7 @@
+use crate::commands::find_channels;
 use crate::data::PoiseContext;
 use color_eyre::eyre::{OptionExt, Result};
+use regex::Regex;
 
 #[poise::command(
     slash_command,
@@ -16,22 +18,22 @@ pub async fn delete_class_category(
     let number_string = number.to_string();
 
     let category_and_role_name = format!("CS {}", &number_string);
-    let Some((category_channel_id, category_channel)) = channels
-        .iter()
-        .find(|x| x.1.name.contains(&category_and_role_name))
-        else {
-            ctx.say("Couldn't find the category!").await?;
-            return Ok(());
-        };
+    let category_channel = &find_channels(
+        ctx,
+        guild,
+        Regex::new(&format!("^{}$", category_and_role_name))?,
+    )
+    .await?[0];
 
-    let children_channels = channels.iter().filter(|x| {
-        match x.1.parent_id {
-            Some(parent) => parent.eq(category_channel_id),
-            None => false,
-        }
+    let children_channels = channels.iter().filter(|x| match x.1.parent_id {
+        Some(parent) => parent.eq(&category_channel.id),
+        None => false,
     });
 
-    let Some((role_id, _)) = roles.iter().find(|x| x.1.name.contains(&category_and_role_name)) else {
+    let Some((role_id, _)) = roles
+        .iter()
+        .find(|x| x.1.name.contains(&category_and_role_name))
+    else {
         ctx.say("Couldn't find the role!").await?;
         return Ok(());
     };
@@ -41,7 +43,6 @@ pub async fn delete_class_category(
         channel.1.delete(ctx).await?;
     }
     guild.delete_role(ctx, role_id).await?;
-
 
     ctx.say("Success!").await?;
     Ok(())
