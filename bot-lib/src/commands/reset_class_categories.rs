@@ -10,7 +10,10 @@ pub async fn reset_class_category_backend(ctx: PoiseContext<'_>, number: u32) ->
     let members = guild.members(ctx, None, None).await?;
 
     let general_channel_name = format!("{}-general", number);
-    let general_channel = &get_channels(ctx, guild, Regex::new(&general_channel_name)?).await?[0];
+    let gotten_channels = get_channels(ctx, guild, Regex::new(&general_channel_name)?).await?;
+    let general_channel = gotten_channels
+        .first()
+        .ok_or_eyre("Could not find general channel!")?;
 
     let role_id = get_role(ctx, number).await?;
 
@@ -69,7 +72,10 @@ pub async fn reset_class_categories(ctx: PoiseContext<'_>) -> Result<()> {
         .await?
         .into_iter()
         .map(|channel| {
-            channel.name[0..4]
+            channel
+                .name
+                .get(0..4)
+                .unwrap_or("Intentional parse error")
                 .parse::<u32>()
                 .context("Parse error")
         });

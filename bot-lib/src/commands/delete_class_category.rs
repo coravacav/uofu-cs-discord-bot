@@ -15,18 +15,15 @@ pub async fn delete_class_category(
     let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
     let channels = guild.channels(ctx).await?;
 
-    let category_and_role_name = format!("CS {}", number);
-    let category_channel = &get_channels(
-        ctx,
-        guild,
-        Regex::new(&format!("^{}$", category_and_role_name))?,
-    )
-    .await?[0];
+    let category_regex = format!("^CS {}$", number);
+    let gotten_channels = &get_channels(ctx, guild, Regex::new(&category_regex)?).await?;
+    let category_channel = gotten_channels
+        .first()
+        .ok_or_eyre("Could not find category channel!")?;
 
-    let children_channels = channels.iter().filter(|x| match x.1.parent_id {
-        Some(parent) => parent.eq(&category_channel.id),
-        None => false,
-    });
+    let children_channels = channels
+        .iter()
+        .filter(|x| matches!(x.1.parent_id, Some(parent) if parent.eq(&category_channel.id)));
 
     let role_id = get_role(ctx, number).await?;
 
