@@ -9,7 +9,7 @@ pub async fn reset_class_category_backend(ctx: PoiseContext<'_>, number: u32) ->
     let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
     let members = guild.members(ctx, None, None).await?;
 
-    let general_channel_name = format!("^{}-general$", number);
+    let general_channel_name = format!("{}-general", number);
     let general_channel = &get_channels(ctx, guild, Regex::new(&general_channel_name)?).await?[0];
 
     let role_id = get_role(ctx, number).await?;
@@ -71,11 +71,11 @@ pub async fn reset_class_categories(ctx: PoiseContext<'_>) -> Result<()> {
         .map(|channel| {
             channel.name[0..4]
                 .parse::<u32>()
-                .unwrap_or(0)
+                .context("Parse error")
         });
 
     for category in removed_categories {
-        reset_class_category_backend(ctx, category).await?;
+        reset_class_category_backend(ctx, category?).await?;
     }
 
     ctx.say("Success!").await?;
