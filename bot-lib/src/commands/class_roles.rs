@@ -13,9 +13,9 @@ pub async fn add_class_role(
     author
         .add_role(ctx, role_id)
         .await
-        .wrap_err("Couldn't remove role")?;
+        .wrap_err("Couldn't add role")?;
 
-    ctx.say("Left class!").await?;
+    ctx.say("Joined class!").await?;
 
     Ok(())
 }
