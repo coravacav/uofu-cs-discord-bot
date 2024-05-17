@@ -5,6 +5,8 @@ guild_id = 1065373537591894086
 skip_hit_rate_text = "KINGFISHER PLEASE"
 skip_duration_text = "HIT ME BABY ONE MORE TIME"
 
+class_categories = []
+
 help_text = """
 [KingFisher](<https://github.com/coravacav/uofu-cs-discord-bot>) is an opportunistic comedian (RNG) that was written in [Rust](<https://doc.rust-lang.org/book/>) (the greatest language) for this server (of nerds).
 ### Commands:

@@ -1,12 +1,15 @@
 use bot_lib::{
     commands::{
         add_bot_role::add_bot_role,
+        class_roles::{add_class_role, remove_class_role},
         course_catalog::course_catalog,
         create_class_category::create_class_category,
+        delete_class_category::delete_class_category,
         help::help,
         lynch::{lynch, update_interval},
         register::register,
         remove_bot_role::remove_bot_role,
+        reset_class_categories::{reset_class_categories, reset_class_category},
         timeout::timeout,
     },
     config,
@@ -63,6 +66,11 @@ async fn main() -> Result<()> {
                 remove_bot_role(),
                 timeout(),
                 lynch(),
+                reset_class_category(),
+                reset_class_categories(),
+                delete_class_category(),
+                add_class_role(),
+                remove_class_role(),
             ],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(ctx, event, framework, data))

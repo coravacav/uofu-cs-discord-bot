@@ -4,6 +4,7 @@ use chrono::{DateTime, Utc};
 use chrono::{Duration, Local};
 use color_eyre::eyre::{Result, WrapErr};
 use parking_lot::Mutex;
+use poise::serenity_prelude::ChannelId;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DurationSeconds};
 use std::sync::Arc;
@@ -49,6 +50,8 @@ pub struct Config {
     /// This may be rate limiting us, so we cache it.
     #[serde(skip)]
     pub bot_react_role_members: Vec<ReactRole>,
+    /// The list of class categories we currently support
+    pub class_categories: Vec<ChannelId>,
 }
 
 impl PartialEq for Config {
@@ -61,6 +64,7 @@ impl PartialEq for Config {
             && self.default_hit_rate == other.default_hit_rate
             && self.skip_hit_rate_text == other.skip_hit_rate_text
             && self.config_path == other.config_path
+            && self.class_categories == other.class_categories
     }
 }
 
@@ -78,6 +82,7 @@ impl Default for Config {
             skip_hit_rate_text: "".to_owned(),
             config_path: "".to_owned(),
             bot_react_role_members: vec![],
+            class_categories: vec![],
         }
     }
 }

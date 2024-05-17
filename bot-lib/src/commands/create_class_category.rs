@@ -5,7 +5,11 @@ use serenity::{ChannelType, PermissionOverwrite, PermissionOverwriteType, Permis
 
 const MOD_ROLE_ID: RoleId = RoleId::new(1192863993883279532);
 
-#[poise::command(slash_command, required_permissions = "MANAGE_CHANNELS")]
+#[poise::command(
+    slash_command,
+    required_permissions = "MANAGE_CHANNELS",
+    description_localized("en-US", "Creates a class category")
+)]
 pub async fn create_class_category(
     ctx: PoiseContext<'_>,
     #[description = "The class number, eg. for CS2420 put in \"2420\""] number: u32,
