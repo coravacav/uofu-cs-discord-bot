@@ -8,6 +8,7 @@ pub mod lynch;
 pub mod register;
 pub mod remove_bot_role;
 pub mod reset_class_categories;
+pub mod sathya;
 pub mod timeout;
 
 use crate::data::PoiseContext;

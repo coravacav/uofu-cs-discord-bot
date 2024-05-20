@@ -10,6 +10,7 @@ use bot_lib::{
         register::register,
         remove_bot_role::remove_bot_role,
         reset_class_categories::{reset_class_categories, reset_class_category},
+        sathya::sathya,
         timeout::timeout,
     },
     config,
@@ -70,6 +71,7 @@ async fn main() -> Result<()> {
                 reset_class_categories(),
                 delete_class_category(),
                 add_class_role(),
+                sathya(),
                 remove_class_role(),
             ],
             event_handler: |ctx, event, framework, data| {
