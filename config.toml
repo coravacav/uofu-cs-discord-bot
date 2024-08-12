@@ -1,5 +1,6 @@
 default_text_detect_cooldown = 45
 bot_react_role_id = 1173465249823850496
+dog_react_role_id = 1271311987057623122
 default_hit_rate = 0.21
 guild_id = 1065373537591894086
 skip_hit_rate_text = "KINGFISHER PLEASE"
@@ -14,6 +15,8 @@ help_text = """
 - `/catalog <course_id>`: Get information about a course. Either add a prefix like MATH2240 or CS will be assumed.
 - `/reactme`: Allow KingFisher automatic reactions to reply to your messages (including luck)
 - `/ignoreme`: Disallow KingFisher automatic reactions to reply to your messages
+- `/woof`: Add @Bark role
+- `/muzzle`: Remove @Bark role
 - `/lynch <user>`: Lynch a user with the Bot React role. 6 yays or nays needed, yay for them, nay for you. You have 90 seconds.
 - `/timeout <duration>`: Timeout yourself for a parsable duration (e.g. 1d, 1h, 1m). Discord sets a limit at 4 weeks.
 
@@ -65,7 +68,7 @@ content = [
     "good bot? more like best bot",
     "your praise has been logged",
     "thank the mods, not the admins",
-    "thank rust, not me"
+    "thank rust, not me",
 ]
 
 [[responses]]
@@ -96,18 +99,14 @@ name = "physics"
 ruleset = '''
 r (?i)\bphysics
 '''
-content = [
-    "<@237717840818470913>",
-]
+content = ["<@237717840818470913>"]
 
 [[responses]]
 name = "india"
 ruleset = '''
 r (?i)\bindia
 '''
-content = [
-    "<@444895960577998860>",
-]
+content = ["<@444895960577998860>"]
 
 [[responses]]
 name = "tkinter"
@@ -116,64 +115,6 @@ r (?i)tkinter
 """
 content = "TKINTER MENTIONED"
 
-[[responses]]
-name = "revskill"
-ruleset = """
-r (?i)revskill
-or
-r (?i)intelligen(?:ce|t)
-or
-r (?i)high iq
-or
-r (?i)inspirational
-"""
-content = [
-    """
-> don't thinking in function
-> thinking in program pipe together
-""",
-    "> i can just reading code understand how fast it is",
-    """
-I think Rust language should be renamed to Oxy.
-because ocean is >> russian
-> WHo do you want to become ? Ocean, or Russian ?
-""",
-    """
-> What is a variable. If you can answer that quesiton, you can learn any language in 1 year.
-> Unlearn everything and relearn from that question.
-> It contains secrets of how programming language works.
-""",
-    """
-> western music has some modes: Ionian, Dorian, Phrygian, Lydian, Mixolydian, Aeolian, and Locrian
-> So you get logerian
-> It's a hybrid between a talent programmer who lacks experience
-""",
-    """
-> But ability to hack depends mostly on which food you eat.
-""",
-    "> The thin man are fear of everything, that's why he live longer than the fat man.",
-    """
-> You'll become a better React dev by learning ASM.
-> So, you learnt the ASM, but still have no idea on how to manage React state ?
-> That means you still not learnt ASM yet.
-> I mean, manage state in ASM is harder than in Redux.
-> So if you can do it well in ASM, so you can easily do it in React.
-""",
-    """
-It's a quiz-type interview.
-Not an IQ type.
-They can't assess if you can fit the job or not based on those questions.
-So in the end, what they get is monkeys.
-Those who know everything but can't do anything.```js
-class Human implement Learnable``` not ```js
-class Human inherit Monkey```
-""",
-    """
-> You dereference a pointer.
-> No.
-> You depointer a reference.
-""",
-]
 
 [[responses]]
 name = "lucky"
@@ -183,62 +124,6 @@ r (?i)luck
 """
 content = "EVERYONE NEEDS TO KNOW THAT THIS PERSON JUST FUCKING HIT A 1 in 1 million roll from saying \"lucky\""
 unskippable = true
-
-[[responses]]
-name = "revskill low hit rate"
-ruleset = """
-r (?i)function
-or
-r (?i)program
-"""
-content = [
-    """
-> don't thinking in function
-> thinking in program pipe together
-""",
-    "> i can just reading code understand how fast it is",
-    """
-I think Rust language should be renamed to Oxy.
-because ocean is >> russian
-> WHo do you want to become ? Ocean, or Russian ?
-""",
-    """
-> What is a variable. If you can answer that quesiton, you can learn any language in 1 year.
-> Unlearn everything and relearn from that question.
-> It contains secrets of how programming language works.
-""",
-    """
-> western music has some modes: Ionian, Dorian, Phrygian, Lydian, Mixolydian, Aeolian, and Locrian
-> So you get logerian
-> It's a hybrid between a talent programmer who lacks experience
-""",
-    """
-> But ability to hack depends mostly on which food you eat.
-""",
-    "> The thin man are fear of everything, that's why he live longer than the fat man.",
-    """
-> You'll become a better React dev by learning ASM.
-> So, you learnt the ASM, but still have no idea on how to manage React state ?
-> That means you still not learnt ASM yet.
-> I mean, manage state in ASM is harder than in Redux.
-> So if you can do it well in ASM, so you can easily do it in React.
-""",
-    """
-It's a quiz-type interview.
-Not an IQ type.
-They can't assess if you can fit the job or not based on those questions.
-So in the end, what they get is monkeys.
-Those who know everything but can't do anything.```js
-class Human implement Learnable``` not ```js
-class Human inherit Monkey```
-""",
-    """
-> You dereference a pointer.
-> No.
-> You depointer a reference.
-""",
-]
-hit_rate = 0.05
 
 [[responses]]
 name = "long ass word bro"
@@ -301,19 +186,6 @@ r <@216767618923757568>
 content = "<@216767618923757568>"
 cooldown = 5
 hit_rate = 0.99
-
-[[responses]]
-name = "javascript"
-ruleset = '''
-r (?i)javascript
-or
-r (?i)\bjs\b
-or
-r (?i)\s===\s
-or
-r (?i)\s!==\s
-'''
-content = "https://tenor.com/view/if-you-cant-do-the-time-dont-do-crime-spongebob-police-close-door-gif-16367094"
 
 [[responses]]
 name = "league of legends"
@@ -398,14 +270,14 @@ content = [
     "https://tenor.com/view/discord-gif-27442765",
 ]
 
-[[responses]]
-name = "hey chat"
-cooldown = 300
-ruleset = """
-r (?i)chat
-!r chatgpt
-"""
-content = "https://tenor.com/view/xqc-what-xqc-what-xqc-search-gif-25343378"
+# [[responses]]
+# name = "hey chat"
+# cooldown = 300
+# ruleset = """
+# r (?i)chat
+# !r chatgpt
+# """
+# content = "https://tenor.com/view/xqc-what-xqc-what-xqc-search-gif-25343378"
 
 [[responses]]
 name = "uh, meow?"

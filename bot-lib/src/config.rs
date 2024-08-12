@@ -32,6 +32,8 @@ pub struct Config {
     pub help_text: Option<Arc<String>>,
     /// The role id of the bot react role.
     pub bot_react_role_id: u64,
+    /// The role id of the woof react role.
+    pub dog_react_role_id: u64,
     /// What possible replies kingfisher can make.
     pub responses: Vec<RegisteredResponse>,
     /// How often kingfisher replies to a message.
@@ -74,6 +76,7 @@ impl Default for Config {
             default_text_detect_cooldown: get_default_text_detect_cooldown(),
             starboards: vec![],
             guild_id: 0,
+            dog_react_role_id: 0,
             skip_duration_text: "".to_owned(),
             help_text: None,
             bot_react_role_id: 0,

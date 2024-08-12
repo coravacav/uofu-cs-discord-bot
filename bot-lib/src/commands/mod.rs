@@ -1,4 +1,3 @@
-pub mod add_bot_role;
 pub mod class_roles;
 pub mod course_catalog;
 pub mod create_class_category;
@@ -6,9 +5,10 @@ pub mod delete_class_category;
 pub mod help;
 pub mod lynch;
 pub mod register;
-pub mod remove_bot_role;
 pub mod reset_class_categories;
 pub mod sathya;
+pub mod set_bot_role;
+pub mod set_dog_role;
 pub mod timeout;
 
 use crate::data::PoiseContext;

@@ -8,7 +8,7 @@ pub async fn text_detection(
     data: &AppState,
     message: &Message,
 ) -> Result<()> {
-    if message.is_own(ctx) {
+    if message.author == **ctx.cache.current_user() {
         return Ok(());
     }
 
