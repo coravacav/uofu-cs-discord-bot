@@ -130,8 +130,10 @@ pub async fn update_interval() {
 
 // Handle a reaction
 pub async fn handle_lynching(ctx: &serenity::Context, message: &serenity::Message) -> Result<()> {
+    let message_id = message.id;
+
     // check if message is in the lynch map
-    let lynch_data = match LYNCH_MAP.lock().await.get(&message.id) {
+    let lynch_data = match LYNCH_MAP.lock().await.get(&message_id) {
         Some(data) => data.clone(),
         None => return Ok(()),
     };
@@ -159,7 +161,7 @@ pub async fn handle_lynching(ctx: &serenity::Context, message: &serenity::Messag
 
     // Delete the voting message
     message.delete(ctx).await?;
-    LYNCH_MAP.lock().await.remove(&message.id);
+    LYNCH_MAP.lock().await.remove(&message_id);
 
     let target = if yay {
         &lynch_data.victim

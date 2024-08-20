@@ -28,7 +28,7 @@ There is a way to force KingFisher to reply to a message. Add "KINGFISHER PLEASE
 [[starboards]]
 all_emotes = true
 channel_id = 1171176750819053589
-reaction_count = 6
+reaction_count = 7
 ignored_channel_ids = [
     1103414812312088677,
     1187117571267371102,
@@ -149,7 +149,7 @@ r (?i)goop
 """
 content = [
     "https://tenor.com/view/gunge-gunged-slime-slimed-dunk-gif-21115557",
-    "https://tenor.com/view/goop-goop-house-jello-gif-23114313",
+    "๑ï"
 ]
 
 [[responses]]

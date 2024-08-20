@@ -85,7 +85,7 @@ async fn main() -> Result<()> {
                 async fn on_error(
                     error: poise::FrameworkError<'_, AppState, color_eyre::eyre::Error>,
                 ) {
-                    tracing::error!("{}", error);
+                    tracing::error!("{:?}", error);
                 }
 
                 Box::pin(on_error(error))
