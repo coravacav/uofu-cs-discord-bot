@@ -9,15 +9,14 @@ use bot_lib::{
         register::register,
         reset_class_categories::{reset_class_categories, reset_class_category},
         sathya::sathya,
-        set_bot_role::add_bot_role,
-        set_bot_role::remove_bot_role,
-        set_dog_role::add_dog_role,
-        set_dog_role::remove_dog_role,
+        set_bot_role::{add_bot_role, remove_bot_role},
+        set_dog_role::{add_dog_role, remove_dog_role},
         timeout::timeout,
     },
     config,
     data::AppState,
     event_handler::event_handler,
+    llm,
 };
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
@@ -57,6 +56,8 @@ async fn main() -> Result<()> {
         std::env::var("DISCORD_TOKEN").wrap_err("Expected a discord token environment variable")?;
     let config =
         config::Config::create_from_file(&args.config).wrap_err("Failed to load config")?;
+
+    let _llm_tx = llm::setup_llm()?;
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {

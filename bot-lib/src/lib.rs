@@ -4,6 +4,7 @@ pub mod data;
 pub mod event_handler;
 mod handle_starboards;
 mod lang;
+pub mod llm;
 mod starboard;
 mod text_detection;
 mod utils;

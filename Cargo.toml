@@ -3,7 +3,7 @@ resolver = "2"
 members = [
     "bot",
     "bot-lib"
-]
+, "bot-llm"]
 
 [profile.release]
 debug = 0
