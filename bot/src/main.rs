@@ -5,6 +5,7 @@ use bot_lib::{
         create_class_category::create_class_category,
         delete_class_category::delete_class_category,
         help::help,
+        llm_prompt::llm_prompt,
         lynch::{lynch, update_interval},
         register::register,
         reset_class_categories::{reset_class_categories, reset_class_category},
@@ -16,7 +17,6 @@ use bot_lib::{
     config,
     data::AppState,
     event_handler::event_handler,
-    llm,
 };
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
@@ -51,13 +51,14 @@ async fn main() -> Result<()> {
         .finish()
         .init();
 
-    let args = Args::parse();
+    let Args {
+        dry_run,
+        config: config_path,
+    } = Args::parse();
     let token =
         std::env::var("DISCORD_TOKEN").wrap_err("Expected a discord token environment variable")?;
     let config =
-        config::Config::create_from_file(&args.config).wrap_err("Failed to load config")?;
-
-    let _llm_tx = llm::setup_llm()?;
+        config::Config::create_from_file(&config_path).wrap_err("Failed to load config")?;
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
@@ -77,6 +78,7 @@ async fn main() -> Result<()> {
                 remove_dog_role(),
                 add_class_role(),
                 sathya(),
+                llm_prompt(),
                 remove_class_role(),
             ],
             event_handler: |ctx, event, framework, data| {
@@ -103,7 +105,8 @@ async fn main() -> Result<()> {
                     serenity::GuildId::from(config.guild_id),
                 )
                 .await?;
-                Ok(AppState::new(config))
+
+                Ok(AppState::new(config, config_path).unwrap())
             })
         });
 
@@ -118,7 +121,7 @@ async fn main() -> Result<()> {
     .framework(framework.build())
     .await;
 
-    if args.dry_run {
+    if dry_run {
         println!("Bot setup worked, dry run enabled, exiting");
         return Ok(());
     }

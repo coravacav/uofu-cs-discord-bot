@@ -3,6 +3,7 @@ pub mod course_catalog;
 pub mod create_class_category;
 pub mod delete_class_category;
 pub mod help;
+pub mod llm_prompt;
 pub mod lynch;
 pub mod register;
 pub mod reset_class_categories;

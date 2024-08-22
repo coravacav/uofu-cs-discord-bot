@@ -7,13 +7,8 @@ use parking_lot::Mutex;
 use poise::serenity_prelude::ChannelId;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DurationSeconds};
+use std::path::Path;
 use std::sync::Arc;
-
-#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
-pub struct ReactRole {
-    pub react: bool,
-    pub user_id: u64,
-}
 
 #[serde_as]
 #[derive(Deserialize, Serialize, Debug)]
@@ -44,14 +39,6 @@ pub struct Config {
     /// Verbatim text to skip the duration check.
     /// Intentionally only a single string to prevent having to check a lot of different strings.
     pub skip_duration_text: String,
-    /// The path to the config file.
-    /// This is to allow for saving / reloading the config.
-    #[serde(skip)]
-    pub config_path: String,
-    /// Our own cache of members with the bot react role.
-    /// This may be rate limiting us, so we cache it.
-    #[serde(skip)]
-    pub bot_react_role_members: Vec<ReactRole>,
     /// The list of class categories we currently support
     pub class_categories: Vec<ChannelId>,
 }
@@ -65,7 +52,6 @@ impl PartialEq for Config {
             && self.responses == other.responses
             && self.default_hit_rate == other.default_hit_rate
             && self.skip_hit_rate_text == other.skip_hit_rate_text
-            && self.config_path == other.config_path
             && self.class_categories == other.class_categories
     }
 }
@@ -83,8 +69,6 @@ impl Default for Config {
             responses: vec![],
             default_hit_rate: 1.,
             skip_hit_rate_text: "".to_owned(),
-            config_path: "".to_owned(),
-            bot_react_role_members: vec![],
             class_categories: vec![],
         }
     }
@@ -92,28 +76,23 @@ impl Default for Config {
 
 impl Config {
     /// Fetches the config from the config file in the root directory.
-    pub fn create_from_file(config_path: &str) -> Result<Config> {
+    pub fn create_from_file(config_path: impl AsRef<Path>) -> Result<Config> {
         let file = std::fs::read_to_string(config_path).wrap_err("Could not read config file")?;
 
-        let config = toml::from_str(&file).wrap_err("Could not parse config file")?;
-
-        Ok(Config {
-            config_path: config_path.to_owned(),
-            ..config
-        })
+        toml::from_str(&file).wrap_err("Could not parse config file")
     }
 
     /// Reloads the config file and updates the configuration.
-    pub fn reload(&mut self) {
-        if let Ok(config) = Config::create_from_file(&self.config_path) {
+    pub fn reload(&mut self, config_path: impl AsRef<Path>) {
+        if let Ok(config) = Config::create_from_file(config_path) {
             *self = config;
         }
     }
 
-    pub fn save(&self) -> Result<()> {
+    pub fn save(&self, config_path: impl AsRef<Path>) -> Result<()> {
         let toml = toml::to_string(&self).wrap_err("Could not serialize config")?;
 
-        std::fs::write(&self.config_path, toml).wrap_err("Could not save config")
+        std::fs::write(config_path, toml).wrap_err("Could not save config")
     }
 }
 

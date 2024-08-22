@@ -1,4 +1,7 @@
-use crate::config::{Config, ResponseKind};
+use crate::{
+    config::{Config, ResponseKind},
+    llm,
+};
 use color_eyre::eyre::{Error, OptionExt, Result};
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::Message;
@@ -14,11 +17,14 @@ pub struct AppState {
     ///
     /// Attached to the AppState to keep the watcher alive
     _watcher: notify::RecommendedWatcher,
+    /// The path to the config file.
+    /// This is to allow for saving / reloading the config.
+    pub config_path: Box<Path>,
+    pub llm_tx: crossbeam_channel::Sender<(Arc<String>, tokio::sync::oneshot::Sender<String>)>,
 }
 
 impl AppState {
-    pub fn new(config: Config) -> AppState {
-        let config_path = config.config_path.to_owned();
+    pub fn new(config: Config, config_path: String) -> Result<AppState> {
         let config = Arc::new(RwLock::new(config));
 
         use notify::{
@@ -27,6 +33,8 @@ impl AppState {
         };
 
         let config_clone = Arc::clone(&config);
+        let reload_config_path = config_path.clone();
+        let config_path: Box<Path> = Path::new(&config_path).into();
 
         let mut watcher = notify::recommended_watcher(move |res| match res {
             Ok(Event {
@@ -35,7 +43,7 @@ impl AppState {
             }) => {
                 event!(Level::INFO, "config changed, reloading...");
 
-                config_clone.blocking_write().reload();
+                config_clone.blocking_write().reload(&*reload_config_path);
             }
             Err(e) => event!(Level::ERROR, "watch error: {:?}", e),
             _ => {}
@@ -43,13 +51,17 @@ impl AppState {
         .expect("Failed to create file watcher");
 
         watcher
-            .watch(Path::new(&config_path), RecursiveMode::NonRecursive)
+            .watch(&config_path, RecursiveMode::NonRecursive)
             .expect("Failed to watch config file");
 
-        AppState {
+        let llm_tx = llm::setup_llm()?;
+
+        Ok(AppState {
             config,
             _watcher: watcher,
-        }
+            config_path,
+            llm_tx,
+        })
     }
 
     /// If the message contents match any pattern, return the name of the response type.
