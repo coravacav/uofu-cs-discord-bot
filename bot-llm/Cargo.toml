@@ -5,7 +5,8 @@ edition = "2021"
 
 [dependencies]
 color-eyre = {workspace = true}
+rand = {workspace = true}
 encoding_rs = "0.8.34"
 llama-cpp-2 = { version = "0.1.66", features = ["native"] }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt"] }
-rand = "0.8.5"
+indoc = "2.0.5"
