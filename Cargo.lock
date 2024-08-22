@@ -247,6 +247,7 @@ dependencies = [
  "color-eyre",
  "encoding_rs",
  "llama-cpp-2",
+ "rand",
  "tracing-subscriber",
 ]
 

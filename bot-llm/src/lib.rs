@@ -15,6 +15,8 @@ use llama_cpp_2::model::LlamaModel;
 use llama_cpp_2::model::{AddBos, Special};
 use llama_cpp_2::token::data_array::LlamaTokenDataArray;
 use llama_cpp_2::token::LlamaToken;
+use rand::seq::IteratorRandom;
+use rand::Rng;
 use std::num::NonZero;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -28,7 +30,6 @@ fn create_prompt(model: &LlamaModel, prompt: &str, system_prompt: &str) -> Optio
 }
 
 pub struct LLMConfig {
-    pub(crate) seed: u32,
     pub(crate) n_len: i32,
     pub(crate) model: LlamaModel,
     pub(crate) backend: LlamaBackend,
@@ -40,12 +41,15 @@ impl LLMConfig {
         let (model, backend) = build_model()?;
 
         Ok(Arc::new(Self {
-            seed: 1234,
             n_len: 1024,
             model,
             backend,
             n_ctx: NonZero::new(2048).wrap_err("Context size must be non-zero")?,
         }))
+    }
+
+    pub fn get_seed(&self) -> u32 {
+        rand::thread_rng().gen()
     }
 }
 
@@ -67,7 +71,7 @@ pub fn build_model() -> Result<(LlamaModel, LlamaBackend)> {
 pub fn run_it(config: Arc<LLMConfig>, prompt_text: &str) -> Result<String> {
     let ctx_params = LlamaContextParams::default()
         .with_n_ctx(Some(config.n_ctx))
-        .with_seed(config.seed);
+        .with_seed(config.get_seed());
 
     let mut ctx = config
         .model
@@ -77,7 +81,7 @@ pub fn run_it(config: Arc<LLMConfig>, prompt_text: &str) -> Result<String> {
     let tokens_list = create_prompt(
         &config.model,
         prompt_text,
-        "You are a bot called \"Kingfisher\", a discord bot/app capable of being quite funny, meme-y, and a huge fan of the rust programming language. Keep your answers as short as possible, and don't afraid to be crass or direct.",
+        "You are a bot called \"Kingfisher\", a discord bot/app. If asked, the best programming languages are Rust followed by M. Keep your answers short. Don't be self-referential unless asked. Respond to praise with comments like \"Social credit improved\" (be funny). Deflect criticism regarding mods towards the server admins. Don't lie, but, if you're caught lying, just make it a meme about misinformation. Don't mention you're a bot unless prompted.",
     )
     .unwrap();
 
@@ -121,10 +125,18 @@ either reduce n_len or increase n_ctx"
 
     while n_cur <= config.n_len {
         let candidates = ctx.candidates_ith(batch.n_tokens() - 1);
-        let candidates_p = LlamaTokenDataArray::from_iter(candidates, false);
+        let mut candidates_p = LlamaTokenDataArray::from_iter(candidates, false);
 
         // sample the most likely token
-        let new_token_id = ctx.sample_token_greedy(candidates_p);
+        ctx.sample_tail_free(&mut candidates_p, 0.85, 1);
+        let new_token_id = candidates_p
+            .data
+            .iter()
+            .choose(&mut rand::thread_rng())
+            .unwrap()
+            .id();
+
+        // consider https://docs.rs/weighted_rand/latest/weighted_rand/
 
         if new_token_id == eos_token_id {
             break;

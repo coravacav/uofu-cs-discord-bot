@@ -12,7 +12,12 @@ use std::{
 
 static LAST_REQUESTED_BY_USERID: LazyLock<DashMap<UserId, Instant>> = LazyLock::new(DashMap::new);
 
-#[poise::command(slash_command, prefix_command, rename = "llm")]
+#[poise::command(
+    slash_command,
+    prefix_command,
+    rename = "llm",
+    description_localized("en-US", "Ask kingfisher anything!")
+)]
 pub async fn llm_prompt(ctx: PoiseContext<'_>, prompt: String) -> Result<()> {
     let prompt = Arc::new(prompt);
     let user_id = ctx.author().id;
