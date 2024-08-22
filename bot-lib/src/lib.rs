@@ -1,5 +1,6 @@
 pub mod commands;
 pub mod config;
+pub mod courses;
 pub mod data;
 pub mod event_handler;
 mod handle_starboards;
