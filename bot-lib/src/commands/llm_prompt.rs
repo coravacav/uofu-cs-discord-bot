@@ -54,20 +54,19 @@ pub async fn llm_prompt(ctx: PoiseContext<'_>, prompt: String) -> Result<()> {
     let reply = reply_rx.await.wrap_err("LLM task failed")?;
     let guild_id = ctx.guild_id().ok_or_eyre("Couldn't get guild id")?;
 
+    let author_username = ctx.author().name.clone();
+    let author_nickname = ctx.author().nick_in(&ctx, guild_id).await;
+    let shown_username: String = match author_nickname {
+        Some(nickname) => format!("{} ({})", nickname, author_username),
+        None => author_username,
+    };
+
+    let mut title = format!("{} asked, \"{}\"", shown_username, prompt);
+    title.truncate(256); // Discord limits titles to 256 characters
+
     ctx.send(
         CreateReply::default()
-            .embed(
-                serenity::CreateEmbed::new()
-                    .title(format!(
-                        "{} asked, \"{}\"",
-                        ctx.author()
-                            .nick_in(&ctx, guild_id)
-                            .await
-                            .ok_or_eyre("Couldn't get nick")?,
-                        prompt
-                    ))
-                    .description(reply),
-            )
+            .embed(serenity::CreateEmbed::new().title(title).description(reply))
             .reply(true),
     )
     .await?;
