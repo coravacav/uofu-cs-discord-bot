@@ -81,7 +81,7 @@ pub async fn course_catalog(ctx: PoiseContext<'_>, course_id: String) -> Result<
                         course_id,
                         course.long_name.clone(),
                         if course.are_there_duplicates {
-                            "Note: maybe a duplicate, the U has bad APIs"
+                            " Note: maybe a duplicate, the U has bad APIs"
                         } else {
                             ""
                         }
