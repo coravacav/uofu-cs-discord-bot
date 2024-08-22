@@ -5,12 +5,12 @@ edition = "2021"
 publish = false
 
 [dependencies]
-tokio = { version = "1.37.0", features = ["rt", "macros", "rt-multi-thread"] }
+tokio = {workspace = true}
+color-eyre = {workspace = true}
+poise = {workspace = true}
+tracing = {workspace = true}
+bot-lib = { workspace = true }
 clap = { version = "4.5.4", features = ["derive"] }
-color-eyre = "0.6"
 dotenvy = "0.15.7"
-poise = "0.6.1"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt"] }
-tracing = "0.1.40"
-bot-lib = { path = "../bot-lib" }
 
