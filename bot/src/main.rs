@@ -1,14 +1,14 @@
 use bot_lib::{
     commands::{
-        class_roles::{add_class_role, remove_class_role},
+        class_commands::{
+            add_class_role, create_class_category, delete_class_category, remove_class_role,
+            reset_class_categories, reset_class_category, update_class_category,
+        },
         course_catalog::course_catalog,
-        create_class_category::create_class_category,
-        delete_class_category::delete_class_category,
         help::help,
         llm_prompt::llm_prompt,
         lynch::{lynch, update_interval},
         register::register,
-        reset_class_categories::{reset_class_categories, reset_class_category},
         sathya::sathya,
         set_bot_role::{add_bot_role, remove_bot_role},
         set_dog_role::{add_dog_role, remove_dog_role},
@@ -76,6 +76,7 @@ async fn main() -> Result<()> {
                 delete_class_category(),
                 add_dog_role(),
                 remove_dog_role(),
+                update_class_category(),
                 add_class_role(),
                 sathya(),
                 llm_prompt(),
