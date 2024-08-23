@@ -19,6 +19,7 @@ help_text = """
 - `/muzzle`: Remove @Bark role
 - `/lynch <user>`: Lynch a user with the Bot React role. 6 yays or nays needed, yay for them, nay for you. You have 90 seconds.
 - `/timeout <duration>`: Timeout yourself for a parsable duration (e.g. 1d, 1h, 1m). Discord sets a limit at 4 weeks.
+- `/aur <query> <amount>`: Queries the AUR. Can only display the top 20 entries at maximum.
 
 KingFisher also sometimes really likes to react to messages. That's why he replies sometimes (21% rate, unless you're pinging Stefan or typing "luck").
 
