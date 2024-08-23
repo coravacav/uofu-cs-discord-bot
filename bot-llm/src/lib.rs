@@ -58,6 +58,11 @@ pub fn build_model() -> Result<(LlamaModel, LlamaBackend)> {
     backend.void_logs();
     let model_params = LlamaModelParams::default();
 
+    // Check that the model exists
+    if !PathBuf::from("./Meta-Llama-3.1-8B-Instruct-Q5_K_M.gguf").exists() {
+        bail!("Model not found! Please download it and put it in the root directory of the repo. (URL NOT INCLUDED FOR NOW, since i'm about to change it)");
+    }
+
     let model = LlamaModel::load_from_file(
         &backend,
         PathBuf::from("./Meta-Llama-3.1-8B-Instruct-Q5_K_M.gguf"),
