@@ -5,10 +5,16 @@ use poise::{serenity_prelude as serenity, CreateReply};
 use raur::Raur;
 use std::cmp::Reverse;
 
-const SEARCHCAP: usize = 20;
 const BASE_AUR_URL: &str = "https://aur.archlinux.org/packages/";
-#[poise::command(slash_command, prefix_command, rename = "aur")]
-pub async fn aur_search(ctx: PoiseContext<'_>, search: String, amount: usize) -> Result<()> {
+/// A simple command to search the aur, you cannot display more than 20 results at a time.
+#[poise::command(slash_command, rename = "aur")]
+pub async fn aur_search(
+    ctx: PoiseContext<'_>,
+    search: String,
+    #[min = 1]
+    #[max = 20]
+    amount: usize,
+) -> Result<()> {
     ctx.defer().await?;
 
     let search: String = search
@@ -19,15 +25,6 @@ pub async fn aur_search(ctx: PoiseContext<'_>, search: String, amount: usize) ->
 
     if search.is_empty() {
         ctx.reply("Please provide a valid search string").await?;
-        return Ok(());
-    }
-
-    if amount > SEARCHCAP || amount < 1 {
-        ctx.reply(format!(
-            "Please provide an amount between 1 and {}",
-            SEARCHCAP
-        ))
-        .await?;
         return Ok(());
     }
 
