@@ -19,10 +19,10 @@ static COURSES: LazyLock<DashMap<String, Course>> = LazyLock::new(|| {
 
     tracing::info!("Loaded {} courses", courses.len());
 
-    courses
+    courses 
 });
 
-pub fn get_course(course_id: &str) -> Option<Course> {
+pub fn  get_course(course_id: &str) -> Option<Course> {
     COURSES.get(course_id).map(|c| c.clone())
 }
 

@@ -1,3 +1,4 @@
+pub mod aur_search;
 pub mod class_commands;
 pub mod course_catalog;
 pub mod help;

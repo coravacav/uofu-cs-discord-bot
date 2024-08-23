@@ -1,5 +1,6 @@
 use bot_lib::{
     commands::{
+        aur_search::aur_search,
         class_commands::{
             add_class_role, create_class_category, delete_class_category, remove_class_role,
             reset_class_categories, reset_class_category, update_class_category,
@@ -63,6 +64,7 @@ async fn main() -> Result<()> {
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![
+                aur_search(),
                 add_bot_role(),
                 help(),
                 create_class_category(),
