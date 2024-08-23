@@ -29,7 +29,7 @@ pub async fn aur_search(
 
     let raur = raur::Handle::new();
 
-    let pkgs = raur.search(search).await?;
+    let pkgs = raur.search(&search).await?;
 
     if pkgs.is_empty() {
         ctx.send(
@@ -55,13 +55,10 @@ pub async fn aur_search(
     for pkg in pkgs_iter {
         let version = &pkg.version;
         let name = &pkg.name;
-        let url = format!("{BASE_AUR_URL}{name}");
         let votes = pkg.num_votes;
 
-        let formatted_info = format!(
-            "- [{}]({}) - Version {} Votes: {} \n",
-            name, url, version, votes
-        );
+        let formatted_info =
+            format!("- [{name}]({BASE_AUR_URL}{name}) `{version}` ({votes} votes) \n",);
         pretty_results = format!("{}{}", pretty_results, &formatted_info);
     }
 
@@ -70,7 +67,7 @@ pub async fn aur_search(
             .embed(
                 serenity::CreateEmbed::new()
                     .title(format!(
-                        "Found {} packages - Displaying top {}",
+                        "Found {} packages from search query \"{search}\" - Displaying top {}",
                         pkgs.len(),
                         amount
                     ))
@@ -80,5 +77,5 @@ pub async fn aur_search(
     )
     .await?;
 
-    return Ok(());
+    Ok(())
 }

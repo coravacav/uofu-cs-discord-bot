@@ -284,6 +284,7 @@ pub async fn reset_class_categories(ctx: PoiseContext<'_>) -> Result<()> {
     Ok(())
 }
 
+/// Join a class. Enter the CS class number, eg. for CS2420 put in "2420"
 #[poise::command(slash_command, prefix_command, rename = "join_class", ephemeral = true)]
 pub async fn add_class_role(
     ctx: PoiseContext<'_>,
@@ -302,6 +303,7 @@ pub async fn add_class_role(
     Ok(())
 }
 
+/// Leave a class. Enter the CS class number, eg. for CS2420 put in "2420"
 #[poise::command(
     slash_command,
     prefix_command,
