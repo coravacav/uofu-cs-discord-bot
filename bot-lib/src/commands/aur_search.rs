@@ -18,7 +18,6 @@ pub async fn aur_search(
     ctx.defer().await?;
 
     let search: String = search
-        .to_uppercase()
         .chars()
         .filter(|c| c.is_alphanumeric())
         .collect::<String>();
@@ -54,8 +53,8 @@ pub async fn aur_search(
     let mut pretty_results = "".to_string();
 
     for pkg in pkgs_iter {
-        let version = pkg.version.as_str();
-        let name = pkg.name.as_str();
+        let version = &pkg.version;
+        let name = &pkg.name;
         let url = format!("{BASE_AUR_URL}{name}");
         let votes = pkg.num_votes;
 
@@ -63,7 +62,7 @@ pub async fn aur_search(
             "- [{}]({}) - Version {} Votes: {} \n",
             name, url, version, votes
         );
-        pretty_results = pretty_results + &formatted_info;
+        pretty_results = format!("{}{}", pretty_results, &formatted_info);
     }
 
     ctx.send(
