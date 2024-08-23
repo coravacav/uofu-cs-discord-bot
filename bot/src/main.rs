@@ -40,7 +40,7 @@ pub struct Args {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    dotenv().wrap_err("Failed to load .env file")?;
+    dotenv().wrap_err("Failed to load .env file. Add a file with the following contents: `DISCORD_TOKEN=\"your token\"` to a .env file in the root directory of the repo.")?;
     color_eyre::install()?;
 
     tracing_subscriber::fmt()

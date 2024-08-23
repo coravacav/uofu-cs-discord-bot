@@ -11,9 +11,13 @@ struct _LLMRunner {
 
 pub fn setup_llm(
 ) -> Result<crossbeam_channel::Sender<(Arc<String>, tokio::sync::oneshot::Sender<String>)>> {
-    let config = bot_llm::LLMConfig::new()?;
     let (tx, rx) =
         crossbeam_channel::bounded::<(Arc<String>, tokio::sync::oneshot::Sender<String>)>(100);
+
+    let Ok(config) = bot_llm::LLMConfig::new() else {
+        tracing::warn!("Failed to create LLM config, using a dummy one");
+        return Ok(tx);
+    };
 
     tokio::task::spawn_blocking(move || loop {
         while let Ok((prompt, return_channel)) = rx.recv() {
