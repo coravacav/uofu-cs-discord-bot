@@ -27,7 +27,7 @@ pub async fn event_handler(
             let message = reaction.message(ctx).await?;
 
             tokio::join!(
-                handle_lynching(ctx, framework.user_data, &message),
+                handle_lynching(ctx, &message),
                 handle_starboards(ctx, framework.user_data, &message, reaction)
             )
             .pipe(|(err1, err2)| match (err1, err2) {

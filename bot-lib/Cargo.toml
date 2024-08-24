@@ -34,3 +34,4 @@ serde_json = "1.0.116"
 tokio-stream = "0.1.15"
 crossbeam-channel = "0.5.13"
 raur = "7.0.0"
+rocksdb = { version = "0.22.0", features = ["multi-threaded-cf"] }

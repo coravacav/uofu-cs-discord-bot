@@ -1,7 +1,4 @@
-use crate::{
-    data::{AppState, PoiseContext},
-    utils::GetRelativeTimestamp,
-};
+use crate::{data::PoiseContext, utils::GetRelativeTimestamp};
 use color_eyre::eyre::{eyre, OptionExt, Result};
 use dashmap::DashMap;
 use itertools::Itertools;
@@ -124,11 +121,7 @@ pub async fn update_interval() {
 }
 
 // Handle a reaction
-pub async fn handle_lynching(
-    ctx: &serenity::Context,
-    data: &AppState,
-    message: &serenity::Message,
-) -> Result<()> {
+pub async fn handle_lynching(ctx: &serenity::Context, message: &serenity::Message) -> Result<()> {
     let message_id = message.id;
 
     // check if message is in the lynch map
@@ -138,7 +131,7 @@ pub async fn handle_lynching(
     };
 
     // Kingfisher user id
-    let kingfisher_id = data.config.read().await.kingfishser_id;
+    let kingfisher_id = ctx.cache.current_user().id;
 
     // count reaction counts on yay and nay
     let yay = message

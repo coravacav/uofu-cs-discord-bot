@@ -29,8 +29,6 @@ pub struct Config {
     pub bot_react_role_id: u64,
     /// The role id of the woof react role.
     pub dog_react_role_id: u64,
-    /// The id of the kingfisher bot.
-    pub kingfishser_id: u64,
     /// What possible replies kingfisher can make.
     pub responses: Vec<RegisteredResponse>,
     /// How often kingfisher replies to a message.
@@ -68,7 +66,6 @@ impl Default for Config {
             skip_duration_text: "".to_owned(),
             help_text: None,
             bot_react_role_id: 0,
-            kingfishser_id: 0,
             responses: vec![],
             default_hit_rate: 1.,
             skip_hit_rate_text: "".to_owned(),

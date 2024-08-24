@@ -30,3 +30,6 @@ assets/
 
 # don't track the ai model
 Meta-Llama-3.1-8B-Instruct-Q5_K_M.gguf
+
+# rocksdb db
+kingfisher.db
