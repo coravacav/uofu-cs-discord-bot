@@ -227,7 +227,6 @@ dependencies = [
  "fundu",
  "futures",
  "itertools 0.11.0",
- "lazy_static",
  "nom",
  "notify",
  "parking_lot",

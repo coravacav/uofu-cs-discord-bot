@@ -17,3 +17,4 @@ tracing = "0.1.40"
 bot-llm = { path = 'bot-llm' }
 bot-lib = { path = 'bot-lib' }
 rand = "0.8.5"
+dashmap = { version = "5.5.3", features = ["inline"] }

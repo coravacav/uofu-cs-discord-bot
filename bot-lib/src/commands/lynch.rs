@@ -1,11 +1,10 @@
-use std::{collections::HashMap, time::Duration};
-
 use crate::{data::PoiseContext, utils::GetRelativeTimestamp};
 use color_eyre::eyre::{eyre, OptionExt, Result, WrapErr};
-use lazy_static::lazy_static;
+use dashmap::DashMap;
 use poise::serenity_prelude::{
     self as serenity, ChannelId, CreateMessage, GuildId, MessageBuilder, MessageId, User,
 };
+use std::{sync::LazyLock, time::Duration};
 use tokio::sync::Mutex;
 
 #[derive(Clone)]
@@ -24,10 +23,9 @@ pub const LYNCH_DURATION_SECONDS: u64 = 300;
 pub const LYNCH_VOTING_SECONDS: u64 = 90;
 pub const LYNCH_KNOWN_MESSAGE_PORTION: &str = "Do you want to lynch ";
 
-lazy_static! {
-    pub static ref LYNCH_MAP: Mutex<HashMap<MessageId, LynchData>> = Mutex::new(HashMap::new());
-    pub static ref LYNCH_OPPORTUNITIES: Mutex<usize> = Mutex::new(LYNCH_DEFAULT_OPPORTUNITIES);
-}
+pub static LYNCH_MAP: LazyLock<DashMap<MessageId, LynchData>> = LazyLock::new(DashMap::new);
+pub static LYNCH_OPPORTUNITIES: LazyLock<Mutex<usize>> =
+    LazyLock::new(|| Mutex::new(LYNCH_DEFAULT_OPPORTUNITIES));
 
 #[poise::command(
     slash_command,
@@ -96,7 +94,7 @@ pub async fn lynch(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
 
     ctx.say("Lynching started!").await?;
 
-    LYNCH_MAP.lock().await.insert(
+    LYNCH_MAP.insert(
         msg.id,
         LynchData {
             lyncher,
@@ -108,7 +106,7 @@ pub async fn lynch(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
 
     tokio::time::sleep(Duration::from_secs(LYNCH_VOTING_SECONDS)).await;
 
-    if LYNCH_MAP.lock().await.remove(&msg.id).is_some() {
+    if LYNCH_MAP.remove(&msg.id).is_some() {
         msg.delete(ctx).await?;
     }
 
@@ -133,7 +131,7 @@ pub async fn handle_lynching(ctx: &serenity::Context, message: &serenity::Messag
     let message_id = message.id;
 
     // check if message is in the lynch map
-    let lynch_data = match LYNCH_MAP.lock().await.get(&message_id) {
+    let lynch_data = match LYNCH_MAP.get(&message_id) {
         Some(data) => data.clone(),
         None => return Ok(()),
     };
@@ -161,7 +159,7 @@ pub async fn handle_lynching(ctx: &serenity::Context, message: &serenity::Messag
 
     // Delete the voting message
     message.delete(ctx).await?;
-    LYNCH_MAP.lock().await.remove(&message_id);
+    LYNCH_MAP.remove(&message_id);
 
     let target = if yay {
         &lynch_data.victim

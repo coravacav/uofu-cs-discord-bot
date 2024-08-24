@@ -139,7 +139,7 @@ impl Starboard {
     async fn is_message_a_lynch(&self, message: &serenity::Message) -> bool {
         use crate::commands::lynch::{LYNCH_KNOWN_MESSAGE_PORTION, LYNCH_MAP};
 
-        !LYNCH_MAP.lock().await.contains_key(&message.id)
+        !LYNCH_MAP.contains_key(&message.id)
             && !message.content.starts_with(LYNCH_KNOWN_MESSAGE_PORTION)
     }
 
