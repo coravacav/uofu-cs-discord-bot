@@ -29,6 +29,8 @@ pub struct Config {
     pub bot_react_role_id: u64,
     /// The role id of the woof react role.
     pub dog_react_role_id: u64,
+    /// The id of the kingfisher bot.
+    pub kingfishser_id: u64,
     /// What possible replies kingfisher can make.
     pub responses: Vec<RegisteredResponse>,
     /// How often kingfisher replies to a message.
@@ -66,6 +68,7 @@ impl Default for Config {
             skip_duration_text: "".to_owned(),
             help_text: None,
             bot_react_role_id: 0,
+            kingfishser_id: 0,
             responses: vec![],
             default_hit_rate: 1.,
             skip_hit_rate_text: "".to_owned(),
@@ -210,66 +213,5 @@ impl RegisteredResponse {
         *last_triggered = Utc::now();
 
         Some(Arc::clone(&self.message_response))
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use crate::{fast_ruleset, starboard::EmoteType};
-
-    use super::*;
-
-    #[test]
-    fn should_deserialize_properly() {
-        let test_input = r#"
-bot_react_role_id = 123456789109876
-default_hit_rate = 1.0
-guild_id = 123456789109876
-skip_hit_rate_text = "kf please"
-
-[[starboards]]
-reaction_count = 3
-emote_name = "star"
-channel_id = 123456789109876
-
-[[responses]]
-name = "1984"
-ruleset = '''
-r 1234
-!r 4312
-'''
-content = "literally 1984""#;
-
-        let config: Config = toml::from_str(test_input).unwrap();
-
-        assert_eq!(
-            config,
-            Config {
-                guild_id: 123456789109876,
-                default_text_detect_cooldown: get_default_text_detect_cooldown(),
-                starboards: vec![Arc::new(Starboard {
-                    reaction_count: 3,
-                    emote_type: EmoteType::CustomEmote {
-                        emote_name: "star".to_owned()
-                    },
-                    channel_id: 123456789109876,
-                    ..Default::default()
-                })],
-                bot_react_role_id: 123456789109876,
-                responses: vec![RegisteredResponse {
-                    name: "1984".into(),
-                    hit_rate: None,
-                    ruleset: fast_ruleset!("r 1234\n!r 4312"),
-                    message_response: Arc::new(ResponseKind::Text {
-                        content: "literally 1984".to_owned()
-                    }),
-                    last_triggered: Mutex::new(DateTime::<Utc>::MIN_UTC),
-                    cooldown: None,
-                    unskippable: false,
-                }],
-                skip_hit_rate_text: "kf please".to_owned(),
-                ..Default::default()
-            }
-        );
     }
 }

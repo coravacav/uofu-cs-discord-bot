@@ -26,26 +26,8 @@ pub async fn event_handler(
         } => {
             let message = reaction.message(ctx).await?;
 
-            if tracing::event_enabled!(tracing::Level::TRACE) {
-                let reaction_text = match reaction.emoji {
-                    serenity::ReactionType::Unicode(ref string) => emojis::get(string)
-                        .map(|emoji| emoji.name().to_owned())
-                        .unwrap_or(string.to_owned()),
-                    serenity::ReactionType::Custom { id, .. } => id.to_string(),
-                    _ => format!("{:?}", reaction.emoji),
-                };
-
-                let message_text = &message.content;
-
-                tracing::trace!(
-                    "reaction {:?} added to message {:?}",
-                    reaction_text,
-                    message_text
-                );
-            }
-
             tokio::join!(
-                handle_lynching(ctx, &message),
+                handle_lynching(ctx, framework.user_data, &message),
                 handle_starboards(ctx, framework.user_data, &message, reaction)
             )
             .pipe(|(err1, err2)| match (err1, err2) {
