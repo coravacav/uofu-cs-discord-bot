@@ -2,7 +2,7 @@ pub mod commands;
 pub mod config;
 pub mod courses;
 pub mod data;
-mod db;
+pub mod db;
 pub mod event_handler;
 mod handle_starboards;
 mod lang;

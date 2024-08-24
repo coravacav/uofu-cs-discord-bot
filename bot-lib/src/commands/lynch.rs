@@ -1,6 +1,6 @@
 use crate::{
     data::{AppState, PoiseContext},
-    db::{get_lynch_leaderboard, DbU64},
+    db::{get_lynch_leaderboard, ReadWriteTree},
     utils::GetRelativeTimestamp,
 };
 use color_eyre::eyre::{eyre, OptionExt, Result};
@@ -121,7 +121,7 @@ pub async fn update_interval() {
         .for_each(|_| async {
             let mut lynch_opportunities = LYNCH_OPPORTUNITIES.lock().await;
             *lynch_opportunities = (*lynch_opportunities + 1).min(LYNCH_DEFAULT_OPPORTUNITIES);
-            tracing::info!("Updated lynch opportunities to {lynch_opportunities}");
+            tracing::trace!("Updated lynch opportunities to {lynch_opportunities}");
         })
         .await
 }
@@ -140,7 +140,6 @@ pub async fn handle_lynching(
         None => return Ok(()),
     };
 
-    // Kingfisher user id
     let kingfisher_id = ctx.cache.current_user().id;
 
     // count reaction counts on yay and nay
@@ -164,7 +163,10 @@ pub async fn handle_lynching(
         return Ok(());
     }
 
-    LYNCH_MAP.remove(&message_id);
+    // Make sure we don't count too many times
+    if LYNCH_MAP.remove(&message_id).is_none() {
+        return Ok(());
+    }
 
     // Delete the voting message
     message.delete(ctx).await.ok(); // Don't care if it succeeds
@@ -193,11 +195,10 @@ pub async fn handle_lynching(
         target: &UserId,
     ) -> Result<()> {
         let target = target.to_user(ctx).await?.name;
-
         let tree = get_lynch_leaderboard(&data.db)?;
 
-        let current_count: DbU64 = tree.get(&target)?.map(Into::into).unwrap_or(DbU64::new(0));
-        tree.insert(&target, current_count + 1)?;
+        let current_count = tree.typed_get::<String, u64>(&target)?.unwrap_or(0);
+        tree.typed_insert(&target, &(current_count + 1))?;
 
         Ok(())
     }

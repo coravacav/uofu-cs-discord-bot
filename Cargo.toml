@@ -7,7 +7,7 @@ debug = 0
 incremental = true
 
 [patch.crates-io]
-serenity = { git = "https://github.com/serenity-rs/serenity", rev = "658b6a7261fbde7cf59f84613f870ef7a48735c6" }
+serenity = { git = "https://github.com/serenity-rs/serenity", rev = "ba731209e81802318548aedb111bb2d9362c30be" }
 
 [workspace.dependencies]
 tokio = { version = "1.37.0", features = ["rt", "macros", "rt-multi-thread"] }

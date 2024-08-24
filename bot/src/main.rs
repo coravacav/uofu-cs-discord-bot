@@ -23,6 +23,7 @@ use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use dotenvy::dotenv;
 use poise::serenity_prelude as serenity;
+use tokio::io::{stdin, AsyncReadExt};
 use tracing_subscriber::util::SubscriberInitExt;
 
 /// The cli arguments for the bot
@@ -128,6 +129,31 @@ async fn main() -> Result<()> {
         println!("Bot setup worked, dry run enabled, exiting");
         return Ok(());
     }
+
+    tokio::task::spawn(async {
+        let mut stdin = stdin();
+        let mut key = [0; 1];
+        loop {
+            stdin
+                .read_exact(&mut key)
+                .await
+                .inspect_err(|e| {
+                    tracing::error!("Failed to read from stdin: {:?}", e);
+                })
+                .ok();
+
+            // This will be expanded later
+            match key[0] {
+                b'd' => {
+                    println!("Debug");
+                }
+                b's' => {
+                    println!("Status check");
+                }
+                _ => {}
+            }
+        }
+    });
 
     tracing::info!("Starting bot");
 
