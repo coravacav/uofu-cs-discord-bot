@@ -1,5 +1,10 @@
-use crate::{data::PoiseContext, utils::GetRelativeTimestamp};
+use crate::{
+    data::{AppState, PoiseContext},
+    db::{get_lynch_leaderboard, DbU64},
+    utils::GetRelativeTimestamp,
+};
 use color_eyre::eyre::{eyre, OptionExt, Result};
+use core::str;
 use dashmap::DashMap;
 use itertools::Itertools;
 use poise::serenity_prelude::{
@@ -18,7 +23,7 @@ pub struct LynchData {
 }
 
 pub const LYNCH_DEFAULT_OPPORTUNITIES: usize = 3;
-pub const LYNCH_REQUIRED_REACTION_COUNT: usize = 6;
+pub const LYNCH_REQUIRED_REACTION_COUNT: usize = 5;
 pub const LYNCH_NO_REACTION: char = '❌';
 pub const LYNCH_YES_REACTION: char = '✅';
 pub const LYNCH_DURATION_SECONDS: u64 = 300;
@@ -30,7 +35,7 @@ pub static LYNCH_OPPORTUNITIES: LazyLock<Mutex<usize>> =
     LazyLock::new(|| Mutex::new(LYNCH_DEFAULT_OPPORTUNITIES));
 
 /// Lynch a user if you get 6 yay votes, get lynched yourself if they vote nay
-#[poise::command(slash_command, rename = "lynch")]
+#[poise::command(slash_command, rename = "lynch", ephemeral = true)]
 pub async fn lynch(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
     tracing::trace!("lynch start");
 
@@ -64,7 +69,8 @@ pub async fn lynch(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
                 .mention(&victim)
                 .push(format!(
                     "? ({} {}'s needed)\n",
-                    LYNCH_REQUIRED_REACTION_COUNT, LYNCH_YES_REACTION,
+                    LYNCH_REQUIRED_REACTION_COUNT + 1,
+                    LYNCH_YES_REACTION,
                 ))
                 .push(format!(
                     "Or, vote {} to lynch the author: ||",
@@ -121,7 +127,11 @@ pub async fn update_interval() {
 }
 
 // Handle a reaction
-pub async fn handle_lynching(ctx: &serenity::Context, message: &serenity::Message) -> Result<()> {
+pub async fn handle_lynching(
+    ctx: &serenity::Context,
+    data: &AppState,
+    message: &serenity::Message,
+) -> Result<()> {
     let message_id = message.id;
 
     // check if message is in the lynch map
@@ -176,6 +186,23 @@ pub async fn handle_lynching(ctx: &serenity::Context, message: &serenity::Messag
             serenity::EditMember::new().disable_communication_until(timeout_end.to_rfc3339()),
         )
         .await?;
+
+    async fn save_to_lynch_leaderboard(
+        ctx: &serenity::Context,
+        data: &AppState,
+        target: &UserId,
+    ) -> Result<()> {
+        let target = target.to_user(ctx).await?.name;
+
+        let tree = get_lynch_leaderboard(&data.db)?;
+
+        let current_count: DbU64 = tree.get(&target)?.map(Into::into).unwrap_or(DbU64::new(0));
+        tree.insert(&target, current_count + 1)?;
+
+        Ok(())
+    }
+
+    save_to_lynch_leaderboard(ctx, data, target).await.ok();
 
     let mut message_handle = lynch_data
         .channel_id
