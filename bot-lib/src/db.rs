@@ -1,4 +1,6 @@
-use color_eyre::eyre::Result;
+use std::fmt::Debug;
+
+use color_eyre::eyre::{Context, Result};
 use poise::serenity_prelude as serenity;
 use serde::{de::DeserializeOwned, Serialize};
 use sled::{Db, Tree};
@@ -90,15 +92,39 @@ impl LynchLeaderboard {
     }
 }
 
+fn create_update_with_deserialization<V: DeserializeOwned + Serialize + Debug>(
+    old_value: Option<&[u8]>,
+    update_function: impl FnMut(V) -> V,
+    mut get_default_value: impl FnMut() -> V,
+) -> Option<Vec<u8>> {
+    old_value
+        .map_or_else(
+            || Ok(get_default_value()),
+            |v| bincode::deserialize::<V>(v).wrap_err("Failed to deserialize"),
+        )
+        .inspect_err(|e| tracing::error!("{:?}", e))
+        .ok()
+        .map(update_function)
+        .map(|new_value| bincode::serialize::<V>(&new_value).wrap_err("Failed to serialize"))
+        .transpose()
+        .inspect_err(|e| tracing::error!("{:?}", e))
+        .ok()
+        .flatten()
+        .or_else(|| old_value.map(|v| v.to_vec()))
+}
+
 pub fn get_lynch_leaderboard(db: &Db) -> Result<LynchLeaderboard> {
     let db = db.open_tree("lynch_leaderboard")?;
 
     fn increment(_key: &[u8], old_value: Option<&[u8]>, _merged_bytes: &[u8]) -> Option<Vec<u8>> {
-        let old_value = old_value.map_or(Ok(0), bincode::deserialize::<u64>).ok()?;
-        let new_value = old_value + 1;
-        let ret = bincode::serialize(&new_value).ok()?;
-
-        Some(ret)
+        create_update_with_deserialization::<usize>(
+            old_value,
+            |mut value| {
+                value += 1;
+                value
+            },
+            || 0,
+        )
     }
 
     db.set_merge_operator(increment);
@@ -117,6 +143,18 @@ pub fn get_lynch_leaderboard(db: &Db) -> Result<LynchLeaderboard> {
 
 // pub fn get_message_store(db: &Db) -> Result<MessageStore> {
 //     let db = db.open_tree("message_store")?;
+
+//     fn add_message(_key: &[u8], old_value: Option<&[u8]>, merged_bytes: &[u8]) -> Option<Vec<u8>> {
+//         let mut value = old_value
+//             .map_or(Ok(vec![]), bincode::deserialize::<Vec<&[u8]>>)
+//             .ok()?;
+
+//         value.push(merged_bytes);
+
+//         bincode::serialize(&value)
+//             .ok()
+//             .or_else(|| old_value.map(|v| v.to_vec()))
+//     }
 
 //     Ok(MessageStore(db))
 // }

@@ -209,16 +209,36 @@ pub async fn handle_lynching(
     let time = std::time::Duration::from_secs(LYNCH_DURATION_SECONDS);
     let timeout_end = chrono::Utc::now() + time;
 
-    lynch_data
+    save_to_lynch_leaderboard(ctx, data, target).await.ok();
+
+    if lynch_data
         .guild_id
         .edit_member(
             ctx,
             target,
             serenity::EditMember::new().disable_communication_until(timeout_end.to_rfc3339()),
         )
-        .await?;
+        .await
+        .is_err()
+    {
+        lynch_data
+            .channel_id
+            .send_message(
+                ctx,
+                CreateMessage::new().content(
+                    MessageBuilder::new()
+                        .push(format!(
+                            "Sorry {}, but I couldn't lynch {}. Shame them publicly instead.",
+                            shooters.mention_all(),
+                            target.mention()
+                        ))
+                        .build(),
+                ),
+            )
+            .await?;
 
-    save_to_lynch_leaderboard(ctx, data, target).await.ok();
+        return Ok(());
+    };
 
     let mut message_handle = lynch_data
         .channel_id
