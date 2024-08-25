@@ -10,6 +10,15 @@ You can also open an issue if you have a suggestion or bug report.
 
 ## First time setup
 
+You'll need rust installed. You can install it from https://rustup.rs/.
+
+Clone this repo and `cd` into it.
+
+```bash
+git clone git@github.com:coravacav/uofu-cs-discord-bot.git
+cd uofu-cs-discord-bot
+```
+
 You'll need to create a bot using discord's developer portal. You can do this by going to https://discord.com/developers/applications and clicking "New Application".
 
 Then, put the token in `.env` as `DISCORD_TOKEN`. For example:
