@@ -271,8 +271,7 @@ async fn save_to_lynch_leaderboard(
     let target = target.to_user(ctx).await?.id;
     let lynch_leaderboard = get_lynch_leaderboard(&data.db)?;
 
-    let current_count = lynch_leaderboard.get(target)?.unwrap_or(0);
-    lynch_leaderboard.set(target, current_count + 1)?;
+    lynch_leaderboard.increment(target)?;
 
     Ok(())
 }
