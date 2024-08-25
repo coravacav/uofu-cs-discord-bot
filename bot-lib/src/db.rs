@@ -1,4 +1,5 @@
 use color_eyre::eyre::Result;
+use poise::serenity_prelude as serenity;
 use serde::{de::DeserializeOwned, Serialize};
 use sled::{Db, Tree};
 
@@ -33,8 +34,33 @@ impl ReadWriteTree for Tree {
     }
 }
 
-pub fn get_lynch_leaderboard(db: &Db) -> Result<Tree> {
-    Ok(db.open_tree("lynch_leaderboard")?)
+pub struct LynchLeaderboard(Tree);
+
+impl LynchLeaderboard {
+    pub fn set(&self, user_id: serenity::UserId, count: u64) -> Result<()> {
+        let user_id: u64 = user_id.into();
+        self.0.typed_insert::<u64, u64>(&user_id, &count)
+    }
+
+    pub fn get(&self, user_id: serenity::UserId) -> Result<Option<u64>> {
+        let user_id: u64 = user_id.into();
+        self.0.typed_get::<u64, u64>(&user_id)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (serenity::UserId, u64)> {
+        self.0
+            .iter()
+            .filter_map(|i| i.ok())
+            .map(|(user_id, count)| {
+                let user_id: u64 = bincode::deserialize(&user_id).unwrap();
+                let count: u64 = bincode::deserialize(&count).unwrap();
+                (serenity::UserId::from(user_id), count)
+            })
+    }
+}
+
+pub fn get_lynch_leaderboard(db: &Db) -> Result<LynchLeaderboard> {
+    Ok(LynchLeaderboard(db.open_tree("lynch_leaderboard")?))
 }
 
 pub fn get_db() -> Result<Db> {

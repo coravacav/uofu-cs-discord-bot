@@ -1,6 +1,6 @@
 use crate::{
     data::{AppState, PoiseContext},
-    db::{get_lynch_leaderboard, ReadWriteTree},
+    db::get_lynch_leaderboard,
     utils::GetRelativeTimestamp,
 };
 use color_eyre::eyre::{bail, OptionExt, Result};
@@ -27,7 +27,7 @@ pub struct LynchData {
 }
 
 pub const LYNCH_DEFAULT_OPPORTUNITIES: usize = 3;
-pub const LYNCH_REQUIRED_REACTION_COUNT: u64 = 5;
+pub const LYNCH_REQUIRED_REACTION_COUNT: u64 = 6;
 pub const LYNCH_NO_REACTION: char = '❌';
 pub const LYNCH_YES_REACTION: char = '✅';
 pub const LYNCH_DURATION_SECONDS: u64 = 300;
@@ -60,8 +60,7 @@ fn create_lynch_message(lyncher: &User, victim: &User) -> Result<CreateMessage> 
                 .mention(victim)
                 .push(format!(
                     "? ({} {}'s needed)\n",
-                    LYNCH_REQUIRED_REACTION_COUNT + 1,
-                    LYNCH_YES_REACTION,
+                    LYNCH_REQUIRED_REACTION_COUNT, LYNCH_YES_REACTION,
                 ))
                 .push(format!(
                     "Or, vote {} to lynch the author: ||",
@@ -269,18 +268,18 @@ async fn save_to_lynch_leaderboard(
     data: &AppState,
     target: &UserId,
 ) -> Result<()> {
-    let target = target.to_user(ctx).await?.id.into();
-    let tree = get_lynch_leaderboard(&data.db)?;
+    let target = target.to_user(ctx).await?.id;
+    let lynch_leaderboard = get_lynch_leaderboard(&data.db)?;
 
-    let current_count = tree.typed_get::<u64, u64>(&target)?.unwrap_or(0);
-    tree.typed_insert(&target, &(current_count + 1))?;
+    let current_count = lynch_leaderboard.get(target)?.unwrap_or(0);
+    lynch_leaderboard.set(target, current_count + 1)?;
 
     Ok(())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct LynchEntry {
-    user_id: u64,
+    user_id: serenity::UserId,
     count: u64,
 }
 
@@ -304,19 +303,12 @@ pub async fn lynch_leaderboard(ctx: PoiseContext<'_>) -> Result<()> {
 
     let lynch_leaderboard = get_lynch_leaderboard(&ctx.data().db)?;
 
-    for data in lynch_leaderboard.iter() {
-        let Ok((user_id, count)) = data else {
-            continue;
-        };
-
-        let user_id = bincode::deserialize::<u64>(&user_id)?;
-        let count = bincode::deserialize::<u64>(&count)?;
-
+    for (user_id, count) in lynch_leaderboard.iter() {
         lynched.push(LynchEntry { user_id, count });
     }
 
     for entry in lynched {
-        message_text.push_str(&format!("<@{}>: {}\n", entry.user_id, entry.count));
+        message_text.push_str(&format!("{}: {}\n", entry.user_id.mention(), entry.count));
     }
 
     ctx.say(message_text).await?;
