@@ -12,6 +12,8 @@ You can also open an issue if you have a suggestion or bug report.
 
 You'll need rust installed. You can install it from https://rustup.rs/.
 
+If you haven't learned rust, you'll need to. [Learn from the book](https://doc.rust-lang.org/book/).
+
 Clone this repo and `cd` into it.
 
 ```bash
@@ -21,9 +23,9 @@ cd uofu-cs-discord-bot
 
 You'll need to create a bot using discord's developer portal. You can do this by going to https://discord.com/developers/applications and clicking "New Application".
 
-Then, put the token in `.env` as `DISCORD_TOKEN`. For example:
+Then, put the token in `.env` as `DISCORD_TOKEN` at the root of the project. For example:
 
-```
+```env
 DISCORD_TOKEN="your token"
 ```
 
