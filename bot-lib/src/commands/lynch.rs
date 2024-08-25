@@ -11,7 +11,7 @@ use poise::serenity_prelude::{
     self as serenity, ChannelId, CreateMessage, EditMessage, GuildId, Mentionable, MessageBuilder,
     MessageId, User, UserId,
 };
-use std::{sync::LazyLock, time::Duration};
+use std::{collections::BinaryHeap, sync::LazyLock, time::Duration};
 use tokio::{
     sync::Mutex,
     time::{interval, sleep},
@@ -153,20 +153,6 @@ async fn get_unique_non_kingfisher_voters(
         .collect_vec())
 }
 
-async fn save_to_lynch_leaderboard(
-    ctx: &serenity::Context,
-    data: &AppState,
-    target: &UserId,
-) -> Result<()> {
-    let target = target.to_user(ctx).await?.name;
-    let tree = get_lynch_leaderboard(&data.db)?;
-
-    let current_count = tree.typed_get::<String, u64>(&target)?.unwrap_or(0);
-    tree.typed_insert(&target, &(current_count + 1))?;
-
-    Ok(())
-}
-
 // Handle a reaction
 pub async fn handle_lynching(
     ctx: &serenity::Context,
@@ -276,4 +262,64 @@ impl MentionableExt for Vec<User> {
     fn mention_all(&self) -> String {
         self.iter().map(|user| user.mention().to_string()).join(" ")
     }
+}
+
+async fn save_to_lynch_leaderboard(
+    ctx: &serenity::Context,
+    data: &AppState,
+    target: &UserId,
+) -> Result<()> {
+    let target = target.to_user(ctx).await?.id.into();
+    let tree = get_lynch_leaderboard(&data.db)?;
+
+    let current_count = tree.typed_get::<u64, u64>(&target)?.unwrap_or(0);
+    tree.typed_insert(&target, &(current_count + 1))?;
+
+    Ok(())
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct LynchEntry {
+    user_id: u64,
+    count: u64,
+}
+
+impl PartialOrd for LynchEntry {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for LynchEntry {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.count.cmp(&other.count)
+    }
+}
+
+/// See who has been lynched the most
+#[poise::command(slash_command, rename = "lynch_leaderboard", ephemeral = true)]
+pub async fn lynch_leaderboard(ctx: PoiseContext<'_>) -> Result<()> {
+    let mut message_text = String::from("### Lynch leaderboard:\n");
+    let mut lynched = BinaryHeap::new();
+
+    let lynch_leaderboard = get_lynch_leaderboard(&ctx.data().db)?;
+
+    for data in lynch_leaderboard.iter() {
+        let Ok((user_id, count)) = data else {
+            continue;
+        };
+
+        let user_id = bincode::deserialize::<u64>(&user_id)?;
+        let count = bincode::deserialize::<u64>(&count)?;
+
+        lynched.push(LynchEntry { user_id, count });
+    }
+
+    for entry in lynched {
+        message_text.push_str(&format!("<@{}>: {}\n", entry.user_id, entry.count));
+    }
+
+    ctx.say(message_text).await?;
+
+    Ok(())
 }

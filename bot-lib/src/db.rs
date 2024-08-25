@@ -40,15 +40,5 @@ pub fn get_lynch_leaderboard(db: &Db) -> Result<Tree> {
 pub fn get_db() -> Result<Db> {
     let db = sled::open("kingfisher.db")?;
 
-    // for (key, value) in db
-    //     .open_tree("lynch_leaderboard")?
-    //     .iter()
-    //     .filter_map(|t| t.ok())
-    // {
-    //     let key = bincode::deserialize::<String>(&key)?;
-    //     let value = bincode::deserialize::<u64>(&value)?;
-    //     println!("{}: {}", key, value);
-    // }
-
     Ok(db)
 }
