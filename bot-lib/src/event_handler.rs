@@ -1,5 +1,5 @@
 use crate::{
-    commands::lynch::handle_lynching, data::AppState, handle_starboards::handle_starboards,
+    commands::yeet::handle_yeeting, data::AppState, handle_starboards::handle_starboards,
     text_detection::text_detection,
 };
 use color_eyre::eyre::{Error, Result};
@@ -27,7 +27,7 @@ pub async fn event_handler(
             let message = reaction.message(ctx).await?;
 
             tokio::join!(
-                handle_lynching(ctx, framework.user_data, &message),
+                handle_yeeting(ctx, framework.user_data, &message),
                 handle_starboards(ctx, framework.user_data, &message, reaction)
             )
             .pipe(|(err1, err2)| match (err1, err2) {

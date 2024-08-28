@@ -61,9 +61,9 @@ impl ReadWriteTree for Tree {
     }
 }
 
-pub struct LynchLeaderboard(Tree);
+pub struct YeetLeaderboard(Tree);
 
-impl LynchLeaderboard {
+impl YeetLeaderboard {
     pub fn set(&self, user_id: serenity::UserId, count: u64) -> Result<()> {
         let user_id: u64 = user_id.into();
         self.0.typed_insert::<u64, u64>(&user_id, &count)
@@ -113,8 +113,9 @@ fn create_update_with_deserialization<V: DeserializeOwned + Serialize + Debug>(
         .or_else(|| old_value.map(|v| v.to_vec()))
 }
 
-pub fn get_lynch_leaderboard(db: &Db) -> Result<LynchLeaderboard> {
-    let db = db.open_tree("lynch_leaderboard")?;
+pub fn get_yeet_leaderboard(db: &Db) -> Result<YeetLeaderboard> {
+    let db = db.open_tree("yeet_leaderboard")?;
+    // TODO Need to convert data from lynch_leaderboard
 
     fn increment(_key: &[u8], old_value: Option<&[u8]>, _merged_bytes: &[u8]) -> Option<Vec<u8>> {
         create_update_with_deserialization::<usize>(
@@ -129,7 +130,7 @@ pub fn get_lynch_leaderboard(db: &Db) -> Result<LynchLeaderboard> {
 
     db.set_merge_operator(increment);
 
-    Ok(LynchLeaderboard(db))
+    Ok(YeetLeaderboard(db))
 }
 
 // struct MessageStore(Tree);

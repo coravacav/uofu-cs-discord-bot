@@ -61,7 +61,7 @@ impl Starboard {
             && self.is_channel_allowed(message.channel_id.into())
             && self.is_emote_allowed(emote_name)
             && self.is_message_unseen(&message.link())
-            && self.is_message_a_lynch(message).await
+            && self.is_message_a_yeet(message).await
             && self.is_channel_missing_reply(ctx, message).await;
 
         let check_msg = if check { "applies" } else { "does not apply" };
@@ -136,11 +136,11 @@ impl Starboard {
         check
     }
 
-    async fn is_message_a_lynch(&self, message: &serenity::Message) -> bool {
-        use crate::commands::lynch::{LYNCH_KNOWN_MESSAGE_PORTION, LYNCH_MAP};
+    async fn is_message_a_yeet(&self, message: &serenity::Message) -> bool {
+        use crate::commands::yeet::{YEET_KNOWN_MESSAGE_PORTION, YEET_MAP};
 
-        !LYNCH_MAP.contains_key(&message.id)
-            && !message.content.starts_with(LYNCH_KNOWN_MESSAGE_PORTION)
+        !YEET_MAP.contains_key(&message.id)
+            && !message.content.starts_with(YEET_KNOWN_MESSAGE_PORTION)
     }
 
     async fn is_channel_missing_reply(

@@ -3,12 +3,12 @@ pub mod class_commands;
 pub mod course_catalog;
 pub mod help;
 pub mod llm_prompt;
-pub mod lynch;
 pub mod register;
 pub mod sathya;
 pub mod set_bot_role;
 pub mod set_dog_role;
 pub mod timeout;
+pub mod yeet;
 
 use crate::data::PoiseContext;
 use color_eyre::eyre::{OptionExt, Result};
