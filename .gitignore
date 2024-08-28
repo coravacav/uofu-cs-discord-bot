@@ -28,8 +28,11 @@ assets/
 
 /.vscode/
 
-# don't track the ai model
-Meta-Llama-3.1-8B-Instruct-Q5_K_M.gguf
+# don't track the ai models
+Meta-Llama-3.1-8B-Instruct-Q8_0.gguf
+Hermes-3-Llama-3.1-8B.Q8_0.gguf
+tokenizer.json
+tokenizer_config.json
 
 # rocksdb db
 kingfisher.db

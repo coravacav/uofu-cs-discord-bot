@@ -19,7 +19,7 @@ help_text = """
 - `/ignoreme`: Disallow KingFisher automatic reactions to reply to your messages
 - `/woof`: Add @Bark role
 - `/muzzle`: Remove @Bark role
-- `/lynch <user>`: Lynch a user with the Bot React role. 6 yays or nays needed, yay for them, nay for you. You have 90 seconds.
+- `/Yeet <user>`: Yeet a user with the Bot React role for 5 minutes. 6 yays or nays needed, yay for them, nay for you. You have 90 seconds. 
 - `/timeout <duration>`: Timeout yourself for a parsable duration (e.g. 1d, 1h, 1m). Discord sets a limit at 4 weeks.
 - `/aur <query> <amount>`: Queries the AUR. Can only display the top 20 entries at maximum.
 
