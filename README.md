@@ -34,7 +34,7 @@ Next, for whatever server you'll run the bot in, you'll want to list the server 
 Then put it under `guild_id` in the config file.
 
 There's one more step. CUDA is a pain to build, so you'll want to turn that off.
-To do that, edit the `bot-llm/Cargo.toml` file and change the `llama_cpp = { version = "x.x.x", features = ["cuda"] }` to `llama_cpp = "x.x.x"`. 
+To do that, edit the `bot-llm/Cargo.toml` file and remove the `cuda` feature from all dependencies with it.
 
 Finally, run `cargo run` to start the bot.
 
