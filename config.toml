@@ -12,6 +12,7 @@ help_text = """
 [KingFisher](<https://github.com/coravacav/uofu-cs-discord-bot>) is an opportunistic comedian (RNG) that was written in [Rust](<https://doc.rust-lang.org/book/>) (the greatest language) for this server (of nerds).
 ### Commands:
 - `/help`: Display this help message.
+- `/send_feedback`: Easily create a github issue for Kingfisher. Links to the issue creation page.
 - `/join_class <course_id>`: Join a class. Gives you the role / access to the channels.
 - `/leave_class <course_id>`: Leave a class. Removes the role / access to the channels.
 - `/catalog <course_id>`: Get information about a course. Either add a prefix like MATH2240 or CS will be assumed.

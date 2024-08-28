@@ -313,9 +313,9 @@ checksum = "5ce89b21cab1437276d2650d57e971f9d548a2d9037cc231abdc0562b97498ce"
 
 [[package]]
 name = "bytemuck"
-version = "1.17.0"
+version = "1.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6fd4c6dcc3b0aea2f5c0b4b82c2b15fe39ddbc76041a310848f4706edf76bb31"
+checksum = "773d90827bc3feecfb67fab12e24de0749aad83c74b9504ecde46237b5cd24e2"
 dependencies = [
  "bytemuck_derive",
 ]
@@ -361,7 +361,7 @@ dependencies = [
 [[package]]
 name = "candle-core"
 version = "0.6.1"
-source = "git+https://github.com/huggingface/candle.git#fdc262268683b66393250d85bef58dba43161c6a"
+source = "git+https://github.com/huggingface/candle.git#29e25c458da869808502a88024f57b1c86efa090"
 dependencies = [
  "byteorder",
  "candle-kernels",
@@ -383,7 +383,7 @@ dependencies = [
 [[package]]
 name = "candle-examples"
 version = "0.6.1"
-source = "git+https://github.com/huggingface/candle.git#fdc262268683b66393250d85bef58dba43161c6a"
+source = "git+https://github.com/huggingface/candle.git#29e25c458da869808502a88024f57b1c86efa090"
 dependencies = [
  "anyhow",
  "bindgen_cuda",
@@ -404,7 +404,7 @@ dependencies = [
 [[package]]
 name = "candle-kernels"
 version = "0.6.1"
-source = "git+https://github.com/huggingface/candle.git#fdc262268683b66393250d85bef58dba43161c6a"
+source = "git+https://github.com/huggingface/candle.git#29e25c458da869808502a88024f57b1c86efa090"
 dependencies = [
  "bindgen_cuda",
 ]
@@ -412,7 +412,7 @@ dependencies = [
 [[package]]
 name = "candle-nn"
 version = "0.6.1"
-source = "git+https://github.com/huggingface/candle.git#fdc262268683b66393250d85bef58dba43161c6a"
+source = "git+https://github.com/huggingface/candle.git#29e25c458da869808502a88024f57b1c86efa090"
 dependencies = [
  "candle-core",
  "half",
@@ -426,7 +426,7 @@ dependencies = [
 [[package]]
 name = "candle-transformers"
 version = "0.6.1"
-source = "git+https://github.com/huggingface/candle.git#fdc262268683b66393250d85bef58dba43161c6a"
+source = "git+https://github.com/huggingface/candle.git#29e25c458da869808502a88024f57b1c86efa090"
 dependencies = [
  "byteorder",
  "candle-core",
@@ -465,9 +465,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.1.14"
+version = "1.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50d2eb3cd3d1bf4529e31c215ee6f93ec5a3d536d9f578f93d9d33ee19562932"
+checksum = "57b6a275aa2903740dc87da01c62040406b8812552e97129a63ea8850a17c6e6"
 dependencies = [
  "shlex",
 ]
@@ -696,9 +696,9 @@ dependencies = [
 
 [[package]]
 name = "cudarc"
-version = "0.11.6"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89df33b4eb35d6d3f19ce8015fda23079131afef42cf6ede03e961ab8aeb29af"
+checksum = "e736ec4e22548a5677d65fe191301c243cd63365db2e2def0e263b176f51531c"
 dependencies = [
  "half",
  "libloading",
@@ -994,9 +994,9 @@ dependencies = [
 
 [[package]]
 name = "filetime"
-version = "0.2.24"
+version = "0.2.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf401df4a4e3872c4fe8151134cf483738e74b67fc934d6532c882b3d24a4550"
+checksum = "35c0522e981e68cbfa8c3f978441a5f34b30b96e146b33cd3359176b50fe8586"
 dependencies = [
  "cfg-if",
  "libc",
@@ -2416,11 +2416,11 @@ dependencies = [
 
 [[package]]
 name = "proc-macro-crate"
-version = "3.1.0"
+version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d37c51ca738a55da99dc0c4a34860fd675453b8b36209178c2249bb13651284"
+checksum = "8ecf48c7ca261d60b74ab1a7b20da18bede46776b2e55535cb958eb595c5fa7b"
 dependencies = [
- "toml_edit 0.21.1",
+ "toml_edit",
 ]
 
 [[package]]
@@ -2749,9 +2749,9 @@ checksum = "719b953e2095829ee67db738b3bfa9fa368c94900df327b3f07fe6e794d2fe1f"
 
 [[package]]
 name = "rustix"
-version = "0.38.34"
+version = "0.38.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70dc5ec042f7a43c4a73241207cecc9873a06d45debb38b329f8541d85c2730f"
+checksum = "a85d50532239da68e9addb745ba38ff4612a242c1c7ceea689c4bc7c2f43c36f"
 dependencies = [
  "bitflags 2.6.0",
  "errno",
@@ -2781,7 +2781,7 @@ dependencies = [
  "log",
  "ring",
  "rustls-pki-types",
- "rustls-webpki 0.102.6",
+ "rustls-webpki 0.102.7",
  "subtle",
  "zeroize",
 ]
@@ -2796,7 +2796,7 @@ dependencies = [
  "once_cell",
  "ring",
  "rustls-pki-types",
- "rustls-webpki 0.102.6",
+ "rustls-webpki 0.102.7",
  "subtle",
  "zeroize",
 ]
@@ -2838,9 +2838,9 @@ dependencies = [
 
 [[package]]
 name = "rustls-webpki"
-version = "0.102.6"
+version = "0.102.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e6b52d4fda176fd835fdc55a835d4a89b8499cad995885a21149d5ad62f852e"
+checksum = "84678086bd54edf2b415183ed7a94d0efb049f1b646a33e22a36f3794be6ae56"
 dependencies = [
  "ring",
  "rustls-pki-types",
@@ -3563,7 +3563,7 @@ dependencies = [
  "serde",
  "serde_spanned",
  "toml_datetime",
- "toml_edit 0.22.20",
+ "toml_edit",
 ]
 
 [[package]]
@@ -3577,17 +3577,6 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.21.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a8534fd7f78b5405e860340ad6575217ce99f38d4d5c8f2442cb5ecb50090e1"
-dependencies = [
- "indexmap 2.4.0",
- "toml_datetime",
- "winnow 0.5.40",
-]
-
-[[package]]
-name = "toml_edit"
 version = "0.22.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "583c44c02ad26b0c3f3066fe629275e50627026c51ac2e595cca4c230ce1ce1d"
@@ -3596,7 +3585,7 @@ dependencies = [
  "serde",
  "serde_spanned",
  "toml_datetime",
- "winnow 0.6.18",
+ "winnow",
 ]
 
 [[package]]
@@ -3745,9 +3734,9 @@ checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
 
 [[package]]
 name = "typesize"
-version = "0.1.7"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb704842c709bc76f63e99e704cb208beeccca2abbabd0d9aec02e48ca1cee0f"
+checksum = "666137410f50df35fabf3c8ac6380d47281e9523799c74df192abba1b508b4bf"
 dependencies = [
  "chrono",
  "dashmap",
@@ -4048,7 +4037,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -4243,15 +4232,6 @@ name = "windows_x86_64_msvc"
 version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
-
-[[package]]
-name = "winnow"
-version = "0.5.40"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f593a95398737aeed53e489c785df13f3618e41dbcd6718c6addbf1395aa6876"
-dependencies = [
- "memchr",
-]
 
 [[package]]
 name = "winnow"
