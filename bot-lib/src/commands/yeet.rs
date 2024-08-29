@@ -11,7 +11,7 @@ use poise::serenity_prelude::{
     self as serenity, ChannelId, CreateMessage, EditMessage, GuildId, Mentionable, MessageBuilder,
     MessageId, User, UserId,
 };
-use std::{collections::BinaryHeap, sync::LazyLock, time::Duration};
+use std::{cmp::Reverse, sync::LazyLock, time::Duration};
 use tokio::{
     sync::Mutex,
     time::{interval, sleep},
@@ -294,38 +294,18 @@ async fn save_to_yeet_leaderboard(
     Ok(())
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct YeetEntry {
-    user_id: serenity::UserId,
-    count: u64,
-}
-
-impl PartialOrd for YeetEntry {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for YeetEntry {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.count.cmp(&other.count)
-    }
-}
-
 /// See who has been yeeted the most
-#[poise::command(slash_command, rename = "yeet_leaderboard", ephemeral = true)]
+#[poise::command(slash_command, rename = "yeeterboard", ephemeral = true)]
 pub async fn yeet_leaderboard(ctx: PoiseContext<'_>) -> Result<()> {
     let mut message_text = String::from("### Yeet leaderboard:\n");
-    let mut yeeted = BinaryHeap::new();
 
     let yeet_leaderboard = YeetLeaderboard::new(&ctx.data().db)?;
 
-    for (user_id, count) in yeet_leaderboard.iter() {
-        yeeted.push(YeetEntry { user_id, count });
-    }
-
-    for entry in yeeted {
-        message_text.push_str(&format!("{}: {}\n", entry.user_id.mention(), entry.count));
+    for (user_id, count) in yeet_leaderboard
+        .iter()
+        .sorted_by_key(|(_, count)| Reverse(*count))
+    {
+        message_text.push_str(&format!("{}: {}\n", user_id.mention(), count));
     }
 
     ctx.say(message_text).await?;

@@ -36,7 +36,7 @@ impl YeetLeaderboard {
 
     pub fn increment(&self, user_id: serenity::UserId) -> Result<Option<u64>> {
         let user_id: u64 = user_id.into();
-        self.0.typed_merge(&user_id, &0u64)
+        self.0.typed_merge(&user_id, &1u64)
     }
 
     pub fn get(&self, user_id: serenity::UserId) -> Result<Option<u64>> {

@@ -26,38 +26,6 @@ pub trait ReadWriteTree {
     ) -> Result<Option<V>>;
 }
 
-#[derive(Debug)]
-pub struct KingFisherDb(Db);
-
-impl KingFisherDb {
-    pub fn new() -> Result<Self> {
-        Ok(Self(sled::open("kingfisher.db")?))
-    }
-
-    fn create_update_with_deserialization<V: DeserializeOwned + Serialize + Debug>(
-        old_value: Option<&[u8]>,
-        update_function: impl FnMut(V) -> V,
-        mut get_default_value: impl FnMut() -> V,
-    ) -> Option<Vec<u8>> {
-        old_value
-            .map_or_else(
-                || Ok(get_default_value()),
-                |v| bincode::deserialize::<V>(v).wrap_err("Failed to deserialize"),
-            )
-            .trace_err_ok()
-            .map(update_function)
-            .map(|new_value| bincode::serialize::<V>(&new_value).wrap_err("Failed to serialize"))
-            .transpose()
-            .trace_err_ok()
-            .flatten()
-            .or_else(|| old_value.map(|v| v.to_vec()))
-    }
-
-    fn open_tree(&self, name: impl AsRef<[u8]>) -> Result<Tree> {
-        self.0.open_tree(name).wrap_err("Failed to open tree")
-    }
-}
-
 impl ReadWriteTree for Tree {
     fn typed_insert<K: DeserializeOwned + Serialize, V: DeserializeOwned + Serialize>(
         &self,
@@ -93,4 +61,40 @@ impl ReadWriteTree for Tree {
             .map(|value| bincode::deserialize::<V>(&value))
             .transpose()?)
     }
+}
+
+#[derive(Debug)]
+pub struct KingFisherDb(Db);
+
+impl KingFisherDb {
+    pub fn new() -> Result<Self> {
+        Ok(Self(sled::open("kingfisher.db")?))
+    }
+
+    fn create_update_with_deserialization<V: DeserializeOwned + Serialize + Debug>(
+        old_value: Option<&[u8]>,
+        update_function: impl FnMut(V) -> V,
+        mut get_default_value: impl FnMut() -> V,
+    ) -> Option<Vec<u8>> {
+        old_value
+            .map_or_else(
+                || Ok(get_default_value()),
+                |v| bincode::deserialize::<V>(v).wrap_err("Failed to deserialize"),
+            )
+            .trace_err_ok()
+            .map(update_function)
+            .map(|new_value| bincode::serialize::<V>(&new_value).wrap_err("Failed to serialize"))
+            .transpose()
+            .trace_err_ok()
+            .flatten()
+            .or_else(|| old_value.map(|v| v.to_vec()))
+    }
+
+    fn open_tree(&self, name: impl AsRef<[u8]>) -> Result<Tree> {
+        self.0.open_tree(name).wrap_err("Failed to open tree")
+    }
+}
+
+pub fn perform_migration() -> Result<()> {
+    Ok(())
 }
