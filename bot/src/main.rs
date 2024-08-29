@@ -19,6 +19,7 @@ use bot_lib::{
     config,
     data::AppState,
     event_handler::event_handler,
+    trace_err_ext::ForwardRefToTracing,
 };
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
@@ -138,13 +139,7 @@ async fn main() -> Result<()> {
         let mut stdin = stdin();
         let mut key = [0; 1];
         loop {
-            stdin
-                .read_exact(&mut key)
-                .await
-                .inspect_err(|e| {
-                    tracing::error!("Failed to read from stdin: {:?}", e);
-                })
-                .ok();
+            stdin.read_exact(&mut key).await.trace_err_ok();
 
             // This will be expanded later
             match key[0] {

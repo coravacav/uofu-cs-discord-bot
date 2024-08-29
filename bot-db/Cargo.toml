@@ -1,0 +1,12 @@
+[package]
+name = "bot-db"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sled = "0.34.7"
+bincode = "1.3.3"
+color-eyre = { workspace = true }
+serde = { workspace = true }
+bot-traits = { workspace = true }
+poise = { workspace = true }

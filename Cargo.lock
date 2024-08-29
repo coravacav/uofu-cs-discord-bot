@@ -250,10 +250,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "bot-lib"
+name = "bot-db"
 version = "0.1.0"
 dependencies = [
  "bincode",
+ "bot-traits",
+ "color-eyre",
+ "poise",
+ "serde",
+ "sled",
+]
+
+[[package]]
+name = "bot-lib"
+version = "0.1.0"
+dependencies = [
+ "bot-db",
  "bot-llm",
  "chrono",
  "color-eyre",
@@ -275,7 +287,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
- "sled",
  "tap",
  "tokio",
  "tokio-stream",
@@ -297,6 +308,13 @@ dependencies = [
  "rand",
  "tokenizers",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "bot-traits"
+version = "0.1.0"
+dependencies = [
+ "tracing",
 ]
 
 [[package]]

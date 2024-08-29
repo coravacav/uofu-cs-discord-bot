@@ -1,12 +1,12 @@
 use crate::{
     config::{Config, ResponseKind},
-    db, llm,
+    llm,
 };
+use bot_db::KingFisherDb;
 use color_eyre::eyre::{Error, OptionExt, Result};
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::Message;
 use rand::seq::SliceRandom;
-use sled::Db;
 use std::{path::Path, sync::Arc};
 use tokio::sync::RwLock;
 use tracing::{event, Level};
@@ -22,7 +22,7 @@ pub struct AppState {
     /// This is to allow for saving / reloading the config.
     pub config_path: Box<Path>,
     pub llm_tx: crossbeam_channel::Sender<(Arc<String>, tokio::sync::oneshot::Sender<String>)>,
-    pub db: Db,
+    pub db: KingFisherDb,
 }
 
 impl AppState {
@@ -30,7 +30,7 @@ impl AppState {
         let config = Arc::new(RwLock::new(config));
 
         let llm_tx = llm::setup_llm()?;
-        let db = db::get_db()?;
+        let db = KingFisherDb::new()?;
 
         use notify::{
             event::{AccessKind, AccessMode},

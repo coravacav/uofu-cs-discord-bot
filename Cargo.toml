@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["bot", "bot-lib", "bot-llm"]
+members = ["bot", "bot-db", "bot-lib", "bot-llm", "bot-traits"]
 
 [profile.release]
 debug = 0
@@ -16,5 +16,8 @@ poise = "0.6.1"
 tracing = "0.1.40"
 bot-llm = { path = 'bot-llm' }
 bot-lib = { path = 'bot-lib' }
+bot-traits = { path = 'bot-traits' }
+bot-db = { path = 'bot-db' }
 rand = "0.8.5"
 dashmap = { version = "5.5.3", features = ["inline"] }
+serde = { version = "1.0.198", features = ["derive", "rc"] }

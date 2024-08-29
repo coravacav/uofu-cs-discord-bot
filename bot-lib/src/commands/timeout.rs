@@ -14,6 +14,11 @@ pub async fn timeout(
 ) -> Result<()> {
     tracing::trace!("timeout command");
 
+    if time_text.len() > 20 {
+        ctx.say("Send something reasonable, please.").await?;
+        return Ok(());
+    }
+
     let author = ctx.author();
     let Ok(time) = fundu::parse_duration(&time_text) else {
         tracing::info!(

@@ -1,8 +1,8 @@
 use crate::{
     data::{AppState, PoiseContext},
-    db::get_yeet_leaderboard,
     utils::GetRelativeTimestamp,
 };
+use bot_db::yeet::YeetLeaderboard;
 use color_eyre::eyre::{bail, OptionExt, Result};
 use core::str;
 use dashmap::DashMap;
@@ -289,9 +289,7 @@ async fn save_to_yeet_leaderboard(
     target: &UserId,
 ) -> Result<()> {
     let target = target.to_user(ctx).await?.id;
-    let yeet_leaderboard = get_yeet_leaderboard(&data.db)?;
-
-    yeet_leaderboard.increment(target)?;
+    YeetLeaderboard::new(&data.db)?.increment(target)?;
 
     Ok(())
 }
@@ -320,7 +318,7 @@ pub async fn yeet_leaderboard(ctx: PoiseContext<'_>) -> Result<()> {
     let mut message_text = String::from("### Yeet leaderboard:\n");
     let mut yeeted = BinaryHeap::new();
 
-    let yeet_leaderboard = get_yeet_leaderboard(&ctx.data().db)?;
+    let yeet_leaderboard = YeetLeaderboard::new(&ctx.data().db)?;
 
     for (user_id, count) in yeet_leaderboard.iter() {
         yeeted.push(YeetEntry { user_id, count });

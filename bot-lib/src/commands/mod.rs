@@ -5,6 +5,7 @@ pub mod feedback;
 pub mod help;
 pub mod llm_prompt;
 pub mod register;
+pub mod russian_roulette;
 pub mod sathya;
 pub mod set_bot_role;
 pub mod set_dog_role;
