@@ -76,7 +76,10 @@ async fn try_lock_llm(ctx: PoiseContext<'_>) -> Result<()> {
 /// Ask kingfisher anything!
 #[poise::command(slash_command, prefix_command, rename = "llm")]
 pub async fn llm_prompt(ctx: PoiseContext<'_>, prompt: String) -> Result<()> {
-    try_lock_llm(ctx).await.ok();
+    if try_lock_llm(ctx).await.ok().is_none() {
+        return Ok(());
+    }
+
     let prompt = Arc::new(prompt);
 
     ctx.defer().await?;
