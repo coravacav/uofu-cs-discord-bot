@@ -13,16 +13,18 @@ help_text = """
 ### Commands:
 - `/help`: Display this help message.
 - `/send_feedback`: Easily create a github issue for Kingfisher. Links to the issue creation page.
-- `/join_class <course_id>`: Join a class. Gives you the role / access to the channels.
+- `/join_class <course_id>`: Join a class. Gives the role / access to the channels.
 - `/leave_class <course_id>`: Leave a class. Removes the role / access to the channels.
 - `/catalog <course_id>`: Get information about a course. Either add a prefix like MATH2240 or CS will be assumed.
-- `/reactme`: Allow KingFisher automatic reactions to reply to your messages (including luck)
-- `/ignoreme`: Disallow KingFisher automatic reactions to reply to your messages
+- `/reactme`: Allow KingFisher automatic reactions to reply to your messages (including luck). Enables other features as well.
+- `/ignoreme`: Disallow KingFisher automatic reactions to reply to your messages and disables other features.
 - `/woof`: Add @Bark role
 - `/muzzle`: Remove @Bark role
-- `/Yeet <user>`: Yeet a user with the Bot React role for 5 minutes. 6 yays or nays needed, yay for them, nay for you. You have 90 seconds. 
+- `/yeet <user>`: Yeet a user with the Bot React role for 5 minutes. 6 yays or nays needed, yay for them, nay for you. You have 90 seconds. 
 - `/timeout <duration>`: Timeout yourself for a parsable duration (e.g. 1d, 1h, 1m). Discord sets a limit at 4 weeks.
 - `/aur <query> <amount>`: Queries the AUR. Can only display the top 20 entries at maximum.
+- `/income`: Get some income (5 coins once per minute)
+- `/fishercoin_balance`: What's my balance?
 
 KingFisher also sometimes really likes to react to messages. That's why he replies sometimes (21% rate, unless you're pinging Stefan or typing "luck").
 
