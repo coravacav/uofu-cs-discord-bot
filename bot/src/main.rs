@@ -1,11 +1,13 @@
 use bot_lib::{
     commands::{
         aur_search::aur_search,
+        bank::{fishercoin_balance, give_charity},
         class_commands::{
             add_class_role, create_class_category, delete_class_category, remove_class_role,
             reset_class_categories, reset_class_category, update_class_category,
         },
         course_catalog::course_catalog,
+        db::{clear_value, inspect_value},
         feedback::send_feedback,
         help::help,
         llm_prompt::llm_prompt,
@@ -19,8 +21,8 @@ use bot_lib::{
     config,
     data::AppState,
     event_handler::event_handler,
-    trace_err_ext::ForwardRefToTracing,
 };
+use bot_traits::ForwardRefToTracing;
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use dotenvy::dotenv;
@@ -83,6 +85,10 @@ async fn main() -> Result<()> {
                 delete_class_category(),
                 yeet_leaderboard(),
                 add_dog_role(),
+                clear_value(),
+                fishercoin_balance(),
+                give_charity(),
+                inspect_value(),
                 remove_dog_role(),
                 update_class_category(),
                 add_class_role(),
@@ -97,6 +103,11 @@ async fn main() -> Result<()> {
                 async fn on_error(
                     error: poise::FrameworkError<'_, AppState, color_eyre::eyre::Error>,
                 ) {
+                    // Don't care.
+                    if let poise::FrameworkError::CommandCheckFailed { .. } = error {
+                        return;
+                    }
+
                     tracing::error!("{:?}", error);
                 }
 

@@ -10,3 +10,4 @@ color-eyre = { workspace = true }
 serde = { workspace = true }
 bot-traits = { workspace = true }
 poise = { workspace = true }
+tracing = { workspace = true }

@@ -10,6 +10,7 @@ color-eyre = {workspace = true}
 poise = {workspace = true}
 tracing = {workspace = true}
 bot-lib = { workspace = true }
+bot-traits = { workspace = true }
 clap = { version = "4.5.4", features = ["derive"] }
 dotenvy = "0.15.7"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt"] }

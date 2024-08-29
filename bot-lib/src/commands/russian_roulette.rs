@@ -19,67 +19,15 @@
 // use tokio_stream::wrappers::IntervalStream;
 
 // #[derive(Clone)]
-// pub struct YeetData {
+// pub struct RussianRoulette {
 //     yeeter: UserId,
 //     victim: UserId,
 //     guild_id: GuildId,
 //     channel_id: ChannelId,
 // }
 
-// pub const YEET_DEFAULT_OPPORTUNITIES: usize = 3;
-// pub const YEET_REQUIRED_REACTION_COUNT: u64 = 6;
-// pub const YEET_NO_REACTION: char = '❌';
-// pub const YEET_YES_REACTION: char = '✅';
-// pub const YEET_DURATION_SECONDS: u64 = 300;
-// pub const YEET_REFRESH_CHARGE_SECONDS: u64 = 3600;
-// pub const YEET_VOTING_SECONDS: u64 = 90;
-// pub const YEET_KNOWN_MESSAGE_PORTION: &str = "Do you want to yeet ";
-
-// pub static YEET_MAP: LazyLock<DashMap<MessageId, YeetData>> = LazyLock::new(DashMap::new);
-// pub static YEET_OPPORTUNITIES: LazyLock<Mutex<usize>> =
-//     LazyLock::new(|| Mutex::new(YEET_DEFAULT_OPPORTUNITIES));
-
-// async fn check_yeet_opportunities() -> Result<bool> {
-//     let mut yeet_opportunities = YEET_OPPORTUNITIES.lock().await;
-
-//     if *yeet_opportunities == 0 {
-//         return Ok(false);
-//     }
-
-//     *yeet_opportunities = (*yeet_opportunities).saturating_sub(1);
-//     tracing::info!("Updated yeet opportunities to {yeet_opportunities}");
-
-//     Ok(true)
-// }
-
-// fn create_yeet_message(yeeter: &User, victim: &User) -> Result<CreateMessage> {
-//     Ok(CreateMessage::new()
-//         .content(
-//             MessageBuilder::new()
-//                 .push(YEET_KNOWN_MESSAGE_PORTION)
-//                 .mention(victim)
-//                 .push(format!(
-//                     "? ({} {}'s needed)\n",
-//                     YEET_REQUIRED_REACTION_COUNT, YEET_YES_REACTION,
-//                 ))
-//                 .push(format!(
-//                     "Or, vote {} to yeet the author: ||",
-//                     YEET_NO_REACTION
-//                 ))
-//                 .mention(yeeter)
-//                 .push("||\n")
-//                 .push("Otherwise, this will be deleted ")
-//                 .push(
-//                     (chrono::Utc::now() + Duration::from_secs(YEET_VOTING_SECONDS))
-//                         .discord_relative_timestamp(),
-//                 )
-//                 .build(),
-//         )
-//         .reactions([YEET_YES_REACTION, YEET_NO_REACTION]))
-// }
-
-// /// Yeet a user if you get 6 yay votes, get yeeted yourself if they vote nay
-// #[poise::command(slash_command, rename = "yeet", ephemeral = true)]
+// /// Start a round of russian roulette
+// #[poise::command(slash_command, ephemeral = true)]
 // pub async fn yeet(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
 //     let yeeter = ctx.author();
 //     let guild_id = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
@@ -105,7 +53,7 @@
 
 //     YEET_MAP.insert(
 //         msg.id,
-//         YeetData {
+//         RussianRoulette {
 //             yeeter: yeeter.id,
 //             victim: victim.id,
 //             guild_id,

@@ -8,5 +8,4 @@ mod lang;
 pub mod llm;
 mod starboard;
 mod text_detection;
-pub mod trace_err_ext;
 mod utils;

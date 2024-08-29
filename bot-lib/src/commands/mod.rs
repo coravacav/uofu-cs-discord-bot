@@ -1,6 +1,8 @@
 pub mod aur_search;
+pub mod bank;
 pub mod class_commands;
 pub mod course_catalog;
+pub mod db;
 pub mod feedback;
 pub mod help;
 pub mod llm_prompt;
@@ -21,4 +23,8 @@ pub async fn get_member(ctx: PoiseContext<'_>) -> Result<Member> {
     let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
 
     Ok(guild.member(ctx, author.id).await?)
+}
+
+pub async fn is_stefan(ctx: PoiseContext<'_>) -> Result<bool> {
+    Ok(ctx.author().id == 216767618923757568)
 }

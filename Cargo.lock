@@ -240,6 +240,7 @@ name = "bot"
 version = "0.1.0"
 dependencies = [
  "bot-lib",
+ "bot-traits",
  "clap",
  "color-eyre",
  "dotenvy",
@@ -259,6 +260,7 @@ dependencies = [
  "poise",
  "serde",
  "sled",
+ "tracing",
 ]
 
 [[package]]

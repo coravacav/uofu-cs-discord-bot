@@ -1,11 +1,12 @@
+pub mod bank;
+pub mod russian_roulette;
 pub mod yeet;
-
-use std::fmt::Debug;
 
 use bot_traits::ForwardRefToTracing;
 use color_eyre::eyre::{Context, Result};
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sled::{Db, Tree};
+use std::fmt::Debug;
 
 pub trait ReadWriteTree {
     fn typed_insert<K: DeserializeOwned + Serialize, V: DeserializeOwned + Serialize>(
@@ -18,6 +19,14 @@ pub trait ReadWriteTree {
         &self,
         key: &K,
     ) -> Result<Option<V>>;
+
+    fn typed_get_or_default<
+        K: DeserializeOwned + Serialize,
+        V: DeserializeOwned + Serialize + Default,
+    >(
+        &self,
+        key: &K,
+    ) -> Result<V>;
 
     fn typed_merge<K: DeserializeOwned + Serialize, V: DeserializeOwned + Serialize>(
         &self,
@@ -46,6 +55,24 @@ impl ReadWriteTree for Tree {
             .get(bincode::serialize::<K>(key)?)?
             .map(|value| bincode::deserialize::<V>(&value))
             .transpose()?)
+    }
+
+    fn typed_get_or_default<
+        K: DeserializeOwned + Serialize,
+        V: DeserializeOwned + Serialize + Default,
+    >(
+        &self,
+        key: &K,
+    ) -> Result<V> {
+        Ok(self
+            .get(bincode::serialize::<K>(key).context("Failed to serialize key")?)
+            .trace_err_ok()
+            .flatten()
+            .map(|value| bincode::deserialize::<V>(&value))
+            .transpose()
+            .ok()
+            .flatten()
+            .unwrap_or_default())
     }
 
     fn typed_merge<K: DeserializeOwned + Serialize, V: DeserializeOwned + Serialize>(
@@ -79,11 +106,11 @@ impl KingFisherDb {
         old_value
             .map_or_else(
                 || Ok(get_default_value()),
-                |v| bincode::deserialize::<V>(v).wrap_err("Failed to deserialize"),
+                |v| bincode::deserialize::<V>(v).context("Failed to deserialize"),
             )
             .trace_err_ok()
             .map(update_function)
-            .map(|new_value| bincode::serialize::<V>(&new_value).wrap_err("Failed to serialize"))
+            .map(|new_value| bincode::serialize::<V>(&new_value).context("Failed to serialize"))
             .transpose()
             .trace_err_ok()
             .flatten()
@@ -93,8 +120,82 @@ impl KingFisherDb {
     fn open_tree(&self, name: impl AsRef<[u8]>) -> Result<Tree> {
         self.0.open_tree(name).wrap_err("Failed to open tree")
     }
+
+    pub fn debug_remove_value<K: DeserializeOwned + Serialize + Debug>(
+        &self,
+        tree: &str,
+        key: &K,
+    ) -> Result<()> {
+        let key = bincode::serialize::<K>(key)?;
+        let db = self.open_tree(tree)?;
+        db.remove(&key)?;
+        Ok(())
+    }
+
+    pub fn debug_inspect_value<K: DeserializeOwned + Serialize + Debug>(
+        &self,
+        tree: &str,
+        key: &K,
+    ) -> Result<Option<String>> {
+        let key = bincode::serialize::<K>(key)?;
+        let db = self.open_tree(tree)?;
+        Ok(db.get(&key)?.map(|v| format!("{:?}", v)))
+    }
 }
 
-pub fn perform_migration() -> Result<()> {
+fn perform_migration<
+    OldValue: DeserializeOwned + Serialize + Debug,
+    NewValue: DeserializeOwned + Serialize + Debug,
+    OldKey: DeserializeOwned + Serialize + Debug,
+    NewKey: DeserializeOwned + Serialize + Debug,
+>(
+    tree: &Tree,
+    version_check_function: impl Fn(&OldValue) -> bool,
+    mut update_function: impl FnMut(OldKey, OldValue) -> (NewKey, NewValue),
+) -> Result<()> {
+    // Store last
+    for data in tree.iter() {
+        let Ok((old_key_bytes, old_value_bytes)) = data else {
+            continue;
+        };
+
+        let Ok(old_key) = bincode::deserialize::<OldKey>(&old_key_bytes) else {
+            eprintln!("Failed to deserialize old key, {:?}", old_key_bytes);
+            continue;
+        };
+
+        let Ok(old_value) = bincode::deserialize::<OldValue>(&old_value_bytes) else {
+            eprintln!("Failed to deserialize old value, key={:?}", old_key);
+            continue;
+        };
+
+        if !version_check_function(&old_value) {
+            continue;
+        }
+
+        let (new_key, new_value) = update_function(old_key, old_value);
+
+        let new_key_bytes = bincode::serialize::<NewKey>(&new_key)?;
+        let new_value_bytes = bincode::serialize::<NewValue>(&new_value)?;
+
+        if *new_key_bytes != *old_key_bytes {
+            tree.remove(&old_key_bytes)?;
+        }
+
+        tree.insert(new_key_bytes, new_value_bytes)?;
+    }
+
     Ok(())
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct DataWithVersion<T> {
+    version: u32,
+    data: T,
+}
+
+impl<T> DataWithVersion<T> {
+    fn new(version: u32, data: T) -> Self {
+        Self { version, data }
+    }
 }
