@@ -22,7 +22,7 @@ pub async fn aur_search(
         .filter(|c| c.is_alphanumeric())
         .collect::<String>();
 
-    if search.is_empty() {
+    if search.len() < 2 || search.is_empty() {
         ctx.reply("Please provide a valid search string").await?;
         return Ok(());
     }

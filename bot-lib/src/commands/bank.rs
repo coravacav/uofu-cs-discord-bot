@@ -11,19 +11,21 @@ use dashmap::DashMap;
 use poise::serenity_prelude::{Mentionable, User, UserId};
 use rand::Rng;
 
+#[poise::command(slash_command, subcommands("balance", "income", "gamble", "history",))]
+pub async fn bank(_ctx: PoiseContext<'_>) -> Result<()> {
+    Ok(())
+}
+
 #[poise::command(
     slash_command,
     subcommands(
-        "balance",
-        "income",
-        "gamble",
-        "history",
-        "zgive_charity",
-        "zinspect_history",
-        "zinspect_balance"
-    )
+        "give_charity",
+        "inspect_history",
+        "inspect_balance"
+    ),
+    check = is_stefan
 )]
-pub async fn bank(_ctx: PoiseContext<'_>) -> Result<()> {
+pub async fn bank_admin(_ctx: PoiseContext<'_>) -> Result<()> {
     Ok(())
 }
 
@@ -43,7 +45,7 @@ pub async fn balance(ctx: PoiseContext<'_>) -> Result<()> {
 
 /// For stefan only, see a user's balance
 #[poise::command(slash_command, ephemeral = true, check = is_stefan)]
-pub async fn zinspect_balance(ctx: PoiseContext<'_>, user: User) -> Result<()> {
+pub async fn inspect_balance(ctx: PoiseContext<'_>, user: User) -> Result<()> {
     let bank = BankDb::new(&ctx.data().db)?;
     let user_id = user.id;
     let account = bank.get(user_id)?;
@@ -104,8 +106,8 @@ pub async fn income(ctx: PoiseContext<'_>) -> Result<()> {
 }
 
 /// For Stefan only, give charity.
-#[poise::command(slash_command, ephemeral = true, check=is_stefan, hide_in_help = true)]
-pub async fn zgive_charity(
+#[poise::command(slash_command, ephemeral = true, hide_in_help = true)]
+pub async fn give_charity(
     ctx: PoiseContext<'_>,
     charity_recipient: User,
     amount: i64,
@@ -217,7 +219,7 @@ pub async fn history(ctx: PoiseContext<'_>) -> Result<()> {
 
 /// For stefan only, see the history of a user
 #[poise::command(slash_command, ephemeral = true, check = is_stefan)]
-pub async fn zinspect_history(ctx: PoiseContext<'_>, user: User) -> Result<()> {
+pub async fn inspect_history(ctx: PoiseContext<'_>, user: User) -> Result<()> {
     let bank = BankDb::new(&ctx.data().db)?;
     let user_id = user.id;
 

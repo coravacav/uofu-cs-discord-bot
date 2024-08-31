@@ -2,7 +2,7 @@ pub mod aur_search;
 pub mod bank;
 pub mod class_commands;
 pub mod course_catalog;
-pub mod db;
+pub mod db_admin;
 pub mod feedback;
 pub mod help;
 pub mod llm_prompt;

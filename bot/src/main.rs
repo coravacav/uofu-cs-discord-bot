@@ -1,13 +1,13 @@
 use bot_lib::{
     commands::{
         aur_search::aur_search,
-        bank::bank,
+        bank::{bank, bank_admin},
         class_commands::{
             add_class_role, create_class_category, delete_class_category, remove_class_role,
             reset_class_categories, reset_class_category, update_class_category,
         },
         course_catalog::course_catalog,
-        db::{clear_value, inspect_value},
+        db_admin::db_admin,
         feedback::send_feedback,
         help::help,
         llm_prompt::llm_prompt,
@@ -85,9 +85,9 @@ async fn main() -> Result<()> {
                 delete_class_category(),
                 yeet_leaderboard(),
                 add_dog_role(),
-                clear_value(),
-                inspect_value(),
                 bank(),
+                bank_admin(),
+                db_admin(),
                 remove_dog_role(),
                 update_class_category(),
                 add_class_role(),
