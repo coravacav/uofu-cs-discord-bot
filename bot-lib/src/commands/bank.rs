@@ -35,8 +35,13 @@ pub async fn balance(ctx: PoiseContext<'_>) -> Result<()> {
 
 static INSTANT_BY_USER_ID: LazyLock<DashMap<UserId, Instant>> = LazyLock::new(DashMap::new);
 const PER_USER_INCOME_TIMEOUT_SECONDS: u64 = 60;
+static BONUS_BY_USER_ID: LazyLock<DashMap<UserId, i64>> = LazyLock::new(DashMap::new);
 
-/// Get some income (5 coins, you can do it once per minute)
+pub fn reset_user_bonus(user_id: UserId) {
+    BONUS_BY_USER_ID.remove(&user_id);
+}
+
+/// Get some income (5 coins, once per minute, bonus if you repeat without sending messages)
 #[poise::command(slash_command, ephemeral = true)]
 pub async fn income(ctx: PoiseContext<'_>) -> Result<()> {
     let bank = BankDb::new(&ctx.data().db)?;
@@ -53,11 +58,19 @@ pub async fn income(ctx: PoiseContext<'_>) -> Result<()> {
     }
 
     INSTANT_BY_USER_ID.insert(user_id, Instant::now());
+    let mut bonus_amount = BONUS_BY_USER_ID.entry(user_id).or_insert(-1);
+    *bonus_amount += 1;
+    let bonus_amount = *bonus_amount;
 
-    bank.change(user_id, 5, String::from("Income"))?;
+    bank.change(user_id, 5 + bonus_amount, String::from("Income"))?;
 
     ctx.reply(format!(
-        "Paycheck deposited! Your new balance is {}",
+        "Paycheck deposited{}! Your new balance is {}",
+        if bonus_amount > 0 {
+            format!(" with a bonus of {}", bonus_amount)
+        } else {
+            String::new()
+        },
         bank.get(user_id)?.balance
     ))
     .await?;
@@ -99,6 +112,8 @@ pub async fn gamble(
 ) -> Result<()> {
     let bank = BankDb::new(&ctx.data().db)?;
     let user_id = ctx.author().id;
+
+    reset_user_bonus(user_id);
 
     if amount <= 0 {
         ctx.say("Trying to gamble negative money? No.").await?;
