@@ -64,4 +64,15 @@ impl BankDb {
         self.0
             .typed_merge::<u64, Change, BankAccount>(&user_id, &change)
     }
+
+    pub fn get_history(
+        &self,
+        user_id: serenity::UserId,
+    ) -> Result<Option<impl DoubleEndedIterator<Item = Change>>> {
+        let user_id: u64 = user_id.into();
+
+        let account = self.0.typed_get::<u64, BankAccount>(&user_id)?;
+
+        Ok(account.map(|account| account.changes.into_iter()))
+    }
 }

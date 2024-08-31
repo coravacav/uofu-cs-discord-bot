@@ -5,7 +5,7 @@ use std::{
 
 use crate::commands::is_stefan;
 use crate::data::PoiseContext;
-use bot_db::bank::BankDb;
+use bot_db::bank::{BankDb, Change};
 use color_eyre::eyre::Result;
 use dashmap::DashMap;
 use poise::serenity_prelude::{Mentionable, User, UserId};
@@ -13,7 +13,15 @@ use rand::Rng;
 
 #[poise::command(
     slash_command,
-    subcommands("balance", "income", "give_charity", "gamble")
+    subcommands(
+        "balance",
+        "income",
+        "gamble",
+        "history",
+        "zgive_charity",
+        "zinspect_history",
+        "zinspect_balance"
+    )
 )]
 pub async fn bank(_ctx: PoiseContext<'_>) -> Result<()> {
     Ok(())
@@ -27,6 +35,23 @@ pub async fn balance(ctx: PoiseContext<'_>) -> Result<()> {
     ctx.say(format!(
         "Your balance is {}",
         bank.get(ctx.author().id)?.balance
+    ))
+    .await?;
+
+    Ok(())
+}
+
+/// For stefan only, see a user's balance
+#[poise::command(slash_command, ephemeral = true, check = is_stefan)]
+pub async fn zinspect_balance(ctx: PoiseContext<'_>, user: User) -> Result<()> {
+    let bank = BankDb::new(&ctx.data().db)?;
+    let user_id = user.id;
+    let account = bank.get(user_id)?;
+
+    ctx.say(format!(
+        "{}'s balance is {}",
+        user.mention(),
+        account.balance
     ))
     .await?;
 
@@ -80,7 +105,7 @@ pub async fn income(ctx: PoiseContext<'_>) -> Result<()> {
 
 /// For Stefan only, give charity.
 #[poise::command(slash_command, ephemeral = true, check=is_stefan, hide_in_help = true)]
-pub async fn give_charity(
+pub async fn zgive_charity(
     ctx: PoiseContext<'_>,
     charity_recipient: User,
     amount: i64,
@@ -157,6 +182,51 @@ pub async fn gamble(
         account.balance
     ))
     .await?;
+
+    Ok(())
+}
+
+fn build_history_message(history: impl DoubleEndedIterator<Item = Change>, user: UserId) -> String {
+    let mut message_text = String::from("### History:\n");
+
+    message_text.push_str(&user.mention().to_string());
+    message_text.push('\n');
+
+    for Change { amount, reason } in history.rev().take(20) {
+        message_text.push_str(&format!("`{:>9}`: {}\n", amount, reason));
+    }
+
+    message_text
+}
+
+/// Inspect your own history
+#[poise::command(slash_command, ephemeral = true)]
+pub async fn history(ctx: PoiseContext<'_>) -> Result<()> {
+    let bank = BankDb::new(&ctx.data().db)?;
+    let author = ctx.author().id;
+
+    let Some(history) = bank.get_history(author)? else {
+        ctx.say("No history found for that user").await?;
+        return Ok(());
+    };
+
+    ctx.say(build_history_message(history, author)).await?;
+
+    Ok(())
+}
+
+/// For stefan only, see the history of a user
+#[poise::command(slash_command, ephemeral = true, check = is_stefan)]
+pub async fn zinspect_history(ctx: PoiseContext<'_>, user: User) -> Result<()> {
+    let bank = BankDb::new(&ctx.data().db)?;
+    let user_id = user.id;
+
+    let Some(history) = bank.get_history(user_id)? else {
+        ctx.say("No history found for that user").await?;
+        return Ok(());
+    };
+
+    ctx.say(build_history_message(history, user_id)).await?;
 
     Ok(())
 }
