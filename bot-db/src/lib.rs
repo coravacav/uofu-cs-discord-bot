@@ -28,11 +28,15 @@ pub trait ReadWriteTree {
         key: &K,
     ) -> Result<V>;
 
-    fn typed_merge<K: DeserializeOwned + Serialize, V: DeserializeOwned + Serialize>(
+    fn typed_merge<
+        K: DeserializeOwned + Serialize,
+        InsertedValue: DeserializeOwned + Serialize,
+        ReturnedValue: DeserializeOwned + Serialize,
+    >(
         &self,
         key: &K,
-        value: &V,
-    ) -> Result<Option<V>>;
+        value: &InsertedValue,
+    ) -> Result<Option<ReturnedValue>>;
 }
 
 impl ReadWriteTree for Tree {
@@ -75,17 +79,21 @@ impl ReadWriteTree for Tree {
             .unwrap_or_default())
     }
 
-    fn typed_merge<K: DeserializeOwned + Serialize, V: DeserializeOwned + Serialize>(
+    fn typed_merge<
+        K: DeserializeOwned + Serialize,
+        InsertedValue: DeserializeOwned + Serialize,
+        ReturnedValue: DeserializeOwned + Serialize,
+    >(
         &self,
         key: &K,
-        value: &V,
-    ) -> Result<Option<V>> {
+        value: &InsertedValue,
+    ) -> Result<Option<ReturnedValue>> {
         Ok(self
             .merge(
                 bincode::serialize::<K>(key)?,
-                bincode::serialize::<V>(value)?,
+                bincode::serialize::<InsertedValue>(value)?,
             )?
-            .map(|value| bincode::deserialize::<V>(&value))
+            .map(|value| bincode::deserialize::<ReturnedValue>(&value))
             .transpose()?)
     }
 }

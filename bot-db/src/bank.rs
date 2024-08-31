@@ -27,8 +27,6 @@ impl BankDb {
             old_value: Option<&[u8]>,
             merged_bytes: &[u8],
         ) -> Option<Vec<u8>> {
-            dbg!(_key, old_value, merged_bytes);
-
             KingFisherDb::create_update_with_deserialization::<BankAccount>(
                 old_value,
                 |mut account| {
@@ -36,8 +34,6 @@ impl BankDb {
                         tracing::error!("Failed to deserialize change, {:?}", merged_bytes);
                         return account;
                     };
-
-                    dbg!(&change, &account);
 
                     account.balance += change.amount;
                     account.changes.push(change);
@@ -57,11 +53,15 @@ impl BankDb {
         self.0.typed_get_or_default::<u64, BankAccount>(&user_id)
     }
 
-    pub fn change(&self, user_id: serenity::UserId, amount: i64, reason: String) -> Result<()> {
+    pub fn change(
+        &self,
+        user_id: serenity::UserId,
+        amount: i64,
+        reason: String,
+    ) -> Result<Option<BankAccount>> {
         let user_id: u64 = user_id.into();
         let change = Change { amount, reason };
         self.0
-            .typed_merge::<u64, Change>(&user_id, &change)
-            .map(|_| {})
+            .typed_merge::<u64, Change, BankAccount>(&user_id, &change)
     }
 }
