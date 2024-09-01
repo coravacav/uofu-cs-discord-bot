@@ -47,7 +47,8 @@ pub async fn income(ctx: PoiseContext<'_>) -> Result<()> {
         Some(last_time)
             if last_time.elapsed() < Duration::from_secs(PER_USER_INCOME_TIMEOUT_SECONDS) =>
         {
-            ctx.reply("Federal law requires you calm down").await?;
+            ctx.say_then_delete("Federal law requires you calm down")
+                .await?;
             return Ok(());
         }
         _ => {}
@@ -60,7 +61,7 @@ pub async fn income(ctx: PoiseContext<'_>) -> Result<()> {
 
     bank.change(user_id, 5 + bonus_amount, String::from("Income"))?;
 
-    ctx.reply(format!(
+    ctx.say_then_delete(format!(
         "Paycheck deposited{}! Your new balance is {}",
         if bonus_amount > 0 {
             format!(" with a bonus of {}", bonus_amount)
