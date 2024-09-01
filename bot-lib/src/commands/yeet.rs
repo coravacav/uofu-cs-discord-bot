@@ -11,7 +11,11 @@ use poise::serenity_prelude::{
     self as serenity, ChannelId, CreateMessage, EditMessage, GuildId, Mentionable, MessageBuilder,
     MessageId, User, UserId,
 };
-use std::{cmp::Reverse, sync::LazyLock, time::Duration};
+use std::{
+    cmp::Reverse,
+    sync::LazyLock,
+    time::{Duration, Instant},
+};
 use tokio::{
     sync::Mutex,
     time::{interval, sleep},
@@ -24,6 +28,7 @@ pub struct YeetData {
     victim: UserId,
     guild_id: GuildId,
     channel_id: ChannelId,
+    start_time: Instant,
 }
 
 pub const YEET_DEFAULT_OPPORTUNITIES: usize = 3;
@@ -102,6 +107,7 @@ pub async fn yeet(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
         ctx.say("Couldn't send message announcing yeeting").await?;
         bail!("Couldn't send message announcing yeeting");
     };
+    let start_time = Instant::now();
 
     YEET_MAP.insert(
         msg.id,
@@ -110,6 +116,7 @@ pub async fn yeet(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
             victim: victim.id,
             guild_id,
             channel_id,
+            start_time,
         },
     );
 
@@ -240,6 +247,8 @@ pub async fn handle_yeeting(
         return Ok(());
     };
 
+    let duration = yeet_data.start_time.elapsed();
+
     let mut message_handle = yeet_data
         .channel_id
         .send_message(
@@ -247,8 +256,9 @@ pub async fn handle_yeeting(
             CreateMessage::new().content(
                 MessageBuilder::new()
                     .push(format!(
-                        "User {} has been yeeted! They will return {}\nBrought to you by: {}",
+                        "User {} has been yeeted in {} seconds! They will return {}\nBrought to you by: {}",
                         target.mention(),
+                        duration.as_secs(),
                         timeout_end.discord_relative_timestamp(),
                         shooters.mention_all(),
                     ))
@@ -263,8 +273,9 @@ pub async fn handle_yeeting(
         .edit(
             ctx,
             EditMessage::new().content(format!(
-                "User {} was yeeted\nBrought to you by: {}",
+                "User {} was yeeted in {} seconds\nBrought to you by: {}",
                 target.mention(),
+                duration.as_secs(),
                 shooters.mention_all()
             )),
         )
