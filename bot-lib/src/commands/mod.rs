@@ -1,24 +1,39 @@
-pub mod aur_search;
-pub mod bank;
-pub mod class_commands;
-pub mod course_catalog;
-pub mod db_admin;
-pub mod feedback;
-pub mod help;
-pub mod llm_prompt;
-pub mod register;
-pub mod russian_roulette;
-pub mod sathya;
-pub mod set_bot_role;
-pub mod set_dog_role;
-pub mod timeout;
-pub mod yeet;
+mod aur_search;
+mod bank;
+mod class_commands;
+mod course_catalog;
+mod db_admin;
+mod feedback;
+mod help;
+mod llm_prompt;
+mod register;
+mod russian_roulette;
+mod sathya;
+mod set_bot_role;
+mod set_dog_role;
+mod timeout;
+mod yeet;
 
-use std::time::Duration;
+pub use aur_search::*;
+pub use bank::*;
+pub use class_commands::*;
+pub use course_catalog::*;
+pub use db_admin::*;
+pub use feedback::*;
+pub use help::*;
+pub use llm_prompt::*;
+pub use register::*;
+pub use russian_roulette::*;
+pub use sathya::*;
+pub use set_bot_role::*;
+pub use set_dog_role::*;
+pub use timeout::*;
+pub use yeet::*;
 
 use crate::data::PoiseContext;
 use color_eyre::eyre::{Context, ContextCompat, OptionExt, Result};
 use poise::serenity_prelude::{self as serenity, CreateMessage, Member, Mentionable};
+use std::time::Duration;
 
 pub async fn get_member(ctx: PoiseContext<'_>) -> Result<Member> {
     let author = ctx.author();

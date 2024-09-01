@@ -257,6 +257,7 @@ dependencies = [
  "bincode",
  "bot-traits",
  "color-eyre",
+ "itertools 0.11.0",
  "poise",
  "serde",
  "sled",

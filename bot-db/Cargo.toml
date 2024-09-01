@@ -11,3 +11,7 @@ serde = { workspace = true }
 bot-traits = { workspace = true }
 poise = { workspace = true }
 tracing = { workspace = true }
+itertools = { workspace = true }
+
+[lints]
+workspace = true

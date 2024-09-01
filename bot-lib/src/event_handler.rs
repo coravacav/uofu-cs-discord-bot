@@ -1,5 +1,5 @@
 use crate::{
-    commands::yeet::handle_yeeting, data::AppState, handle_starboards::handle_starboards,
+    commands::handle_yeeting, data::AppState, handle_starboards::handle_starboards,
     text_detection::text_detection,
 };
 use color_eyre::eyre::{Error, Result};

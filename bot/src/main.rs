@@ -1,27 +1,4 @@
-use bot_lib::{
-    commands::{
-        aur_search::aur_search,
-        bank::{bank, bank_admin},
-        class_commands::{
-            add_class_role, create_class_category, delete_class_category, remove_class_role,
-            reset_class_categories, reset_class_category, update_class_category,
-        },
-        course_catalog::course_catalog,
-        db_admin::db_admin,
-        feedback::send_feedback,
-        help::help,
-        llm_prompt::llm_prompt,
-        register::register,
-        sathya::sathya,
-        set_bot_role::{add_bot_role, remove_bot_role},
-        set_dog_role::{add_dog_role, remove_dog_role},
-        timeout::timeout,
-        yeet::{update_interval, yeet, yeet_leaderboard},
-    },
-    config,
-    data::AppState,
-    event_handler::event_handler,
-};
+use bot_lib::{commands::*, config, data::AppState, event_handler::event_handler};
 use bot_traits::ForwardRefToTracing;
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};

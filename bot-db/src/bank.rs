@@ -1,8 +1,10 @@
 use crate::{KingFisherDb, ReadWriteTree};
 use color_eyre::eyre::Result;
-use poise::serenity_prelude::{self as serenity};
+use itertools::Itertools;
+use poise::serenity_prelude::UserId;
 use serde::{Deserialize, Serialize};
 use sled::Tree;
+use std::cmp::Reverse;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Change {
@@ -48,14 +50,14 @@ impl BankDb {
         Ok(BankDb(db))
     }
 
-    pub fn get(&self, user_id: serenity::UserId) -> Result<BankAccount> {
+    pub fn get(&self, user_id: UserId) -> Result<BankAccount> {
         let user_id: u64 = user_id.into();
         self.0.typed_get_or_default::<u64, BankAccount>(&user_id)
     }
 
     pub fn change(
         &self,
-        user_id: serenity::UserId,
+        user_id: UserId,
         amount: i64,
         reason: String,
     ) -> Result<Option<BankAccount>> {
@@ -67,12 +69,29 @@ impl BankDb {
 
     pub fn get_history(
         &self,
-        user_id: serenity::UserId,
+        user_id: UserId,
     ) -> Result<Option<impl DoubleEndedIterator<Item = Change>>> {
         let user_id: u64 = user_id.into();
 
         let account = self.0.typed_get::<u64, BankAccount>(&user_id)?;
 
         Ok(account.map(|account| account.changes.into_iter()))
+    }
+
+    pub fn get_global_rankings(&self) -> Result<impl Iterator<Item = (UserId, BankAccount)>> {
+        Ok(self
+            .0
+            .typed_iter::<u64, BankAccount>()?
+            .map(|(user_id, account)| (user_id, account.balance))
+            .sorted_by_key(|(_, balance)| Reverse(*balance))
+            .map(|(user_id, balance)| {
+                (
+                    UserId::from(user_id),
+                    BankAccount {
+                        balance,
+                        ..Default::default()
+                    },
+                )
+            }))
     }
 }

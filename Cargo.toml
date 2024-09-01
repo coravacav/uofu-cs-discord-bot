@@ -21,3 +21,8 @@ bot-db = { path = 'bot-db' }
 rand = "0.8.5"
 dashmap = { version = "5.5.3", features = ["inline"] }
 serde = { version = "1.0.198", features = ["derive", "rc"] }
+itertools = "0.11.0"
+
+[workspace.lints.rust]
+async_fn_in_trait = "allow"
+unsafe_code = "forbid"

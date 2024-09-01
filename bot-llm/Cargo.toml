@@ -13,3 +13,6 @@ candle-transformers = { git = "https://github.com/huggingface/candle.git", versi
 candle-examples = { git = "https://github.com/huggingface/candle.git", version = "0.6.1", features = ["cuda"] }
 tokenizers = "0.19.1"
 rand.workspace = true
+
+[lints]
+workspace = true

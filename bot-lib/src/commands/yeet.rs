@@ -35,8 +35,8 @@ pub const YEET_REFRESH_CHARGE_SECONDS: u64 = 3600;
 pub const YEET_VOTING_SECONDS: u64 = 90;
 pub const YEET_KNOWN_MESSAGE_PORTION: &str = "Do you want to yeet ";
 
-pub static YEET_MAP: LazyLock<DashMap<MessageId, YeetData>> = LazyLock::new(DashMap::new);
-pub static YEET_OPPORTUNITIES: LazyLock<Mutex<usize>> =
+pub(crate) static YEET_MAP: LazyLock<DashMap<MessageId, YeetData>> = LazyLock::new(DashMap::new);
+pub(crate) static YEET_OPPORTUNITIES: LazyLock<Mutex<usize>> =
     LazyLock::new(|| Mutex::new(YEET_DEFAULT_OPPORTUNITIES));
 
 async fn check_yeet_opportunities() -> Result<bool> {

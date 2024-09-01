@@ -1,11 +1,8 @@
 use crate::data::PoiseContext;
 use color_eyre::eyre::Result;
 
-#[poise::command(
-    slash_command,
-    ephemeral = true,
-    description_localized("en-US", "Displays bot info and available commands")
-)]
+/// Displays bot info and available commands
+#[poise::command(slash_command, ephemeral = true)]
 pub async fn help(ctx: PoiseContext<'_>) -> Result<()> {
     let help_text = ctx.data().config.read().await.help_text.clone();
 

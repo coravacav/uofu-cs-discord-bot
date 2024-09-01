@@ -37,6 +37,10 @@ pub trait ReadWriteTree {
         key: &K,
         value: &InsertedValue,
     ) -> Result<Option<ReturnedValue>>;
+
+    fn typed_iter<K: DeserializeOwned + Serialize, V: DeserializeOwned + Serialize>(
+        &self,
+    ) -> Result<impl Iterator<Item = (K, V)>>;
 }
 
 impl ReadWriteTree for Tree {
@@ -96,6 +100,16 @@ impl ReadWriteTree for Tree {
             .map(|value| bincode::deserialize::<ReturnedValue>(&value))
             .transpose()?)
     }
+
+    fn typed_iter<K: DeserializeOwned + Serialize, V: DeserializeOwned + Serialize>(
+        &self,
+    ) -> Result<impl Iterator<Item = (K, V)>> {
+        Ok(self
+            .iter()
+            .filter_map(|i| i.trace_err_ok())
+            .map(|(key, value)| Ok((bincode::deserialize(&key)?, bincode::deserialize(&value)?)))
+            .filter_map(|i: Result<(K, V)>| i.trace_err_ok()))
+    }
 }
 
 #[derive(Debug)]
@@ -151,6 +165,7 @@ impl KingFisherDb {
     }
 }
 
+#[allow(dead_code)]
 fn perform_migration<
     OldValue: DeserializeOwned + Serialize + Debug,
     NewValue: DeserializeOwned + Serialize + Debug,
@@ -203,6 +218,7 @@ struct DataWithVersion<T> {
 }
 
 impl<T> DataWithVersion<T> {
+    #[allow(dead_code)]
     fn new(version: u32, data: T) -> Self {
         Self { version, data }
     }
