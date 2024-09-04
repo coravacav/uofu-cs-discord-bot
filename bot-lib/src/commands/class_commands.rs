@@ -45,9 +45,7 @@ pub async fn create_class_category(
     let role = guild
         .create_role(
             ctx,
-            serenity::EditRole::new()
-                .hoist(true)
-                .name(format!("CS {}", number_string)),
+            serenity::EditRole::new().name(format!("CS {}", number_string)),
         )
         .await
         .wrap_err("Couldn't create role")?;

@@ -1,6 +1,6 @@
 use super::build_history_message;
-use crate::{commands::is_stefan, SayThenDelete};
 use crate::data::PoiseContext;
+use crate::{commands::is_stefan, SayThenDelete};
 use bot_db::bank::BankDb;
 use color_eyre::eyre::Result;
 use poise::serenity_prelude::{Mentionable, User};
@@ -20,7 +20,7 @@ pub async fn bank_admin(_ctx: PoiseContext<'_>) -> Result<()> {
 
 /// For Stefan only, give charity.
 #[poise::command(
-    slash_command, 
+    slash_command,
     ephemeral = true,
     hide_in_help = true,
     check = is_stefan)]
@@ -58,7 +58,8 @@ pub async fn inspect_history(ctx: PoiseContext<'_>, user: User) -> Result<()> {
         return Ok(());
     };
 
-    ctx.say_then_delete(build_history_message(history, user_id)).await?;
+    ctx.say_then_delete(build_history_message(history, user_id))
+        .await?;
 
     Ok(())
 }
@@ -89,11 +90,7 @@ pub async fn global_rankings(ctx: PoiseContext<'_>) -> Result<()> {
     let mut message_text = String::from("### Global Rankings:\n");
 
     for (user_id, account) in rankings {
-        message_text.push_str(&format!(
-            "{}: {}, ",
-            user_id.mention(),
-            account.balance
-        ));
+        message_text.push_str(&format!("{}: {}, ", user_id.mention(), account.balance));
     }
 
     ctx.say_then_delete(message_text).await?;
