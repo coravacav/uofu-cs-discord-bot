@@ -7,10 +7,10 @@ debug = 0
 incremental = true
 
 [patch.crates-io]
-serenity = { git = "https://github.com/serenity-rs/serenity", rev = "ba731209e81802318548aedb111bb2d9362c30be" }
+serenity = { git = "https://github.com/serenity-rs/serenity", rev = "c28c25e65d77690c5ae700e459fde48c73ee4667" }
 
 [workspace.dependencies]
-tokio = { version = "1.37.0", features = ["rt", "macros", "rt-multi-thread"] }
+tokio = { version = "1.40.0", features = ["rt", "macros", "rt-multi-thread", "tracing"] }
 color-eyre = "0.6"
 poise = "0.6.1"
 tracing = "0.1.40"
@@ -19,9 +19,9 @@ bot-lib = { path = 'bot-lib' }
 bot-traits = { path = 'bot-traits' }
 bot-db = { path = 'bot-db' }
 rand = "0.8.5"
-dashmap = { version = "5.5.3", features = ["inline"] }
+dashmap = { version = "6.0.1", features = ["inline"] }
 serde = { version = "1.0.198", features = ["derive", "rc"] }
-itertools = "0.11.0"
+itertools = "0.13.0"
 
 [workspace.lints.rust]
 async_fn_in_trait = "allow"

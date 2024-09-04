@@ -3,6 +3,7 @@ use color_eyre::eyre::{OptionExt, Result};
 use poise::serenity_prelude::{self as serenity};
 use serenity::Message;
 
+#[tracing::instrument(level = "trace", skip(ctx, data))]
 pub async fn text_detection(
     ctx: &serenity::Context,
     data: &AppState,

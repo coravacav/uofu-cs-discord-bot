@@ -37,7 +37,13 @@ pub fn reset_user_bonus(user_id: UserId) {
     BONUS_BY_USER_ID.remove(&user_id);
 }
 
-/// Get some income (5 coins, once per minute, bonus if you repeat without sending messages)
+pub fn get_user_bonus(user_id: UserId) -> i64 {
+    let mut bonus_amount = BONUS_BY_USER_ID.entry(user_id).or_insert(-1);
+    *bonus_amount += 1;
+    *bonus_amount
+}
+
+/// Get some income (5 coins, once per minute, bonus if you repeat without gambling)
 #[poise::command(slash_command, ephemeral = true)]
 pub async fn income(ctx: PoiseContext<'_>) -> Result<()> {
     let bank = BankDb::new(&ctx.data().db)?;
@@ -55,9 +61,7 @@ pub async fn income(ctx: PoiseContext<'_>) -> Result<()> {
     }
 
     INSTANT_BY_USER_ID.insert(user_id, Instant::now());
-    let mut bonus_amount = BONUS_BY_USER_ID.entry(user_id).or_insert(-1);
-    *bonus_amount += 1;
-    let bonus_amount = *bonus_amount;
+    let bonus_amount = get_user_bonus(user_id);
 
     bank.change(user_id, 5 + bonus_amount, String::from("Income"))?;
 

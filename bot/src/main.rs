@@ -1,11 +1,9 @@
 use bot_lib::{commands::*, config, data::AppState, event_handler::event_handler};
-use bot_traits::ForwardRefToTracing;
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use dotenvy::dotenv;
 use poise::serenity_prelude as serenity;
-use tokio::io::{stdin, AsyncReadExt};
-use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::prelude::*;
 
 /// The cli arguments for the bot
 #[derive(Parser, Debug)]
@@ -25,19 +23,30 @@ async fn main() -> Result<()> {
     dotenv().wrap_err("Failed to load .env file. Add a file with the following contents: `DISCORD_TOKEN=\"your token\"` to a .env file in the root directory of the repo.")?;
     color_eyre::install()?;
 
-    tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-        .compact()
-        .with_file(true)
-        .with_line_number(true)
-        .with_target(false)
-        .finish()
+    tracing_subscriber::registry()
+        .with(console_subscriber::spawn())
+        .with(
+            tracing_subscriber::fmt::layer()
+                .compact()
+                .with_file(true)
+                .with_line_number(true)
+                .with_filter(
+                    tracing_subscriber::filter::EnvFilter::try_from_default_env().unwrap_or_else(
+                        |_| {
+                            tracing_subscriber::filter::EnvFilter::new(
+                                "serenity=warn,bot=info,bot-lib=info",
+                            )
+                        },
+                    ),
+                ),
+        )
         .init();
 
     let Args {
         dry_run,
         config: config_path,
     } = Args::parse();
+
     let token =
         std::env::var("DISCORD_TOKEN").wrap_err("Expected a discord token environment variable")?;
     let config =
@@ -121,25 +130,6 @@ async fn main() -> Result<()> {
         println!("Bot setup worked, dry run enabled, exiting");
         return Ok(());
     }
-
-    tokio::task::spawn(async {
-        let mut stdin = stdin();
-        let mut key = [0; 1];
-        loop {
-            stdin.read_exact(&mut key).await.trace_err_ok();
-
-            // This will be expanded later
-            match key[0] {
-                b'd' => {
-                    println!("Debug");
-                }
-                b's' => {
-                    println!("Status check");
-                }
-                _ => {}
-            }
-        }
-    });
 
     tracing::info!("Starting bot");
 
