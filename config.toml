@@ -195,6 +195,24 @@ cooldown = 5
 hit_rate = 0.99
 
 [[responses]]
+name = "alcoholism"
+ruleset = """
+r (?i)alc(?:ohol(?:ism)?)?
+or
+r (?i)beer
+or
+r (?i)whiskey
+or   
+r (?i)mezcal
+or
+r (?i)tequila
+"""
+content = [
+    "<@216767618923757568>",
+    "<@212398514934775818>"
+]
+
+[[responses]]
 name = "league of legends"
 ruleset = """
 r (?i)league
