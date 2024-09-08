@@ -7,7 +7,7 @@ use poise::{
 };
 use std::{
     collections::HashMap,
-    sync::{Arc, LazyLock},
+    sync::LazyLock,
     time::{Duration, Instant},
 };
 
@@ -64,17 +64,6 @@ pub async fn llm_prompt(ctx: PoiseContext<'_>, prompt: String) -> Result<()> {
         return Ok(());
     }
 
-    let prompt = Arc::new(prompt);
-
-    ctx.defer().await?;
-
-    let (reply, reply_rx) = tokio::sync::oneshot::channel();
-    ctx.data()
-        .llm_tx
-        .send((Arc::clone(&prompt), reply))
-        .wrap_err("Failed to send LLM task")?;
-
-    let reply = reply_rx.await.wrap_err("LLM task failed")?;
     let guild_id = ctx.guild_id().ok_or_eyre("Couldn't get guild id")?;
 
     let author_username = ctx.author().name.clone();
@@ -86,6 +75,16 @@ pub async fn llm_prompt(ctx: PoiseContext<'_>, prompt: String) -> Result<()> {
 
     let mut title = format!("{} asked, \"{}\"", shown_username, prompt);
     title.truncate(256); // Discord limits titles to 256 characters
+
+    ctx.defer().await?;
+
+    let (reply, reply_rx) = tokio::sync::oneshot::channel();
+    ctx.data()
+        .llm_tx
+        .send((prompt, reply))
+        .wrap_err("Failed to send LLM task")?;
+
+    let reply = reply_rx.await.wrap_err("LLM task failed")?;
 
     ctx.send(
         CreateReply::default()

@@ -1,14 +1,14 @@
 use color_eyre::eyre::Result;
-use std::sync::Arc;
 
 struct _LLMRunner {
     tx: crossbeam_channel::Sender<String>,
 }
 
-pub fn setup_llm(
-) -> Result<crossbeam_channel::Sender<(Arc<String>, tokio::sync::oneshot::Sender<String>)>> {
-    let (tx, rx) =
-        crossbeam_channel::bounded::<(Arc<String>, tokio::sync::oneshot::Sender<String>)>(100);
+type LLMTxValue = (String, tokio::sync::oneshot::Sender<String>);
+type LLMTx = crossbeam_channel::Sender<LLMTxValue>;
+
+pub fn setup_llm() -> Result<LLMTx> {
+    let (tx, rx) = crossbeam_channel::bounded::<LLMTxValue>(100);
 
     tokio::task::spawn_blocking(move || -> Result<()> {
         let mut model = match bot_llm::load_model() {

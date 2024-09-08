@@ -21,7 +21,7 @@ pub struct AppState {
     /// The path to the config file.
     /// This is to allow for saving / reloading the config.
     pub config_path: Box<Path>,
-    pub llm_tx: crossbeam_channel::Sender<(Arc<String>, tokio::sync::oneshot::Sender<String>)>,
+    pub llm_tx: crossbeam_channel::Sender<(String, tokio::sync::oneshot::Sender<String>)>,
     pub db: KingFisherDb,
 }
 
