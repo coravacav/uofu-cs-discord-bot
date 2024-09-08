@@ -64,6 +64,7 @@ async fn main() -> Result<()> {
                 remove_bot_role(),
                 timeout(),
                 yeet(),
+                coinflip(),
                 reset_class_category(),
                 // course_catalog_search(),
                 send_feedback(),

@@ -1,5 +1,6 @@
 mod aur_search;
 mod bank;
+mod cice;
 mod class_commands;
 mod course_catalog;
 mod db_admin;
@@ -16,6 +17,7 @@ mod yeet;
 
 pub use aur_search::*;
 pub use bank::*;
+pub use cice::*;
 pub use class_commands::*;
 pub use course_catalog::*;
 pub use db_admin::*;
