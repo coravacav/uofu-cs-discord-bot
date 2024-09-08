@@ -1,11 +1,8 @@
 use color_eyre::eyre::Result;
-use dashmap::DashMap;
-use poise::serenity_prelude::UserId;
 use std::sync::Arc;
 
 struct _LLMRunner {
     tx: crossbeam_channel::Sender<String>,
-    last_prompt: DashMap<UserId, String>,
 }
 
 pub fn setup_llm(

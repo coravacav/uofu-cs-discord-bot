@@ -5,21 +5,19 @@ use crate::{
 use bot_db::yeet::YeetLeaderboard;
 use color_eyre::eyre::{bail, OptionExt, Result};
 use core::str;
-use dashmap::DashMap;
 use itertools::Itertools;
+use parking_lot::Mutex;
 use poise::serenity_prelude::{
     self as serenity, ChannelId, CreateMessage, EditMessage, GuildId, Mentionable, MessageBuilder,
     MessageId, User, UserId,
 };
 use std::{
     cmp::Reverse,
+    collections::HashMap,
     sync::LazyLock,
     time::{Duration, Instant},
 };
-use tokio::{
-    sync::Mutex,
-    time::{interval, sleep},
-};
+use tokio::time::{interval, sleep};
 use tokio_stream::wrappers::IntervalStream;
 
 #[derive(Clone)]
@@ -40,12 +38,13 @@ pub const YEET_REFRESH_CHARGE_SECONDS: u64 = 3600;
 pub const YEET_VOTING_SECONDS: u64 = 90;
 pub const YEET_KNOWN_MESSAGE_PORTION: &str = "Do you want to yeet ";
 
-pub(crate) static YEET_MAP: LazyLock<DashMap<MessageId, YeetData>> = LazyLock::new(DashMap::new);
+pub(crate) static YEET_MAP: LazyLock<Mutex<HashMap<MessageId, YeetData>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
 pub(crate) static YEET_OPPORTUNITIES: LazyLock<Mutex<usize>> =
     LazyLock::new(|| Mutex::new(YEET_DEFAULT_OPPORTUNITIES));
 
 async fn check_yeet_opportunities() -> Result<bool> {
-    let mut yeet_opportunities = YEET_OPPORTUNITIES.lock().await;
+    let mut yeet_opportunities = YEET_OPPORTUNITIES.lock();
 
     if *yeet_opportunities == 0 {
         return Ok(false);
@@ -109,7 +108,7 @@ pub async fn yeet(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
     };
     let start_time = Instant::now();
 
-    YEET_MAP.insert(
+    YEET_MAP.lock().insert(
         msg.id,
         YeetData {
             yeeter: yeeter.id,
@@ -124,7 +123,7 @@ pub async fn yeet(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
 
     sleep(Duration::from_secs(YEET_VOTING_SECONDS)).await;
 
-    if YEET_MAP.remove(&msg.id).is_some() {
+    if YEET_MAP.lock().remove(&msg.id).is_some() {
         msg.delete(ctx).await.ok();
     }
 
@@ -137,7 +136,7 @@ pub async fn update_interval() {
     // Every 1 hour, add a yeet opportunity up to the default, tokio interval
     IntervalStream::new(interval(Duration::from_secs(YEET_REFRESH_CHARGE_SECONDS)))
         .for_each(|_| async {
-            let mut yeet_opportunities = YEET_OPPORTUNITIES.lock().await;
+            let mut yeet_opportunities = YEET_OPPORTUNITIES.lock();
             *yeet_opportunities = (*yeet_opportunities + 1).min(YEET_DEFAULT_OPPORTUNITIES);
             tracing::trace!("Updated yeet opportunities to {yeet_opportunities}");
         })
@@ -168,7 +167,7 @@ pub async fn handle_yeeting(
     let message_id = message.id;
 
     // check if message is in the yeet map
-    let yeet_data = match YEET_MAP.get(&message_id) {
+    let yeet_data = match YEET_MAP.lock().get(&message_id) {
         Some(data) => data.clone(),
         None => return Ok(()),
     };
@@ -196,7 +195,7 @@ pub async fn handle_yeeting(
     }
 
     // Make sure we don't count too many times
-    if YEET_MAP.remove(&message_id).is_none() {
+    if YEET_MAP.lock().remove(&message_id).is_none() {
         return Ok(());
     }
 

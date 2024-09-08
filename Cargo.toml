@@ -19,7 +19,6 @@ bot-lib = { path = 'bot-lib' }
 bot-traits = { path = 'bot-traits' }
 bot-db = { path = 'bot-db' }
 rand = "0.8.5"
-dashmap = { version = "6.0.1", features = ["inline"] }
 serde = { version = "1.0.198", features = ["derive", "rc"] }
 itertools = "0.13.0"
 

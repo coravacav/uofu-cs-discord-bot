@@ -2,10 +2,11 @@ use super::build_history_message;
 use crate::{data::PoiseContext, SayThenDelete};
 use bot_db::bank::BankDb;
 use color_eyre::eyre::Result;
-use dashmap::DashMap;
+use parking_lot::Mutex;
 use poise::serenity_prelude::UserId;
 use rand::Rng;
 use std::{
+    collections::HashMap,
     sync::LazyLock,
     time::{Duration, Instant},
 };
@@ -29,25 +30,23 @@ pub async fn balance(ctx: PoiseContext<'_>) -> Result<()> {
     Ok(())
 }
 
-static INSTANT_BY_USER_ID: LazyLock<DashMap<UserId, Instant>> = LazyLock::new(DashMap::new);
 const PER_USER_INCOME_TIMEOUT_SECONDS: u64 = 60;
-static BONUS_BY_USER_ID: LazyLock<DashMap<UserId, i64>> = LazyLock::new(DashMap::new);
+
+static INSTANT_BY_USER_ID: LazyLock<Mutex<HashMap<UserId, Instant>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+static BONUS_BY_USER_ID: LazyLock<Mutex<HashMap<UserId, i64>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
 
 pub fn reset_user_bonus(user_id: UserId) {
-    if let Some(entry) = BONUS_BY_USER_ID.try_entry(user_id) {
-        *entry.or_insert(-1) = -1;
-    }
+    BONUS_BY_USER_ID.lock().remove(&user_id);
 }
 
 pub fn get_user_bonus(user_id: UserId) -> i64 {
-    match BONUS_BY_USER_ID.try_entry(user_id) {
-        Some(entry) => {
-            let mut entry = entry.or_insert(-1);
-            *entry += 1;
-            *entry
-        }
-        None => 0,
-    }
+    *BONUS_BY_USER_ID
+        .lock()
+        .entry(user_id)
+        .and_modify(|bonus| *bonus += 1)
+        .or_insert(0)
 }
 
 /// Get some income (5 coins, once per minute, bonus if you repeat without gambling)
@@ -56,18 +55,16 @@ pub async fn income(ctx: PoiseContext<'_>) -> Result<()> {
     let bank = BankDb::new(&ctx.data().db)?;
     let user_id = ctx.author().id;
 
-    match INSTANT_BY_USER_ID.get(&user_id) {
-        Some(last_time)
-            if last_time.elapsed() < Duration::from_secs(PER_USER_INCOME_TIMEOUT_SECONDS) =>
-        {
+    let old_time = INSTANT_BY_USER_ID.lock().insert(user_id, Instant::now());
+
+    if let Some(last_time) = old_time {
+        if last_time.elapsed() < Duration::from_secs(PER_USER_INCOME_TIMEOUT_SECONDS) {
             ctx.say_then_delete("Federal law requires you calm down")
                 .await?;
             return Ok(());
         }
-        _ => {}
     }
 
-    INSTANT_BY_USER_ID.insert(user_id, Instant::now());
     let bonus_amount = get_user_bonus(user_id);
 
     bank.change(user_id, 5 + bonus_amount, String::from("Income"))?;

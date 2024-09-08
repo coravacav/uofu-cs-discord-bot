@@ -1,29 +1,28 @@
-use dashmap::DashMap;
+use parking_lot::RwLock;
 use serde::Deserialize;
-use std::sync::LazyLock;
+use std::{collections::HashMap, sync::LazyLock};
 
-static COURSES: LazyLock<DashMap<String, Course>> = LazyLock::new(|| {
+static COURSES: LazyLock<RwLock<HashMap<String, Course>>> = LazyLock::new(|| {
     let static_json_file = include_str!("../../classes.json");
 
     let file: File = serde_json::from_str(static_json_file).unwrap();
 
-    let courses = DashMap::new();
+    let mut courses = HashMap::new();
 
     for mut course in file.data {
         let current = courses.get(&course.course_id);
         let are_there_duplicates = current.is_some();
-        drop(current);
         course.are_there_duplicates = are_there_duplicates;
         courses.insert(course.course_id.clone(), course);
     }
 
     tracing::info!("Loaded {} courses", courses.len());
 
-    courses
+    courses.into()
 });
 
 pub fn get_course(course_id: &str) -> Option<Course> {
-    COURSES.get(course_id).map(|c| c.clone())
+    COURSES.read().get(course_id).cloned()
 }
 
 #[derive(Debug, Deserialize)]

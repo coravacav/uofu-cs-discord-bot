@@ -139,7 +139,7 @@ impl Starboard {
     async fn is_message_a_yeet(&self, message: &serenity::Message) -> bool {
         use crate::commands::{YEET_KNOWN_MESSAGE_PORTION, YEET_MAP};
 
-        !YEET_MAP.contains_key(&message.id)
+        !YEET_MAP.lock().contains_key(&message.id)
             && !message.content.starts_with(YEET_KNOWN_MESSAGE_PORTION)
     }
 
