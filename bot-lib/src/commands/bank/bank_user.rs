@@ -34,13 +34,20 @@ const PER_USER_INCOME_TIMEOUT_SECONDS: u64 = 60;
 static BONUS_BY_USER_ID: LazyLock<DashMap<UserId, i64>> = LazyLock::new(DashMap::new);
 
 pub fn reset_user_bonus(user_id: UserId) {
-    BONUS_BY_USER_ID.remove(&user_id);
+    if let Some(entry) = BONUS_BY_USER_ID.try_entry(user_id) {
+        *entry.or_insert(-1) = -1;
+    }
 }
 
 pub fn get_user_bonus(user_id: UserId) -> i64 {
-    let mut bonus_amount = BONUS_BY_USER_ID.entry(user_id).or_insert(-1);
-    *bonus_amount += 1;
-    *bonus_amount
+    match BONUS_BY_USER_ID.try_entry(user_id) {
+        Some(entry) => {
+            let mut entry = entry.or_insert(-1);
+            *entry += 1;
+            *entry
+        }
+        None => 0,
+    }
 }
 
 /// Get some income (5 coins, once per minute, bonus if you repeat without gambling)
