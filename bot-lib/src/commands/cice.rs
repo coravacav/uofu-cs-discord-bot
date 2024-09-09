@@ -12,7 +12,7 @@ pub async fn coinflip(ctx: PoiseContext<'_>, optional_explanation: Option<String
         ctx.author().mention(),
         if heads { "heads" } else { "tails" },
         if let Some(reason) = optional_explanation {
-            format!(" because \"{}\"", reason)
+            format!(" \"{}\"", reason)
         } else {
             String::new()
         }
