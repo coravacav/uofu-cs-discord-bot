@@ -14,14 +14,12 @@ rand = { workspace = true }
 serde = { workspace = true }
 bot-db = { workspace = true }
 itertools = { workspace = true }
+notify = { workspace = true }
 chrono = "0.4.38"
 toml = "0.8.12"
 regex = "1.10.4"
 nom = "7.1.3"
 emojis = "0.6.1"
-notify = { version = "6.1.1", default-features = false, features = [
-    "macos_kqueue",
-] }
 serde_with = { version = "3.7.0", features = ["chrono"] }
 futures = "0.3.30"
 tap = "1.0.1"

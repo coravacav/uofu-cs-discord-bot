@@ -206,6 +206,8 @@ or
 r (?i)mezcal
 or
 r (?i)tequila
+or
+r (?i)soju
 """
 content = [
     "<@216767618923757568>",

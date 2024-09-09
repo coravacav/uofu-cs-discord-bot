@@ -21,6 +21,9 @@ bot-db = { path = 'bot-db' }
 rand = "0.8.5"
 serde = { version = "1.0.198", features = ["derive", "rc"] }
 itertools = "0.13.0"
+notify = { version = "6.1.1", default-features = false, features = [
+    "macos_kqueue",
+] }
 
 [workspace.lints.rust]
 async_fn_in_trait = "allow"

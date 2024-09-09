@@ -314,6 +314,7 @@ dependencies = [
  "color-eyre",
  "console-subscriber",
  "dotenvy",
+ "notify",
  "poise",
  "tokio",
  "tracing",

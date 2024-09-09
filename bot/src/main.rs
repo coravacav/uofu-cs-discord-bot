@@ -127,6 +127,8 @@ async fn main() -> Result<()> {
     .framework(framework.build())
     .await;
 
+    notify_on_executable_update()?;
+
     if dry_run {
         println!("Bot setup worked, dry run enabled, exiting");
         return Ok(());
@@ -139,4 +141,35 @@ async fn main() -> Result<()> {
         .start()
         .await
         .wrap_err("Failed to start bot (startup)")
+}
+
+fn notify_on_executable_update() -> Result<()> {
+    use notify::event::CreateKind;
+    use notify::EventKind;
+    use notify::RecursiveMode::NonRecursive;
+    use notify::Watcher;
+
+    let current_exe = std::env::current_exe()?;
+    let directory = current_exe.parent().unwrap().to_owned();
+
+    let mut watcher = notify::recommended_watcher(move |res| match res {
+        Ok(notify::Event {
+            kind: EventKind::Create(CreateKind::File),
+            paths,
+            ..
+        }) => {
+            if let Some(true) = paths.first().map(|p| p == &current_exe) {
+                tracing::info!("executable updated!");
+            }
+        }
+        Err(e) => tracing::error!("watch error: {:?}", e),
+        _ => {}
+    })?;
+
+    watcher.watch(&directory, NonRecursive)?;
+
+    // Don't drop it!
+    std::mem::forget(watcher);
+
+    Ok(())
 }

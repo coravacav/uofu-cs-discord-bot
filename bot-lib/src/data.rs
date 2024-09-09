@@ -9,7 +9,6 @@ use poise::serenity_prelude::Message;
 use rand::seq::SliceRandom;
 use std::{path::Path, sync::Arc};
 use tokio::sync::RwLock;
-use tracing::{event, Level};
 
 #[derive(Debug)]
 pub struct AppState {
@@ -46,11 +45,11 @@ impl AppState {
                 kind: EventKind::Access(AccessKind::Close(AccessMode::Write)),
                 ..
             }) => {
-                event!(Level::INFO, "config changed, reloading...");
+                tracing::info!("config changed, reloading...");
 
                 config_clone.blocking_write().reload(&*reload_config_path);
             }
-            Err(e) => event!(Level::ERROR, "watch error: {:?}", e),
+            Err(e) => tracing::error!("watch error: {:?}", e),
             _ => {}
         })
         .expect("Failed to create file watcher");
