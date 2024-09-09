@@ -352,3 +352,10 @@ or
 r (?i)um\s+actually
 '''
 content = "https://tenor.com/view/nerd-nerd-glasses-uhm-aktually-glasses-gif-4161113894351475297"
+
+[[responses]]
+name = "xess"
+ruleset = """
+r (?i)x+ess+
+"""
+content = "haha, nice reference! although i think you meant to type 'sexx'."
