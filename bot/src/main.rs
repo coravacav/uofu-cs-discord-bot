@@ -25,21 +25,11 @@ async fn main() -> Result<()> {
 
     tracing_subscriber::registry()
         .with(console_subscriber::spawn())
-        .with(
-            tracing_subscriber::fmt::layer()
-                .compact()
-                .with_file(true)
-                .with_line_number(true)
-                .with_filter(
-                    tracing_subscriber::filter::EnvFilter::try_from_default_env().unwrap_or_else(
-                        |_| {
-                            tracing_subscriber::filter::EnvFilter::new(
-                                "serenity=warn,bot=info,bot-lib=info",
-                            )
-                        },
-                    ),
-                ),
-        )
+        .with(tracing_subscriber::fmt::layer().compact().with_filter(
+            tracing_subscriber::filter::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                tracing_subscriber::filter::EnvFilter::new("serenity=warn,bot=info,bot-lib=info")
+            }),
+        ))
         .init();
 
     let Args {

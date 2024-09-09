@@ -119,6 +119,14 @@ pub async fn yeet(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
         },
     );
 
+    tracing::info!(
+        "Yeeting started! Yeeter: {} ({}), victim: {} ({})",
+        yeeter.name,
+        yeeter.id,
+        victim.name,
+        victim.id
+    );
+
     ctx.say("Yeeting started!").await?;
 
     sleep(Duration::from_secs(YEET_VOTING_SECONDS)).await;
@@ -199,6 +207,8 @@ pub async fn handle_yeeting(
         return Ok(());
     }
 
+    let duration = yeet_data.start_time.elapsed();
+
     // This are costly api calls.
     let yay = get_unique_non_kingfisher_voters(ctx, message, YEET_YES_REACTION).await?;
     let nay = get_unique_non_kingfisher_voters(ctx, message, YEET_NO_REACTION).await?;
@@ -211,6 +221,15 @@ pub async fn handle_yeeting(
     } else {
         (&yeet_data.yeeter, nay)
     };
+
+    tracing::info!(
+        "Yeeting finished! Yeeter: {}, victim: {} (shot: {}), duration: {}.{}",
+        yeet_data.yeeter,
+        yeet_data.victim,
+        target,
+        duration.as_secs(),
+        duration.subsec_millis()
+    );
 
     let time = std::time::Duration::from_secs(YEET_DURATION_SECONDS);
     let timeout_end = chrono::Utc::now() + time;
@@ -246,8 +265,6 @@ pub async fn handle_yeeting(
         return Ok(());
     };
 
-    let duration = yeet_data.start_time.elapsed();
-
     let mut message_handle = yeet_data
         .channel_id
         .send_message(
@@ -255,9 +272,10 @@ pub async fn handle_yeeting(
             CreateMessage::new().content(
                 MessageBuilder::new()
                     .push(format!(
-                        "User {} has been yeeted in {} seconds! They will return {}\nBrought to you by: {}",
+                        "User {} has been yeeted in {}.{} seconds! They will return {}\nBrought to you by: {}",
                         target.mention(),
                         duration.as_secs(),
+                        duration.subsec_millis(),
                         timeout_end.discord_relative_timestamp(),
                         shooters.mention_all(),
                     ))
@@ -272,9 +290,10 @@ pub async fn handle_yeeting(
         .edit(
             ctx,
             EditMessage::new().content(format!(
-                "User {} was yeeted in {} seconds\nBrought to you by: {}",
+                "User {} was yeeted in {}.{} seconds\nBrought to you by: {}",
                 target.mention(),
                 duration.as_secs(),
+                duration.subsec_millis(),
                 shooters.mention_all()
             )),
         )
