@@ -3,7 +3,13 @@ use crate::{data::PoiseContext, SayThenDelete};
 use bot_db::bank::BankDb;
 use color_eyre::eyre::Result;
 use parking_lot::Mutex;
-use poise::serenity_prelude::UserId;
+use poise::{
+    serenity_prelude::{
+        CreateActionRow, CreateButton, CreateInteractionResponse, CreateInteractionResponseMessage,
+        UserId,
+    },
+    CreateReply,
+};
 use rand::Rng;
 use std::{
     collections::HashMap,
@@ -11,7 +17,10 @@ use std::{
     time::{Duration, Instant},
 };
 
-#[poise::command(slash_command, subcommands("balance", "income", "gamble", "history"))]
+#[poise::command(
+    slash_command,
+    subcommands("balance", "income", "gamble", "history", "casino")
+)]
 pub async fn bank(_ctx: PoiseContext<'_>) -> Result<()> {
     Ok(())
 }
@@ -158,6 +167,58 @@ pub async fn history(ctx: PoiseContext<'_>) -> Result<()> {
 
     ctx.say_then_delete(build_history_message(history, author))
         .await?;
+
+    Ok(())
+}
+
+/// Start the casino games
+#[poise::command(slash_command, ephemeral = true)]
+pub async fn casino(ctx: PoiseContext<'_>) -> Result<()> {
+    // create a menu to pick the game
+
+    let msg = ctx
+        .send(
+            CreateReply::default()
+                .content("Pick a game")
+                .components(vec![CreateActionRow::Buttons(vec![CreateButton::new(
+                    "Test button",
+                )
+                .label("WOWIE")])]),
+        )
+        .await?;
+
+    let msg = msg.into_message().await?;
+    let interaction = msg
+        .await_component_interaction(ctx)
+        .timeout(Duration::from_secs(10))
+        .await;
+
+    match interaction {
+        Some(interaction) => {
+            interaction
+                .create_response(
+                    ctx,
+                    CreateInteractionResponse::UpdateMessage(
+                        CreateInteractionResponseMessage::new()
+                            .content("Done")
+                            .components(vec![CreateActionRow::Buttons(vec![CreateButton::new(
+                                "IT WORKED",
+                            )
+                            .label("IT WORKED")])]),
+                    ),
+                )
+                .await?;
+
+            // wait 500 ms
+            tokio::time::sleep(Duration::from_millis(500)).await;
+
+            interaction.delete_response(ctx).await.ok();
+        }
+        _ => {
+            msg.delete(ctx).await.ok();
+            return Ok(());
+        }
+    }
 
     Ok(())
 }

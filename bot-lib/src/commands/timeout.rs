@@ -98,10 +98,7 @@ pub async fn timeout(
 
     tokio::time::sleep(time - std::time::Duration::from_secs(1)).await;
 
-    reply_handle
-        .delete(ctx)
-        .await
-        .wrap_err("Failed to delete message")?;
+    reply_handle.delete(ctx).await.ok();
 
     Ok(())
 }
