@@ -196,8 +196,8 @@ hit_rate = 0.99
 
 [[responses]]
 name = "alcoholism"
-ruleset = """
-r (?i)alc(?:ohol(?:ism)?)?
+ruleset = '''
+r (?i)\balc(?:ohol(?:ism)?)?
 or
 r (?i)beer
 or
@@ -208,7 +208,7 @@ or
 r (?i)tequila
 or
 r (?i)soju
-"""
+'''
 content = [
     "<@216767618923757568>"
 ]
