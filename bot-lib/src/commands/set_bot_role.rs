@@ -2,7 +2,7 @@ use crate::data::PoiseContext;
 use color_eyre::eyre::{OptionExt, Result, WrapErr};
 use poise::serenity_prelude::RoleId;
 
-#[poise::command(slash_command, prefix_command, rename = "reactme", ephemeral = true)]
+#[poise::command(slash_command, rename = "reactme", ephemeral = true)]
 pub async fn add_bot_role(ctx: PoiseContext<'_>) -> Result<()> {
     let author = ctx.author();
     let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
@@ -21,7 +21,7 @@ pub async fn add_bot_role(ctx: PoiseContext<'_>) -> Result<()> {
     Ok(())
 }
 
-#[poise::command(slash_command, prefix_command, rename = "ignoreme", ephemeral = true)]
+#[poise::command(slash_command, rename = "ignoreme", ephemeral = true)]
 pub async fn remove_bot_role(ctx: PoiseContext<'_>) -> Result<()> {
     let author = ctx.author();
     let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;

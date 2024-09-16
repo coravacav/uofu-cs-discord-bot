@@ -8,8 +8,8 @@ use core::str;
 use itertools::Itertools;
 use parking_lot::Mutex;
 use poise::serenity_prelude::{
-    self as serenity, ChannelId, CreateMessage, EditMessage, GuildId, Mentionable, MessageBuilder,
-    MessageId, User, UserId,
+    ChannelId, Context, CreateMessage, EditMember, EditMessage, GuildId, Mentionable, Message,
+    MessageBuilder, MessageId, ReactionType, User, UserId,
 };
 use std::{
     cmp::Reverse,
@@ -152,9 +152,9 @@ pub async fn update_interval() {
 }
 
 async fn get_unique_non_kingfisher_voters(
-    ctx: &serenity::Context,
-    message: &serenity::Message,
-    reaction: impl Into<serenity::ReactionType>,
+    ctx: &Context,
+    message: &Message,
+    reaction: impl Into<ReactionType>,
 ) -> Result<Vec<User>> {
     let kingfisher_id = ctx.cache.current_user().id;
 
@@ -167,11 +167,7 @@ async fn get_unique_non_kingfisher_voters(
 }
 
 // Handle a reaction
-pub async fn handle_yeeting(
-    ctx: &serenity::Context,
-    data: &AppState,
-    message: &serenity::Message,
-) -> Result<()> {
+pub async fn handle_yeeting(ctx: &Context, data: &AppState, message: &Message) -> Result<()> {
     let message_id = message.id;
 
     // check if message is in the yeet map
@@ -184,7 +180,7 @@ pub async fn handle_yeeting(
     let mut did_nay = 0;
 
     for reaction in &message.reactions {
-        if let serenity::ReactionType::Unicode(emoji) = &reaction.reaction_type {
+        if let ReactionType::Unicode(emoji) = &reaction.reaction_type {
             let char = emoji.chars().next().unwrap_or(' ');
 
             if char == YEET_YES_REACTION {
@@ -241,7 +237,7 @@ pub async fn handle_yeeting(
         .edit_member(
             ctx,
             target,
-            serenity::EditMember::new().disable_communication_until(timeout_end.to_rfc3339()),
+            EditMember::new().disable_communication_until(timeout_end.to_rfc3339()),
         )
         .await
         .is_err()
@@ -312,11 +308,7 @@ impl MentionableExt for Vec<User> {
     }
 }
 
-async fn save_to_yeet_leaderboard(
-    ctx: &serenity::Context,
-    data: &AppState,
-    target: &UserId,
-) -> Result<()> {
+async fn save_to_yeet_leaderboard(ctx: &Context, data: &AppState, target: &UserId) -> Result<()> {
     let target = target.to_user(ctx).await?.id;
     YeetLeaderboard::new(&data.db)?.increment(target)?;
 

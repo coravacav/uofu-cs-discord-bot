@@ -1,10 +1,9 @@
 use crate::data::AppState;
 use color_eyre::eyre::{bail, Result};
-use poise::serenity_prelude::{self as serenity};
-use serenity::{Message, Reaction, ReactionType};
+use poise::serenity_prelude::{ChannelId, Context, Message, Reaction, ReactionType};
 
 pub async fn handle_starboards(
-    ctx: &serenity::Context,
+    ctx: &Context,
     data: &AppState,
     message: &Message,
     reaction: &Reaction,
@@ -28,7 +27,7 @@ pub async fn handle_starboards(
     let config = data.config.read().await;
 
     let futures = config.starboards.iter().map(|starboard| async {
-        let starboard_name = serenity::ChannelId::from(starboard.channel_id)
+        let starboard_name = ChannelId::from(starboard.channel_id)
             .name(ctx)
             .await
             .unwrap_or(format!(

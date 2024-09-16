@@ -2,7 +2,7 @@ use crate::data::PoiseContext;
 use color_eyre::eyre::{bail, Context, OptionExt, Result};
 use parking_lot::Mutex;
 use poise::{
-    serenity_prelude::{self as serenity, ChannelId, UserId},
+    serenity_prelude::{ChannelId, CreateEmbed, UserId},
     CreateReply,
 };
 use std::{
@@ -58,7 +58,7 @@ async fn try_lock_llm(ctx: PoiseContext<'_>) -> Result<()> {
 }
 
 /// Ask kingfisher anything!
-#[poise::command(slash_command, prefix_command, rename = "llm")]
+#[poise::command(slash_command, rename = "llm")]
 pub async fn llm_prompt(ctx: PoiseContext<'_>, prompt: String) -> Result<()> {
     if try_lock_llm(ctx).await.ok().is_none() {
         return Ok(());
@@ -88,7 +88,7 @@ pub async fn llm_prompt(ctx: PoiseContext<'_>, prompt: String) -> Result<()> {
 
     ctx.send(
         CreateReply::default()
-            .embed(serenity::CreateEmbed::new().title(title).description(reply))
+            .embed(CreateEmbed::new().title(title).description(reply))
             .reply(true),
     )
     .await?;

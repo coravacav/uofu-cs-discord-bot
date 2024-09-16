@@ -2,7 +2,7 @@ use crate::{courses::get_course, data::PoiseContext};
 use color_eyre::eyre::Result;
 use poise::{serenity_prelude as serenity, CreateReply};
 
-#[poise::command(slash_command, prefix_command, rename = "catalog")]
+#[poise::command(slash_command, rename = "catalog")]
 pub async fn course_catalog(ctx: PoiseContext<'_>, course_id: String) -> Result<()> {
     ctx.defer().await?;
 
@@ -54,7 +54,7 @@ pub async fn course_catalog(ctx: PoiseContext<'_>, course_id: String) -> Result<
     Ok(())
 }
 
-// #[poise::command(slash_command, prefix_command, rename = "catalog_search")]
+// #[poise::command(slash_command, rename = "catalog_search")]
 // pub async fn course_catalog_search(ctx: PoiseContext<'_>, search_string: String) -> Result<()> {
 //     ctx.defer().await?;
 

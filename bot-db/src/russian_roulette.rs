@@ -1,9 +1,8 @@
-use std::collections::HashMap;
-
 use crate::{KingFisherDb, ReadWriteTree};
 use color_eyre::eyre::Result;
-use poise::serenity_prelude::{self as serenity, UserId};
+use poise::serenity_prelude::UserId;
 use sled::Tree;
+use std::collections::HashMap;
 
 struct RussianRouletteGame {
     game_players: Vec<UserId>,
@@ -46,29 +45,29 @@ impl RussianRouletteStats {
         Ok(RussianRouletteStats(db))
     }
 
-    pub fn set(&self, user_id: serenity::UserId, count: u64) -> Result<()> {
+    pub fn set(&self, user_id: UserId, count: u64) -> Result<()> {
         let user_id: u64 = user_id.into();
         self.0.typed_insert::<u64, u64>(&user_id, &count)
     }
 
-    pub fn increment(&self, user_id: serenity::UserId) -> Result<Option<u64>> {
+    pub fn increment(&self, user_id: UserId) -> Result<Option<u64>> {
         let user_id: u64 = user_id.into();
         self.0.typed_merge(&user_id, &1u64)
     }
 
-    pub fn get(&self, user_id: serenity::UserId) -> Result<Option<u64>> {
+    pub fn get(&self, user_id: UserId) -> Result<Option<u64>> {
         let user_id: u64 = user_id.into();
         self.0.typed_get::<u64, u64>(&user_id)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (serenity::UserId, u64)> {
+    pub fn iter(&self) -> impl Iterator<Item = (UserId, u64)> {
         self.0
             .iter()
             .filter_map(|i| i.ok())
-            .map(|(user_id, count)| -> Result<(serenity::UserId, u64)> {
+            .map(|(user_id, count)| -> Result<(UserId, u64)> {
                 let user_id: u64 = bincode::deserialize(&user_id)?;
                 let count: u64 = bincode::deserialize(&count)?;
-                Ok((serenity::UserId::from(user_id), count))
+                Ok((UserId::from(user_id), count))
             })
             .filter_map(|i| i.ok())
     }

@@ -1,8 +1,10 @@
 use crate::{commands::get_member, courses::get_course, data::PoiseContext};
 use color_eyre::eyre::{bail, OptionExt, Result, WrapErr};
-use poise::serenity_prelude::{self as serenity, EditChannel};
+use poise::serenity_prelude::{
+    ChannelType, CreateChannel, EditChannel, EditRole, PermissionOverwrite,
+    PermissionOverwriteType, Permissions, RoleId,
+};
 use regex::Regex;
-use serenity::{ChannelType, PermissionOverwrite, PermissionOverwriteType, Permissions, RoleId};
 
 pub async fn get_role(ctx: PoiseContext<'_>, number: u32) -> Result<RoleId> {
     let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
@@ -43,17 +45,14 @@ pub async fn create_class_category(
     }
 
     let role = guild
-        .create_role(
-            ctx,
-            serenity::EditRole::new().name(format!("CS {}", number_string)),
-        )
+        .create_role(ctx, EditRole::new().name(format!("CS {}", number_string)))
         .await
         .wrap_err("Couldn't create role")?;
 
     let category = guild
         .create_channel(
             ctx,
-            serenity::CreateChannel::new(format!("CS {}", number_string))
+            CreateChannel::new(format!("CS {}", number_string))
                 .kind(ChannelType::Category)
                 .permissions(vec![
                     PermissionOverwrite {
@@ -79,7 +78,7 @@ pub async fn create_class_category(
     guild
         .create_channel(
             ctx,
-            serenity::CreateChannel::new(format!("{}-resources", number_string))
+            CreateChannel::new(format!("{}-resources", number_string))
                 .kind(ChannelType::Text)
                 .category(category.id),
         )
@@ -89,7 +88,7 @@ pub async fn create_class_category(
     guild
         .create_channel(
             ctx,
-            serenity::CreateChannel::new(format!("{}-general", number_string))
+            CreateChannel::new(format!("{}-general", number_string))
                 .kind(ChannelType::Text)
                 .category(category.id),
         )
@@ -217,7 +216,7 @@ pub async fn update_class_category(
 //     guild
 //         .create_channel(
 //             ctx,
-//             serenity::CreateChannel::new(general_channel_name)
+//             CreateChannel::new(general_channel_name)
 //                 .kind(ChannelType::Text)
 //                 .category(category_id),
 //         )
@@ -283,7 +282,7 @@ pub async fn reset_class_categories(ctx: PoiseContext<'_>) -> Result<()> {
 }
 
 /// Join a class. Enter the CS class number, eg. for CS2420 put in "2420"
-#[poise::command(slash_command, prefix_command, rename = "join_class", ephemeral = true)]
+#[poise::command(slash_command, rename = "join_class", ephemeral = true)]
 pub async fn add_class_role(
     ctx: PoiseContext<'_>,
     #[description = "The class number, eg. for CS2420 put in \"2420\""] number: u32,
@@ -302,12 +301,7 @@ pub async fn add_class_role(
 }
 
 /// Leave a class. Enter the CS class number, eg. for CS2420 put in "2420"
-#[poise::command(
-    slash_command,
-    prefix_command,
-    rename = "leave_class",
-    ephemeral = true
-)]
+#[poise::command(slash_command, rename = "leave_class", ephemeral = true)]
 pub async fn remove_class_role(
     ctx: PoiseContext<'_>,
     #[description = "The class number, eg. for CS2420 put in \"2420\""] number: u32,

@@ -1,3 +1,4 @@
+mod admin;
 mod aur_search;
 mod bank;
 mod cice;
@@ -14,6 +15,7 @@ mod set_dog_role;
 mod timeout;
 mod yeet;
 
+pub use admin::*;
 pub use aur_search::*;
 pub use bank::*;
 pub use cice::*;
@@ -32,7 +34,7 @@ pub use yeet::*;
 
 use crate::data::PoiseContext;
 use color_eyre::eyre::{Context, ContextCompat, OptionExt, Result};
-use poise::serenity_prelude::{self as serenity, CreateMessage, Member, Mentionable};
+use poise::serenity_prelude::{CreateMessage, EditMember, Member, Mentionable};
 use std::time::Duration;
 
 pub async fn get_member(ctx: PoiseContext<'_>) -> Result<Member> {
@@ -57,7 +59,7 @@ pub async fn is_stefan(ctx: PoiseContext<'_>) -> Result<bool> {
         .edit_member(
             ctx,
             author.id,
-            serenity::EditMember::new().disable_communication_until(timeout_end.to_rfc3339()),
+            EditMember::new().disable_communication_until(timeout_end.to_rfc3339()),
         )
         .await
         .wrap_err("Failed to edit member")

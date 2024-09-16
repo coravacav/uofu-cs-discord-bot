@@ -14,7 +14,7 @@ pub async fn db_admin(_ctx: PoiseContext<'_>) -> Result<()> {
     Ok(())
 }
 
-#[poise::command(slash_command, ephemeral = true, check=is_stefan)]
+#[poise::command(slash_command, ephemeral = true)]
 async fn clear_value(ctx: PoiseContext<'_>, tree: String, key: UserId) -> Result<()> {
     let key: u64 = key.into();
     ctx.data().db.debug_remove_value(&tree, &key)?;
@@ -24,7 +24,7 @@ async fn clear_value(ctx: PoiseContext<'_>, tree: String, key: UserId) -> Result
     Ok(())
 }
 
-#[poise::command(slash_command, ephemeral = true, check=is_stefan)]
+#[poise::command(slash_command, ephemeral = true)]
 async fn inspect_value(ctx: PoiseContext<'_>, tree: String, key: UserId) -> Result<()> {
     let key: u64 = key.into();
     let value = ctx.data().db.debug_inspect_value(&tree, &key)?;

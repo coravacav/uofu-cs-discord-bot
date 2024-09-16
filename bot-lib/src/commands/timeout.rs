@@ -1,11 +1,13 @@
 use crate::{data::PoiseContext, utils::GetRelativeTimestamp};
-use color_eyre::eyre::{ContextCompat, Result, WrapErr};
+use color_eyre::eyre::{ContextCompat, Result};
+use humantime::parse_duration;
 use poise::{
-    serenity_prelude::{self as serenity, Mentionable},
+    serenity_prelude::{EditMember, Mentionable},
     CreateReply,
 };
+use std::time::Duration;
 
-#[poise::command(slash_command, prefix_command)]
+#[poise::command(slash_command)]
 pub async fn timeout(
     ctx: PoiseContext<'_>,
     #[description = "The amount of time to time yourself out, like '1h' or '3m'"] time_text: String,
@@ -20,7 +22,7 @@ pub async fn timeout(
     }
 
     let author = ctx.author();
-    let Ok(time) = fundu::parse_duration(&time_text) else {
+    let Ok(time) = parse_duration(&time_text) else {
         tracing::info!(
             "{} tried to time out with invalid time '{}'",
             author.tag(),
@@ -33,19 +35,30 @@ pub async fn timeout(
         return Ok(());
     };
 
+    if time > Duration::from_secs(60 * 60 * 24 * 28) {
+        ctx.say("Discord isn't cool and doesn't let you time out for more than 28 days")
+            .await?;
+        return Ok(());
+    }
+
+    if time < Duration::from_secs(1) {
+        ctx.say("_huh_").await?;
+        return Ok(());
+    }
+
     let timeout_end = chrono::Utc::now() + time;
 
     let guild_id = ctx.guild_id().wrap_err("No guild ID?")?;
 
-    let Ok(_) = guild_id
+    if guild_id
         .edit_member(
             ctx,
             author.id,
-            serenity::EditMember::new().disable_communication_until(timeout_end.to_rfc3339()),
+            EditMember::new().disable_communication_until(timeout_end.to_rfc3339()),
         )
         .await
-        .wrap_err("Failed to edit member")
-    else {
+        .is_err()
+    {
         ctx.say("Failed to time out! Ur too powerful :(").await?;
         return Ok(());
     };

@@ -1,7 +1,9 @@
 use color_eyre::eyre::Result;
 use parking_lot::RwLock;
-use poise::serenity_prelude::ChannelId;
-use poise::serenity_prelude::{self as serenity};
+use poise::serenity_prelude::{
+    Channel, ChannelId, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage,
+    GetMessages, Message, ReactionType, Timestamp,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
@@ -51,8 +53,8 @@ impl Starboard {
     #[tracing::instrument(level = "trace", skip(self, ctx, message), fields(message_link = %message.link()))]
     pub async fn does_starboard_apply(
         &self,
-        ctx: &serenity::Context,
-        message: &serenity::Message,
+        ctx: &Context,
+        message: &Message,
         reaction_count: u64,
         emote_name: &str,
     ) -> bool {
@@ -89,7 +91,7 @@ impl Starboard {
         None => panic!("Failed to create time check"),
     };
 
-    fn is_message_recent(&self, message_timestamp: &serenity::Timestamp) -> bool {
+    fn is_message_recent(&self, message_timestamp: &Timestamp) -> bool {
         let message_timestamp = message_timestamp.unix_timestamp();
         let check = message_timestamp > (chrono::Utc::now() - Self::ONE_WEEK).timestamp();
 
@@ -136,22 +138,18 @@ impl Starboard {
         check
     }
 
-    async fn is_message_a_yeet(&self, message: &serenity::Message) -> bool {
+    async fn is_message_a_yeet(&self, message: &Message) -> bool {
         use crate::commands::{YEET_KNOWN_MESSAGE_PORTION, YEET_MAP};
 
         !YEET_MAP.lock().contains_key(&message.id)
             && !message.content.starts_with(YEET_KNOWN_MESSAGE_PORTION)
     }
 
-    async fn is_channel_missing_reply(
-        &self,
-        ctx: &serenity::Context,
-        message: &serenity::Message,
-    ) -> bool {
+    async fn is_channel_missing_reply(&self, ctx: &Context, message: &Message) -> bool {
         let message_link = message.link();
 
         let Ok(messages) = ChannelId::new(self.channel_id)
-            .messages(ctx, serenity::GetMessages::new())
+            .messages(ctx, GetMessages::new())
             .await
         else {
             return false;
@@ -176,16 +174,16 @@ impl Starboard {
 
     pub async fn reply(
         &self,
-        ctx: &serenity::Context,
-        message: &serenity::Message,
-        reaction_type: &serenity::ReactionType,
+        ctx: &Context,
+        message: &Message,
+        reaction_type: &ReactionType,
     ) -> Result<()> {
-        let reply = serenity::CreateMessage::new();
+        let reply = CreateMessage::new();
 
         let reply = match reaction_type {
-            serenity::ReactionType::Unicode(emoji) => reply.content(emoji),
-            serenity::ReactionType::Custom { animated, id, .. } => reply.add_file(
-                serenity::CreateAttachment::url(
+            ReactionType::Unicode(emoji) => reply.content(emoji),
+            ReactionType::Custom { animated, id, .. } => reply.add_file(
+                CreateAttachment::url(
                     ctx,
                     &format!(
                         "https://cdn.discordapp.com/emojis/{}.{}",
@@ -198,7 +196,7 @@ impl Starboard {
             _ => reply,
         };
 
-        let author = serenity::CreateEmbedAuthor::new(&message.author.name).icon_url(
+        let author = CreateEmbedAuthor::new(&message.author.name).icon_url(
             message
                 .author
                 .avatar_url()
@@ -206,7 +204,7 @@ impl Starboard {
                 .unwrap_or("https://cdn.discordapp.com/embed/avatars/0.png"),
         );
 
-        let embed = serenity::CreateEmbed::new()
+        let embed = CreateEmbed::new()
             .description(format!(
                 "{}\n{}{}",
                 message.content,
@@ -215,7 +213,7 @@ impl Starboard {
                     .channel(ctx)
                     .await
                     .map(|channel| {
-                        if let serenity::Channel::Guild(channel) = channel {
+                        if let Channel::Guild(channel) = channel {
                             format!(" ({})", channel.name)
                         } else {
                             "".to_string()

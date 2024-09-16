@@ -1,14 +1,9 @@
 use crate::data::AppState;
 use color_eyre::eyre::{OptionExt, Result};
-use poise::serenity_prelude::{self as serenity};
-use serenity::Message;
+use poise::serenity_prelude::{Context, Message};
 
 #[tracing::instrument(level = "trace", skip(ctx, data))]
-pub async fn text_detection(
-    ctx: &serenity::Context,
-    data: &AppState,
-    message: &Message,
-) -> Result<()> {
+pub async fn text_detection(ctx: &Context, data: &AppState, message: &Message) -> Result<()> {
     if message.author == **ctx.cache.current_user() {
         return Ok(());
     }

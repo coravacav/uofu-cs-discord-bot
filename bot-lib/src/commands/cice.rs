@@ -3,7 +3,7 @@ use color_eyre::eyre::Result;
 use poise::serenity_prelude::Mentionable;
 use rand::Rng;
 
-#[poise::command(slash_command, prefix_command, rename = "coinflip")]
+#[poise::command(slash_command, rename = "coinflip")]
 pub async fn coinflip(ctx: PoiseContext<'_>, optional_explanation: Option<String>) -> Result<()> {
     let heads = rand::thread_rng().gen_bool(0.5);
     let lands_on_its_side = rand::thread_rng().gen_bool(0.001);
