@@ -3,9 +3,9 @@ use serde::Deserialize;
 use std::{collections::HashMap, sync::LazyLock};
 
 static COURSES: LazyLock<RwLock<HashMap<String, Course>>> = LazyLock::new(|| {
-    let static_json_file = include_str!("../../classes.json");
-
-    let file: File = serde_json::from_str(static_json_file).unwrap();
+    let file = std::fs::File::open("classes.json").unwrap();
+    let file_reader = std::io::BufReader::new(file);
+    let file: File = serde_json::from_reader(file_reader).unwrap();
 
     let mut courses = HashMap::new();
 

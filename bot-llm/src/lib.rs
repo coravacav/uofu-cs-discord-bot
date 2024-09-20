@@ -6,6 +6,7 @@ use candle_transformers::models::quantized_llama as model;
 use color_eyre::eyre::Result;
 use model::ModelWeights;
 use std::fmt::Write;
+use std::sync::LazyLock;
 use tokenizers::Tokenizer;
 
 fn create_prompt(prompt: &str) -> String {
@@ -23,6 +24,8 @@ pub fn load_model() -> Result<ModelWeights> {
     Ok(ModelWeights::from_gguf(model, &mut file, &device)?)
 }
 
+static MODEL_BYTES: LazyLock<Vec<u8>> = LazyLock::new(|| std::fs::read("tokenizer.json").unwrap());
+
 pub fn run_the_model(model: &mut ModelWeights, prompt: &str) -> Result<String> {
     candle_core::cuda::set_gemm_reduced_precision_f16(true);
     candle_core::cuda::set_gemm_reduced_precision_bf16(true);
@@ -35,9 +38,7 @@ pub fn run_the_model(model: &mut ModelWeights, prompt: &str) -> Result<String> {
     let seed = rand::random();
     let sample_len = 1000usize;
 
-    let mut tos = TokenOutputStream::new(
-        Tokenizer::from_bytes(include_bytes!("../../tokenizer.json")).unwrap(),
-    );
+    let mut tos = TokenOutputStream::new(Tokenizer::from_bytes(MODEL_BYTES.as_slice()).unwrap());
     let prompt = create_prompt(prompt);
 
     let pre_prompt_tokens = vec![];
