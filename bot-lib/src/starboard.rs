@@ -139,10 +139,9 @@ impl Starboard {
     }
 
     async fn is_message_a_yeet(&self, message: &Message) -> bool {
-        use crate::commands::{YEET_KNOWN_MESSAGE_PORTION, YEET_MAP};
+        use crate::commands::YEET_MAP;
 
         !YEET_MAP.lock().contains_key(&message.id)
-            && !message.content.starts_with(YEET_KNOWN_MESSAGE_PORTION)
     }
 
     async fn is_channel_missing_reply(&self, ctx: &Context, message: &Message) -> bool {

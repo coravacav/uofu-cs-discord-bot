@@ -1,5 +1,4 @@
 pub mod bank;
-pub mod russian_roulette;
 pub mod yeet;
 
 use bot_traits::ForwardRefToTracing;
