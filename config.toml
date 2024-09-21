@@ -134,6 +134,7 @@ unskippable = true
 
 [[responses]]
 name = "long ass word bro"
+hit_rate = 0.1
 ruleset = """
 r (?: |^)[a-zA-Z]{15,}(?: |$)
 or

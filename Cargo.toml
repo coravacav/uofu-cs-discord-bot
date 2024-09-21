@@ -10,18 +10,28 @@ incremental = true
 serenity = { git = "https://github.com/serenity-rs/serenity", rev = "c28c25e65d77690c5ae700e459fde48c73ee4667" }
 
 [workspace.dependencies]
-tokio = { version = "1.40.0", features = ["rt", "macros", "rt-multi-thread", "tracing"] }
+tokio = { version = "1", features = [
+    "rt",
+    "macros",
+    "rt-multi-thread",
+    "tracing",
+] }
+tracing-subscriber = { version = "0.3", features = [
+    "env-filter",
+    "fmt",
+    "parking_lot",
+] }
 color-eyre = "0.6"
-poise = "0.6.1"
-tracing = "0.1.40"
+poise = "0.6"
+tracing = "0.1"
 bot-llm = { path = 'bot-llm' }
 bot-lib = { path = 'bot-lib' }
 bot-traits = { path = 'bot-traits' }
 bot-db = { path = 'bot-db' }
-rand = "0.8.5"
-serde = { version = "1.0.198", features = ["derive", "rc"] }
-itertools = "0.13.0"
-notify = { version = "6.1.1", default-features = false, features = [
+rand = "0.8"
+serde = { version = "1", features = ["derive", "rc"] }
+itertools = "0.13"
+notify = { version = "6", default-features = false, features = [
     "macos_kqueue",
 ] }
 

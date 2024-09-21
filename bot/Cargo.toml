@@ -5,17 +5,17 @@ edition = "2021"
 publish = false
 
 [dependencies]
-tokio = {workspace = true}
-color-eyre = {workspace = true}
-poise = {workspace = true}
-tracing = {workspace = true}
+tokio = { workspace = true }
+color-eyre = { workspace = true }
+poise = { workspace = true }
+tracing = { workspace = true }
 bot-lib = { workspace = true }
 bot-traits = { workspace = true }
 notify = { workspace = true }
-clap = { version = "4.5.4", features = ["derive"] }
-dotenvy = "0.15.7"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt", "parking_lot"] }
-console-subscriber = { version = "0.4.0", features = ["parking_lot"] }
+tracing-subscriber = { workspace = true }
+clap = { version = "4", features = ["derive"] }
+dotenvy = "0.15"
+console-subscriber = { version = "0.4", features = ["parking_lot"] }
 
 [lints]
 workspace = true
