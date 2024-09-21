@@ -118,8 +118,19 @@ impl MentionableExt for Vec<User> {
         self.iter().map(|user| user.mention().to_string()).join(" ")
     }
 }
+impl MentionableExt for Vec<UserId> {
+    fn mention_all(&self) -> String {
+        self.iter().map(|user| user.mention().to_string()).join(" ")
+    }
+}
 
 impl MentionableExt for &[User] {
+    fn mention_all(&self) -> String {
+        self.iter().map(|user| user.mention().to_string()).join(" ")
+    }
+}
+
+impl MentionableExt for &[UserId] {
     fn mention_all(&self) -> String {
         self.iter().map(|user| user.mention().to_string()).join(" ")
     }

@@ -41,11 +41,15 @@ pub const YEET_YES_REACTION: char = '✅';
 pub const YEET_DURATION_SECONDS: u64 = 300;
 pub const YEET_REFRESH_CHARGE_SECONDS: u64 = 3600;
 pub const YEET_VOTING_SECONDS: u64 = 90;
+pub const YEET_PARRY_SECONDS: u64 = 3;
+pub const YEET_PARRY_COOLDOWN_SECONDS: u64 = 60;
 
 pub(crate) static YEET_MAP: LazyLock<Mutex<HashMap<MessageId, YeetData>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 pub(crate) static YEET_OPPORTUNITIES: LazyLock<Mutex<usize>> =
     LazyLock::new(|| Mutex::new(YEET_DEFAULT_OPPORTUNITIES));
+pub(crate) static YEET_PARRY_MAP: LazyLock<Mutex<HashMap<UserId, (Instant, u64)>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
 
 async fn check_yeet_opportunities() -> Result<bool> {
     let mut yeet_opportunities = YEET_OPPORTUNITIES.lock();
@@ -245,7 +249,7 @@ async fn get_unique_non_kingfisher_voters(
     ctx: &Context,
     message: &Message,
     reaction: impl Into<ReactionType>,
-) -> Result<Vec<User>> {
+) -> Result<Vec<UserId>> {
     let kingfisher_id = ctx.cache.current_user().id;
 
     Ok(message
@@ -253,6 +257,7 @@ async fn get_unique_non_kingfisher_voters(
         .await?
         .into_iter()
         .filter(|user| user.id != kingfisher_id)
+        .map(|user| user.id)
         .collect_vec())
 }
 
@@ -260,7 +265,7 @@ async fn fail_to_yeet_after_vote(
     ctx: CloneableCtx,
     channel_id: ChannelId,
     is_yeet_amongus_easter_egg: bool,
-    shooters: &[User],
+    shooters: &[UserId],
     target: &UserId,
 ) -> Result<()> {
     if is_yeet_amongus_easter_egg {
@@ -285,7 +290,7 @@ async fn successful_yeet(
     ctx: CloneableCtx,
     channel_id: ChannelId,
     is_yeet_amongus_easter_egg: bool,
-    shooters: &[User],
+    shooters: &[UserId],
     target: &UserId,
     duration: Duration,
     timeout_end: DateTime<Utc>,
@@ -372,16 +377,25 @@ pub async fn handle_yeeting(ctx: &Context, data: &AppState, message: &Message) -
     };
 
     let duration = yeet_data.start_time.elapsed();
+    let parried = YEET_PARRY_MAP
+        .lock()
+        .remove(&yeet_data.victim)
+        .map(|(parry_time, attempts)| {
+            (yeet_data.start_time - parry_time).as_secs() < YEET_PARRY_SECONDS && attempts == 0
+        })
+        .unwrap_or(false);
 
     // This are costly api calls.
     let yay = get_unique_non_kingfisher_voters(ctx, message, YEET_YES_REACTION).await?;
     let nay = get_unique_non_kingfisher_voters(ctx, message, YEET_NO_REACTION).await?;
 
+    let parried = !yay.iter().any(|user| *user == yeet_data.victim) && parried;
+
     // Delete the voting message
     message.delete(ctx).await.ok(); // Don't care if it succeeds
 
-    let (targets, shooters): (&[UserId], Vec<User>) = match (did_yay, did_nay) {
-        (true, true) => {
+    let (targets, shooters): (&[UserId], Vec<UserId>) = match (did_yay, did_nay, parried) {
+        (true, true, _) => {
             yeet_data
                 .channel_id
                 .send_message(
@@ -397,9 +411,32 @@ pub async fn handle_yeeting(ctx: &Context, data: &AppState, message: &Message) -
                 [yay, nay].into_iter().flatten().unique().collect_vec(),
             )
         }
-        (true, false) => (&[yeet_data.victim], yay),
-        (false, true) => (&[yeet_data.yeeter], nay),
-        (false, false) => {
+        (true, false, false) => (&[yeet_data.victim], yay),
+        (true, false, true) => {
+            yeet_data
+                .channel_id
+                .send_message(
+                    ctx,
+                    CreateMessage::new().content(format!(
+                        "{} has successfully parried the yeet! Take that {}!",
+                        yeet_data.victim.mention(),
+                        yeet_data.yeeter.mention()
+                    )),
+                )
+                .await
+                .ok();
+
+            (
+                &[yeet_data.yeeter],
+                [nay, vec![yeet_data.victim]]
+                    .into_iter()
+                    .flatten()
+                    .unique()
+                    .collect_vec(),
+            )
+        }
+        (false, true, _) => (&[yeet_data.yeeter], nay),
+        (false, false, _) => {
             tracing::error!("Yeet failure in counting? This should never happen");
             return Ok(());
         }
@@ -467,6 +504,31 @@ pub async fn yeet_leaderboard(ctx: PoiseContext<'_>) -> Result<()> {
     }
 
     ctx.say(message_text).await?;
+
+    Ok(())
+}
+
+/// Parry a yeet for 3 seconds.
+/// If you do it more than once a minute, it will fail :)
+#[poise::command(slash_command, ephemeral = true)]
+pub async fn parry(ctx: PoiseContext<'_>) -> Result<()> {
+    let user = ctx.author();
+
+    YEET_PARRY_MAP
+        .lock()
+        .entry(user.id)
+        .and_modify(|(last_time, attempts)| {
+            if last_time.elapsed() < Duration::from_secs(YEET_PARRY_COOLDOWN_SECONDS) {
+                *attempts += 1;
+            } else {
+                *last_time = Instant::now();
+                *attempts = 0;
+            }
+        })
+        .or_insert((Instant::now(), 0));
+
+    ctx.say("You're now parrying for the next 3 seconds")
+        .await?;
 
     Ok(())
 }

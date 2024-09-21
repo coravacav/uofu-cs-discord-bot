@@ -65,6 +65,7 @@ async fn main() -> Result<()> {
                 bank(),
                 bank_admin(),
                 db_admin(),
+                parry(),
                 remove_dog_role(),
                 update_class_category(),
                 add_class_role(),
