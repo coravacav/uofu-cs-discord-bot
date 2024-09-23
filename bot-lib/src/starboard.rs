@@ -1,29 +1,20 @@
 use color_eyre::eyre::Result;
-use parking_lot::RwLock;
+use parking_lot::Mutex;
 use poise::serenity_prelude::{
     Channel, ChannelId, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage,
-    GetMessages, Message, ReactionType, Timestamp,
+    GetMessages, Message, MessageId, ReactionType, Timestamp,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
-#[serde(untagged)]
-pub enum EmoteType {
-    AllEmotes { all_emotes: bool },
-    CustomEmote { emote_name: String },
-}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Starboard {
     pub reaction_count: u64,
     pub channel_id: u64,
     pub ignored_channel_ids: Option<Vec<u64>>,
-    #[serde(flatten)]
-    pub emote_type: EmoteType,
     /// This stores a string hash of the message link
     #[serde(skip)]
-    pub recently_added_messages: RwLock<HashSet<String>>,
+    pub recently_added_messages: Mutex<HashSet<MessageId>>,
 }
 
 impl PartialEq for Starboard {
@@ -31,7 +22,6 @@ impl PartialEq for Starboard {
         self.reaction_count == other.reaction_count
             && self.channel_id == other.channel_id
             && self.ignored_channel_ids == other.ignored_channel_ids
-            && self.emote_type == other.emote_type
     }
 }
 
@@ -43,8 +33,7 @@ impl Default for Starboard {
             reaction_count: 1,
             channel_id: 0,
             ignored_channel_ids: None,
-            emote_type: EmoteType::AllEmotes { all_emotes: true },
-            recently_added_messages: RwLock::new(HashSet::new()),
+            recently_added_messages: Mutex::new(HashSet::new()),
         }
     }
 }
@@ -56,14 +45,12 @@ impl Starboard {
         ctx: &Context,
         message: &Message,
         reaction_count: u64,
-        emote_name: &str,
     ) -> bool {
         let check = self.enough_reactions(reaction_count)
             && self.is_message_recent(&message.timestamp)
             && self.is_channel_allowed(message.channel_id.into())
-            && self.is_emote_allowed(emote_name)
-            && self.is_message_unseen(&message.link())
-            && self.is_message_a_yeet(message).await
+            && self.is_message_unseen(&message.id)
+            && self.is_message_not_yeet(message).await
             && self.is_channel_missing_reply(ctx, message).await;
 
         let check_msg = if check { "applies" } else { "does not apply" };
@@ -73,75 +60,34 @@ impl Starboard {
     }
 
     fn enough_reactions(&self, reaction_count: u64) -> bool {
-        let check = reaction_count >= self.reaction_count;
-        let check_text = if check { "enough" } else { "not enough" };
-
-        tracing::trace!(
-            "reaction_count {} is {} (needed {})",
-            reaction_count,
-            check_text,
-            self.reaction_count
-        );
-
-        check
+        reaction_count >= self.reaction_count
     }
 
-    const ONE_WEEK: chrono::TimeDelta = match chrono::TimeDelta::try_weeks(1) {
-        Some(time_check) => time_check,
-        None => panic!("Failed to create time check"),
-    };
-
     fn is_message_recent(&self, message_timestamp: &Timestamp) -> bool {
-        let message_timestamp = message_timestamp.unix_timestamp();
-        let check = message_timestamp > (chrono::Utc::now() - Self::ONE_WEEK).timestamp();
+        const ONE_WEEK: chrono::TimeDelta = match chrono::TimeDelta::try_weeks(1) {
+            Some(time_check) => time_check,
+            None => unreachable!(),
+        };
 
-        let check_text = if check { "new enough" } else { "too old" };
-
-        tracing::trace!("message is {}", check_text);
-
-        check
+        message_timestamp.unix_timestamp() > (chrono::Utc::now() - ONE_WEEK).timestamp()
     }
 
     fn is_channel_allowed(&self, channel_id: u64) -> bool {
-        let check = self
-            .ignored_channel_ids
-            .as_ref()
-            .map(|ignored_channel_ids| !ignored_channel_ids.contains(&channel_id))
-            .unwrap_or(true);
-
-        let check_text = if check { "allowed" } else { "disallowed" };
-        tracing::trace!("channel_id {} is {}", channel_id, check_text);
-
-        check
+        if let Some(ignored_channel_ids) = self.ignored_channel_ids.as_ref() {
+            !ignored_channel_ids.contains(&channel_id)
+        } else {
+            true
+        }
     }
 
-    fn is_emote_allowed(&self, emote_name: &str) -> bool {
-        let check = match &self.emote_type {
-            EmoteType::AllEmotes { .. } => true,
-            EmoteType::CustomEmote {
-                emote_name: allowed_emote_name,
-            } => emote_name == allowed_emote_name,
-        };
-
-        let check_text = if check { "allowed" } else { "disallowed" };
-        tracing::trace!("emote_name {} is {}", emote_name, check_text);
-
-        check
+    fn is_message_unseen(&self, message_id: &MessageId) -> bool {
+        !self.recently_added_messages.lock().contains(message_id)
     }
 
-    fn is_message_unseen(&self, message_link: &str) -> bool {
-        let check = !self.recently_added_messages.read().contains(message_link);
-
-        let check_text = if check { "seen" } else { "unseen" };
-        tracing::trace!("message_link {} is {}", message_link, check_text);
-
-        check
-    }
-
-    async fn is_message_a_yeet(&self, message: &Message) -> bool {
-        use crate::commands::YEET_MAP;
-
-        !YEET_MAP.lock().contains_key(&message.id)
+    async fn is_message_not_yeet(&self, message: &Message) -> bool {
+        !crate::commands::YEET_STARBOARD_EXCLUSIONS
+            .lock()
+            .contains(&message.id)
     }
 
     async fn is_channel_missing_reply(&self, ctx: &Context, message: &Message) -> bool {
@@ -163,12 +109,7 @@ impl Starboard {
             })
         });
 
-        let check = !has_already_been_added;
-
-        let check_text = if check { "missing" } else { "already added" };
-        tracing::trace!("message_link {} is {}", message_link, check_text);
-
-        check
+        !has_already_been_added
     }
 
     pub async fn reply(
@@ -177,6 +118,8 @@ impl Starboard {
         message: &Message,
         reaction_type: &ReactionType,
     ) -> Result<()> {
+        self.recently_added_messages.lock().insert(message.id);
+
         let reply = CreateMessage::new();
 
         let reply = match reaction_type {
@@ -240,50 +183,6 @@ impl Starboard {
             .send_message(ctx, reply)
             .await?;
 
-        self.recently_added_messages.write().insert(message.link());
-
         Ok(())
     }
-}
-
-#[test]
-fn check_deserialize_emote() {
-    let toml = r#"
-reaction_count = 1
-channel_id = 1
-emote_name = "test"
-"#;
-    let starboard: Starboard = toml::from_str(toml).unwrap();
-
-    assert_eq!(
-        starboard,
-        Starboard {
-            reaction_count: 1,
-            channel_id: 1,
-            emote_type: EmoteType::CustomEmote {
-                emote_name: "test".to_string()
-            },
-            ..Default::default()
-        }
-    );
-}
-
-#[test]
-fn check_deserialize_all_emotes() {
-    let toml = r#"
-reaction_count = 1
-channel_id = 1
-all_emotes = true
-"#;
-    let starboard: Starboard = toml::from_str(toml).unwrap();
-
-    assert_eq!(
-        starboard,
-        Starboard {
-            reaction_count: 1,
-            channel_id: 1,
-            emote_type: EmoteType::AllEmotes { all_emotes: true },
-            ..Default::default()
-        }
-    );
 }

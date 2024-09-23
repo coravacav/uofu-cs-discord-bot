@@ -1,6 +1,6 @@
 use crate::data::AppState;
-use color_eyre::eyre::{bail, Result};
-use poise::serenity_prelude::{ChannelId, Context, Message, Reaction, ReactionType};
+use color_eyre::eyre::Result;
+use poise::serenity_prelude::{Context, Message, Reaction};
 
 pub async fn handle_starboards(
     ctx: &Context,
@@ -9,14 +9,6 @@ pub async fn handle_starboards(
     reaction: &Reaction,
 ) -> Result<()> {
     let reaction_type = &reaction.emoji;
-
-    let name = match reaction_type {
-        ReactionType::Unicode(string) => emojis::get(string)
-            .map(|emoji| emoji.name().to_owned())
-            .unwrap_or(string.to_owned()),
-        ReactionType::Custom { id, .. } => id.to_string(),
-        _ => bail!("Unknown reaction type"),
-    };
 
     let reaction_count = message
         .reactions
@@ -27,22 +19,8 @@ pub async fn handle_starboards(
     let config = data.config.read().await;
 
     let futures = config.starboards.iter().map(|starboard| async {
-        let starboard_name = ChannelId::from(starboard.channel_id)
-            .name(ctx)
-            .await
-            .unwrap_or(format!(
-                "!! Unknown starboard (id = {})",
-                starboard.channel_id
-            ));
-
-        tracing::event!(
-            tracing::Level::TRACE,
-            "checking starboard {}",
-            starboard_name
-        );
-
         if starboard
-            .does_starboard_apply(ctx, message, reaction_count, &name)
+            .does_starboard_apply(ctx, message, reaction_count)
             .await
         {
             starboard.reply(ctx, message, reaction_type).await.ok();

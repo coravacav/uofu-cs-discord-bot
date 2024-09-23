@@ -17,7 +17,8 @@ use poise::serenity_prelude::{
 use rand::Rng;
 use std::{
     cmp::Reverse,
-    collections::HashMap,
+    collections::{HashMap, HashSet},
+    num::Saturating,
     sync::LazyLock,
     time::{Duration, Instant},
 };
@@ -34,7 +35,7 @@ pub struct YeetData {
     is_yeet_amongus_easter_egg: bool,
 }
 
-pub const YEET_DEFAULT_OPPORTUNITIES: usize = 3;
+pub const YEET_DEFAULT_OPPORTUNITIES: Saturating<usize> = Saturating(3);
 pub const YEET_REQUIRED_REACTION_COUNT: u64 = 6;
 pub const YEET_NO_REACTION: char = '❌';
 pub const YEET_YES_REACTION: char = '✅';
@@ -46,22 +47,22 @@ pub const YEET_PARRY_COOLDOWN_SECONDS: u64 = 60;
 
 pub(crate) static YEET_MAP: LazyLock<Mutex<HashMap<MessageId, YeetData>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
-pub(crate) static YEET_OPPORTUNITIES: LazyLock<Mutex<usize>> =
+pub(crate) static YEET_STARBOARD_EXCLUSIONS: LazyLock<Mutex<HashSet<MessageId>>> =
+    LazyLock::new(|| Mutex::new(HashSet::new()));
+pub(crate) static YEET_OPPORTUNITIES: LazyLock<Mutex<Saturating<usize>>> =
     LazyLock::new(|| Mutex::new(YEET_DEFAULT_OPPORTUNITIES));
 pub(crate) static YEET_PARRY_MAP: LazyLock<Mutex<HashMap<UserId, (Instant, u64)>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
-async fn check_yeet_opportunities() -> Result<bool> {
+fn check_yeet_opportunities() -> bool {
     let mut yeet_opportunities = YEET_OPPORTUNITIES.lock();
 
-    if *yeet_opportunities == 0 {
-        return Ok(false);
+    if yeet_opportunities.0 > 0 {
+        *yeet_opportunities -= 1;
+        true
+    } else {
+        false
     }
-
-    *yeet_opportunities = (*yeet_opportunities).saturating_sub(1);
-    tracing::info!("Updated yeet opportunities to {yeet_opportunities}");
-
-    Ok(true)
 }
 
 fn create_yeet_message(
@@ -154,19 +155,20 @@ fn create_yeet_message_easter_egg(
 }
 
 #[tracing::instrument(level = "trace", skip(ctx, guild_id))]
-pub async fn can_yeet(ctx: PoiseContext<'_>, victim: &User, guild_id: GuildId) -> Result<()> {
+pub async fn can_yeet(ctx: PoiseContext<'_>, victim: &User, guild_id: GuildId) -> Result<bool> {
     let react_role_id = ctx.data().config.read().await.bot_react_role_id;
 
     if !victim.has_role(ctx, guild_id, react_role_id).await? {
         ctx.say("You can't yeet a non reactme user!").await?;
-        return Ok(());
+        return Ok(false);
     }
 
-    if !check_yeet_opportunities().await? {
+    if check_yeet_opportunities() {
         ctx.say("No more yeet opportunities available").await?;
-        return Ok(());
+        return Ok(false);
     }
-    Ok(())
+
+    Ok(true)
 }
 
 /// Yeet a user if you get 6 yay votes, get yeeted yourself if they vote nay
@@ -176,9 +178,11 @@ pub async fn yeet(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
     let guild_id = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
     let channel_id = ctx.channel_id();
 
-    can_yeet(ctx, &victim, guild_id).await?;
+    if !can_yeet(ctx, &victim, guild_id).await? {
+        return Ok(());
+    }
 
-    let is_yeet_amongus_easter_egg = rand::thread_rng().gen_bool(0.01);
+    let is_yeet_amongus_easter_egg = rand::thread_rng().gen_bool(0.02);
 
     let msg = create_yeet_message(
         yeeter,
@@ -204,6 +208,8 @@ pub async fn yeet(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
             is_yeet_amongus_easter_egg,
         },
     );
+
+    YEET_STARBOARD_EXCLUSIONS.lock().insert(msg.id);
 
     ctx.say("Yeeting started!").await?;
 
@@ -239,8 +245,8 @@ pub async fn update_interval() {
     IntervalStream::new(interval(Duration::from_secs(YEET_REFRESH_CHARGE_SECONDS)))
         .for_each(|_| async {
             let mut yeet_opportunities = YEET_OPPORTUNITIES.lock();
-            *yeet_opportunities = (*yeet_opportunities + 1).min(YEET_DEFAULT_OPPORTUNITIES);
-            tracing::trace!("Updated yeet opportunities to {yeet_opportunities}");
+            *yeet_opportunities += 1;
+            *yeet_opportunities = yeet_opportunities.min(YEET_DEFAULT_OPPORTUNITIES);
         })
         .await
 }
@@ -408,7 +414,10 @@ pub async fn handle_yeeting(ctx: &Context, data: &AppState, message: &Message) -
 
             (
                 &[yeet_data.victim, yeet_data.yeeter],
-                [yay, nay].into_iter().flatten().unique().collect_vec(),
+                yay.into_iter()
+                    .chain(nay.into_iter())
+                    .unique()
+                    .collect_vec(),
             )
         }
         (true, false, false) => (&[yeet_data.victim], yay),
@@ -428,9 +437,8 @@ pub async fn handle_yeeting(ctx: &Context, data: &AppState, message: &Message) -
 
             (
                 &[yeet_data.yeeter],
-                [nay, vec![yeet_data.victim]]
-                    .into_iter()
-                    .flatten()
+                nay.into_iter()
+                    .chain(Some(yeet_data.victim))
                     .unique()
                     .collect_vec(),
             )

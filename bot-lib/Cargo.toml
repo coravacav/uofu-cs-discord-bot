@@ -30,6 +30,7 @@ tokio-stream = "0.1"
 crossbeam-channel = "0.5"
 raur = "7"
 humantime = "2"
+thingbuf = { version = "0.1.6", features = ["static"] }
 
 [lints]
 workspace = true
