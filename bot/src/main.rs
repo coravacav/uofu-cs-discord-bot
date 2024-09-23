@@ -67,7 +67,6 @@ async fn main() -> Result<()> {
                 db_admin(),
                 parry(),
                 remove_dog_role(),
-                update_class_category(),
                 add_class_role(),
                 sathya(),
                 llm_prompt(),
