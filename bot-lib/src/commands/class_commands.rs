@@ -1,8 +1,8 @@
 use crate::{commands::get_member, courses::get_course, data::PoiseContext};
 use color_eyre::eyre::{bail, OptionExt, Result, WrapErr};
 use poise::serenity_prelude::{
-    ChannelType, CreateChannel, EditChannel, EditRole, PermissionOverwrite,
-    PermissionOverwriteType, Permissions, RoleId,
+    ChannelType, CreateChannel, EditRole, PermissionOverwrite, PermissionOverwriteType,
+    Permissions, RoleId,
 };
 use regex::Regex;
 
@@ -44,15 +44,28 @@ pub async fn create_class_category(
         }
     }
 
+    let role_name = format!("CS {}", number_string);
+
+    let (category_name, channel_description) = get_course(&format!("CS{}", number))
+        .map(|course| {
+            let mut category_name = format!("{role_name} - {}", course.long_name);
+            category_name.truncate(100);
+            let mut channel_description = course.description;
+            channel_description.truncate(1024);
+
+            (Some(category_name), Some(channel_description))
+        })
+        .unwrap_or((None, None));
+
     let role = guild
-        .create_role(ctx, EditRole::new().name(format!("CS {}", number_string)))
+        .create_role(ctx, EditRole::new().name(&role_name))
         .await
         .wrap_err("Couldn't create role")?;
 
     let category = guild
         .create_channel(
             ctx,
-            CreateChannel::new(format!("CS {}", number_string))
+            CreateChannel::new(category_name.unwrap_or(role_name))
                 .kind(ChannelType::Category)
                 .permissions(vec![
                     PermissionOverwrite {
@@ -90,7 +103,8 @@ pub async fn create_class_category(
             ctx,
             CreateChannel::new(format!("{}-general", number_string))
                 .kind(ChannelType::Text)
-                .category(category.id),
+                .category(category.id)
+                .topic(channel_description.unwrap_or_default()),
         )
         .await
         .wrap_err("Couldn't create general channel")?;
@@ -134,62 +148,6 @@ pub async fn delete_class_category(
         guild_channel.delete(ctx).await?;
     }
     guild.delete_role(ctx, role_id).await?;
-
-    ctx.say("Success!").await?;
-    Ok(())
-}
-
-#[poise::command(
-    slash_command,
-    required_permissions = "MANAGE_CHANNELS",
-    description_localized("en-US", "Updates a class category's name and description")
-)]
-pub async fn update_class_category(
-    ctx: PoiseContext<'_>,
-    #[description = "The class number, eg. for CS2420 put in \"2420\""] number: u32,
-) -> Result<()> {
-    let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
-    let channels = guild.channels(ctx).await?;
-
-    let category_regex = format!("^CS {}", number);
-    let pattern = Regex::new(&category_regex)?;
-
-    let gotten_channels = channels
-        .values()
-        .filter(|channel| pattern.is_match(&channel.name))
-        .map(|channel| channel.id)
-        .next();
-
-    let Some(category_channel) = gotten_channels else {
-        ctx.say("Could not find category channel!").await?;
-        return Ok(());
-    };
-
-    let Some(course) = get_course(&format!("CS{}", number)) else {
-        ctx.say(format!("Could not find course CS{}!", number))
-            .await?;
-        return Ok(());
-    };
-
-    let mut category_name = format!("CS {} - {}", number, course.long_name);
-    category_name.truncate(100);
-    let mut channel_description = course.description;
-    channel_description.truncate(1024);
-
-    category_channel
-        .edit(ctx, EditChannel::new().name(category_name))
-        .await?;
-
-    if let Some(general_channel) = channels
-    .values()
-    .filter(|guild_channel| matches!(guild_channel.parent_id, Some(parent) if parent.eq(&category_channel))).find(|guild_channel| guild_channel.name.contains("-general"))
-     {
-        general_channel.id
-                .edit(ctx, EditChannel::new().topic(channel_description))
-                .await?;
-     } else {
-        ctx.say("Could not update general channel!").await?;
-     }
 
     ctx.say("Success!").await?;
     Ok(())
