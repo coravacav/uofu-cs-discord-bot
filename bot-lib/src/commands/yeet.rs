@@ -7,7 +7,6 @@ use bot_db::yeet::YeetLeaderboard;
 use bot_traits::ForwardRefToTracing;
 use chrono::{DateTime, Utc};
 use color_eyre::eyre::{bail, OptionExt, Result};
-use futures::StreamExt;
 use itertools::Itertools;
 use parking_lot::Mutex;
 use poise::serenity_prelude::{
@@ -19,7 +18,7 @@ use std::{
     cmp::Reverse,
     collections::{HashMap, HashSet},
     num::Saturating,
-    sync::LazyLock,
+    sync::{Arc, LazyLock},
     time::{Duration, Instant},
 };
 use tokio::time::{interval, sleep};
@@ -30,7 +29,6 @@ pub struct YeetData {
     yeeter: UserId,
     victim: UserId,
     guild_id: GuildId,
-    channel_id: ChannelId,
     start_time: Instant,
     is_yeet_amongus_easter_egg: bool,
 }
@@ -203,7 +201,6 @@ pub async fn yeet(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
             yeeter: yeeter.id,
             victim: victim.id,
             guild_id,
-            channel_id,
             start_time: Instant::now(),
             is_yeet_amongus_easter_egg,
         },
@@ -255,7 +252,7 @@ async fn get_unique_non_kingfisher_voters(
     ctx: &Context,
     message: &Message,
     reaction: impl Into<ReactionType>,
-) -> Result<Vec<UserId>> {
+) -> Result<Arc<[UserId]>> {
     let kingfisher_id = ctx.cache.current_user().id;
 
     Ok(message
@@ -264,7 +261,7 @@ async fn get_unique_non_kingfisher_voters(
         .into_iter()
         .filter(|user| user.id != kingfisher_id)
         .map(|user| user.id)
-        .collect_vec())
+        .collect())
 }
 
 async fn fail_to_yeet_after_vote(
@@ -398,49 +395,58 @@ pub async fn handle_yeeting(ctx: &Context, data: &AppState, message: &Message) -
     let parried = !yay.iter().any(|user| *user == yeet_data.victim) && parried;
 
     // Delete the voting message
-    message.delete(ctx).await.ok(); // Don't care if it succeeds
+    let cloneable_ctx = ctx.get_cloneable_ctx();
+    let channel_id = message.channel_id;
+    let guild_id = yeet_data.guild_id;
+    let message_id = message.id;
+    let http = cloneable_ctx.clone();
+    tokio::spawn(async move {
+        channel_id.delete_message(http, message_id).await.ok();
+    });
 
-    let (targets, shooters): (&[UserId], Vec<UserId>) = match (did_yay, did_nay, parried) {
+    let (targets, shooters): (&[UserId], Arc<[UserId]>) = match (did_yay, did_nay, parried) {
         (true, true, _) => {
-            yeet_data
-                .channel_id
+            let http = cloneable_ctx.clone();
+            tokio::spawn(async move {
+                channel_id
                 .send_message(
-                    ctx,
+                    http,
                     CreateMessage::new()
                         .content("Whoops. Discord decided to be bad and didn't allow KingFisher to yeet only one. How about two? :)"),
                 )
                 .await
                 .ok();
+            });
 
             (
                 &[yeet_data.victim, yeet_data.yeeter],
-                yay.into_iter()
-                    .chain(nay.into_iter())
-                    .unique()
-                    .collect_vec(),
+                yay.iter().chain(nay.iter()).unique().cloned().collect(),
             )
         }
         (true, false, false) => (&[yeet_data.victim], yay),
         (true, false, true) => {
-            yeet_data
-                .channel_id
-                .send_message(
-                    ctx,
-                    CreateMessage::new().content(format!(
-                        "{} has successfully parried the yeet! Take that {}!",
-                        yeet_data.victim.mention(),
-                        yeet_data.yeeter.mention()
-                    )),
-                )
-                .await
-                .ok();
+            let http = cloneable_ctx.clone();
+            tokio::spawn(async move {
+                channel_id
+                    .send_message(
+                        http,
+                        CreateMessage::new().content(format!(
+                            "{} has successfully parried the yeet! Take that {}!",
+                            yeet_data.victim.mention(),
+                            yeet_data.yeeter.mention()
+                        )),
+                    )
+                    .await
+                    .ok();
+            });
 
             (
                 &[yeet_data.yeeter],
-                nay.into_iter()
+                nay.iter()
+                    .cloned()
                     .chain(Some(yeet_data.victim))
                     .unique()
-                    .collect_vec(),
+                    .collect(),
             )
         }
         (false, true, _) => (&[yeet_data.yeeter], nay),
@@ -452,21 +458,20 @@ pub async fn handle_yeeting(ctx: &Context, data: &AppState, message: &Message) -
 
     save_to_yeet_leaderboard(data, targets).trace_err_ok();
 
-    futures::stream::iter(targets)
-        .for_each_concurrent(None, |target| async {
-            let ctx = ctx.get_cloneable_ctx();
-
-            match yeet_data
-                .guild_id
-                .timeout(&ctx, target, Duration::from_secs(YEET_DURATION_SECONDS))
+    for &target in targets {
+        let ctx = ctx.get_cloneable_ctx();
+        let shooters = shooters.clone();
+        tokio::spawn(async move {
+            match guild_id
+                .timeout(&ctx, &target, Duration::from_secs(YEET_DURATION_SECONDS))
                 .await
             {
                 Ok((_, timeout_end)) => successful_yeet(
                     ctx,
-                    yeet_data.channel_id,
+                    channel_id,
                     yeet_data.is_yeet_amongus_easter_egg,
                     &shooters,
-                    target,
+                    &target,
                     duration,
                     timeout_end,
                 )
@@ -475,16 +480,16 @@ pub async fn handle_yeeting(ctx: &Context, data: &AppState, message: &Message) -
 
                 _ => fail_to_yeet_after_vote(
                     ctx,
-                    yeet_data.channel_id,
+                    channel_id,
                     yeet_data.is_yeet_amongus_easter_egg,
                     &shooters,
-                    target,
+                    &target,
                 )
                 .await
                 .trace_err_ok(),
             };
-        })
-        .await;
+        });
+    }
 
     Ok(())
 }

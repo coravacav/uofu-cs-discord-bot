@@ -64,6 +64,12 @@ impl From<&PoiseContext<'_>> for CloneableCtx {
     }
 }
 
+impl AsRef<Http> for CloneableCtx {
+    fn as_ref(&self) -> &Http {
+        &self.1
+    }
+}
+
 impl CacheHttp for CloneableCtx {
     fn http(&self) -> &Http {
         &self.1
