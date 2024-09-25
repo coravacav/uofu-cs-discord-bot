@@ -24,7 +24,18 @@ pub async fn event_handler(
         serenity::FullEvent::ReactionAdd {
             add_reaction: reaction,
         } => {
-            let message = reaction.message(ctx).await?;
+            // https://discord.com/channels/1065373537591894086/1065373538258800662/1288309958898880549
+            let Ok(message) = reaction.message(ctx).await else {
+                let message_link = format!(
+                    "https://discord.com/channels/{}/{}/{}",
+                    reaction.guild_id.map(|id| id.get()).unwrap_or(0),
+                    reaction.channel_id,
+                    reaction.message_id
+                );
+
+                tracing::warn!("Failed to get message! {:?}", message_link);
+                return Ok(());
+            };
 
             tokio::join!(
                 handle_yeeting(ctx, framework.user_data, &message),

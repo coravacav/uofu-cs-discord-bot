@@ -54,7 +54,7 @@ pub(crate) static YEET_OPPORTUNITIES: LazyLock<Mutex<Saturating<usize>>> =
 pub(crate) static YEET_PARRY_MAP: LazyLock<Mutex<HashMap<UserId, (Instant, u64)>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
-fn check_yeet_opportunities() -> bool {
+fn has_yeet_opportunities() -> bool {
     let mut yeet_opportunities = YEET_OPPORTUNITIES.lock();
 
     if yeet_opportunities.0 > 0 {
@@ -163,7 +163,7 @@ pub async fn can_yeet(ctx: PoiseContext<'_>, victim: &User, guild_id: GuildId) -
         return Ok(false);
     }
 
-    if check_yeet_opportunities() {
+    if !has_yeet_opportunities() {
         ctx.say("No more yeet opportunities available").await?;
         return Ok(false);
     }
