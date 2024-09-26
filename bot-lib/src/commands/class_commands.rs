@@ -8,7 +8,7 @@ use poise::serenity_prelude::{
 use regex::Regex;
 use std::{collections::HashMap, sync::LazyLock};
 
-static CLASS_ROLE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\w+ +\d+$").unwrap());
+static CLASS_ROLE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\w+ \d+$").unwrap());
 
 fn get_class_roles(roles: HashMap<RoleId, Role>) -> impl Iterator<Item = Role> {
     roles
