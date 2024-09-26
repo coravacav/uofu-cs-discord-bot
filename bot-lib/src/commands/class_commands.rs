@@ -1,5 +1,5 @@
 use crate::{commands::get_member, courses::get_course, data::PoiseContext};
-use color_eyre::eyre::{bail, OptionExt, Result, WrapErr};
+use color_eyre::eyre::{OptionExt, Result, WrapErr};
 use itertools::Itertools;
 use poise::serenity_prelude::{
     ChannelType, CreateChannel, EditRole, PermissionOverwrite, PermissionOverwriteType,
@@ -69,20 +69,53 @@ pub async fn my_classes(ctx: PoiseContext<'_>) -> Result<()> {
     Ok(())
 }
 
-pub async fn get_role(ctx: PoiseContext<'_>, number: u32) -> Result<RoleId> {
+enum GetRoleResult {
+    Found(RoleId),
+    MultipleFound(Vec<Role>),
+    NotFound,
+}
+
+async fn get_role(ctx: PoiseContext<'_>, identifier: &str) -> Result<GetRoleResult> {
     let guild_id = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
     let roles = guild_id.roles(ctx).await?;
 
-    let role_name = format!("CS {}", number);
-    let Some(role_id) = roles
-        .iter()
-        .find_map(|(role_id, role)| role.name.contains(&role_name).then_some(*role_id))
-    else {
-        ctx.say("Couldn't find the class!").await?;
-        bail!("Class role not found");
+    let identifier = identifier
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .map(|c| c.to_ascii_uppercase())
+        .collect::<String>();
+
+    let college_id = identifier
+        .chars()
+        .take_while(|c| c.is_ascii_alphabetic())
+        .collect::<String>();
+
+    let college_id = if college_id.is_empty() {
+        String::from("CS")
+    } else {
+        college_id
     };
 
-    Ok(role_id)
+    let course_id = identifier
+        .chars()
+        .skip_while(|c| c.is_ascii_alphabetic())
+        .collect::<String>();
+
+    let identifier = format!("{} {}", college_id, course_id);
+
+    let joinable_roles = get_class_roles(roles)
+        .filter(|Role { name, .. }| name.contains(&identifier))
+        .collect_vec();
+
+    if joinable_roles.is_empty() {
+        return Ok(GetRoleResult::NotFound);
+    }
+
+    if joinable_roles.len() > 1 {
+        return Ok(GetRoleResult::MultipleFound(joinable_roles));
+    }
+
+    Ok(GetRoleResult::Found(joinable_roles.first().unwrap().id))
 }
 
 const MOD_ROLE_ID: RoleId = RoleId::new(1192863993883279532);
@@ -94,7 +127,7 @@ const MOD_ROLE_ID: RoleId = RoleId::new(1192863993883279532);
 )]
 pub async fn create_class_category(
     ctx: PoiseContext<'_>,
-    #[description = "The class number, eg. for CS2420 put in \"2420\""] number: u32,
+    #[description = "The class number, eg. for CS2420 put in \"2420\""] number: String,
 ) -> Result<()> {
     let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
     let channels = guild.channels(ctx).await?;
@@ -182,37 +215,38 @@ pub async fn create_class_category(
     description_localized("en-US", "Deletes a class category")
 )]
 pub async fn delete_class_category(
-    ctx: PoiseContext<'_>,
-    #[description = "The class number, eg. for CS2420 put in \"2420\""] number: u32,
+    _ctx: PoiseContext<'_>,
+    #[description = "The class identifier, eg. for CS2420 put in \"CS2420\" or \"2420\""]
+    _identifier: String,
 ) -> Result<()> {
-    let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
-    let channels = guild.channels(ctx).await?;
+    // let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
+    // let channels = guild.channels(ctx).await?;
 
-    let category_regex = format!("^CS {}", number);
-    let pattern = Regex::new(&category_regex)?;
+    // let category_regex = format!("^CS {}", number);
+    // let pattern = Regex::new(&category_regex)?;
 
-    let gotten_channels = channels
-        .values()
-        .find(|channel| pattern.is_match(&channel.name));
+    // let gotten_channels = channels
+    //     .values()
+    //     .find(|channel| pattern.is_match(&channel.name));
 
-    let Some(category_channel) = gotten_channels else {
-        ctx.say("Could not find category channel!").await?;
-        return Ok(());
-    };
+    // let Some(category_channel) = gotten_channels else {
+    //     ctx.say("Could not find category channel!").await?;
+    //     return Ok(());
+    // };
 
-    let children_guild_channels = channels
-        .values()
-        .filter(|guild_channel| matches!(guild_channel.parent_id, Some(parent) if parent.eq(&category_channel.id)));
+    // let children_guild_channels = channels
+    //     .values()
+    //     .filter(|guild_channel| matches!(guild_channel.parent_id, Some(parent) if parent.eq(&category_channel.id)));
 
-    let role_id = get_role(ctx, number).await?;
+    // let role_id = get_role(ctx, &number).await?;
 
-    category_channel.delete(ctx).await?;
-    for guild_channel in children_guild_channels {
-        guild_channel.delete(ctx).await?;
-    }
-    guild.delete_role(ctx, role_id).await?;
+    // category_channel.delete(ctx).await?;
+    // for guild_channel in children_guild_channels {
+    //     guild_channel.delete(ctx).await?;
+    // }
+    // guild.delete_role(ctx, role_id).await?;
 
-    ctx.say("Success!").await?;
+    // ctx.say("Success!").await?;
     Ok(())
 }
 
@@ -302,40 +336,78 @@ pub async fn reset_class_categories(ctx: PoiseContext<'_>) -> Result<()> {
     Ok(())
 }
 
-/// Join a class. Enter the CS class number, eg. for CS2420 put in "2420"
+/// Join a class. Enter the CS identifier, eg. for CS2420 put in "CS2420" or "2420"
 #[poise::command(slash_command, rename = "join_class", ephemeral = true)]
 pub async fn add_class_role(
     ctx: PoiseContext<'_>,
-    #[description = "The class number, eg. for CS2420 put in \"2420\""] number: u32,
+    #[description = "The class identifier, eg. for CS2420 put in \"CS2420\" or \"2420\""]
+    identifier: String,
 ) -> Result<()> {
     let author = get_member(ctx).await?;
-    let role_id = get_role(ctx, number).await?;
 
-    author
-        .add_role(ctx, role_id)
-        .await
-        .wrap_err("Couldn't add role")?;
+    match get_role(ctx, &identifier).await? {
+        GetRoleResult::Found(role_id) => {
+            author
+                .add_role(ctx, role_id)
+                .await
+                .wrap_err("Couldn't add role")?;
 
-    ctx.say("Joined class!").await?;
+            ctx.say("Joined class!").await?;
+        }
+        GetRoleResult::MultipleFound(roles) => {
+            let mut message_text =
+                format!("Multiple classes found with search \"{}\"\n", identifier);
+            for role in roles {
+                message_text.push_str(&format!("`{}` ", role.name));
+            }
+            ctx.say(message_text).await?;
+        }
+        GetRoleResult::NotFound => {
+            ctx.say(format!(
+                "Could not find class with identifier \"{}\"",
+                identifier
+            ))
+            .await?;
+        }
+    }
 
     Ok(())
 }
 
-/// Leave a class. Enter the CS class number, eg. for CS2420 put in "2420"
+/// Leave a class. Enter the CS identifier, eg. for CS2420 put in "CS2420" or "2420"
 #[poise::command(slash_command, rename = "leave_class", ephemeral = true)]
 pub async fn remove_class_role(
     ctx: PoiseContext<'_>,
-    #[description = "The class number, eg. for CS2420 put in \"2420\""] number: u32,
+    #[description = "The class identifier, eg. for CS2420 put in \"CS2420\" or \"2420\""]
+    identifier: String,
 ) -> Result<()> {
     let author = get_member(ctx).await?;
-    let role_id = get_role(ctx, number).await?;
 
-    author
-        .remove_role(ctx, role_id)
-        .await
-        .wrap_err("Couldn't remove role")?;
+    match get_role(ctx, &identifier).await? {
+        GetRoleResult::Found(role_id) => {
+            author
+                .remove_role(ctx, role_id)
+                .await
+                .wrap_err("Couldn't remove role")?;
 
-    ctx.say("Left class!").await?;
+            ctx.say("Left class!").await?;
+        }
+        GetRoleResult::MultipleFound(roles) => {
+            let mut message_text =
+                format!("Multiple classes found with search \"{}\"\n", identifier);
+            for role in roles {
+                message_text.push_str(&format!("`{}` ", role.name));
+            }
+            ctx.say(message_text).await?;
+        }
+        GetRoleResult::NotFound => {
+            ctx.say(format!(
+                "Could not find class with identifier \"{}\"",
+                identifier
+            ))
+            .await?;
+        }
+    }
 
     Ok(())
 }
