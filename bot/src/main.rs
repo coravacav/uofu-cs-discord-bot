@@ -50,7 +50,6 @@ async fn main() -> Result<()> {
                 help(),
                 create_class_category(),
                 catalog(),
-                register(),
                 remove_bot_role(),
                 timeout(),
                 yeet(),

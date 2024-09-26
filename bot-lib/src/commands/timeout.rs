@@ -1,10 +1,7 @@
 use crate::{data::PoiseContext, utils::GetRelativeTimestamp};
 use color_eyre::eyre::{ContextCompat, Result};
 use humantime::parse_duration;
-use poise::{
-    serenity_prelude::{EditMember, Mentionable},
-    CreateReply,
-};
+use poise::serenity_prelude::{EditMember, Mentionable};
 use std::time::Duration;
 
 #[poise::command(slash_command)]
@@ -69,15 +66,6 @@ pub async fn timeout(
         timeout_end,
         time_text
     );
-
-    if ctx.prefix() == "/" {
-        ctx.send(
-            CreateReply::default()
-                .ephemeral(true)
-                .content(format!("Timed out until {}", timeout_end)),
-        )
-        .await?;
-    }
 
     if let Some(true) = hide_notification {
         return Ok(());

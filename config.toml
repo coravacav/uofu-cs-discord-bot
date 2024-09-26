@@ -16,6 +16,7 @@ help_text = """
 - `/join_class <course_id>`: Join a class. Gives the role / access to the channels.
 - `/leave_class <course_id>`: Leave a class. Removes the role / access to the channels.
 - `/catalog <course_id>`: Get information about a course. Either add a prefix like MATH2240 or CS will be assumed.
+- `/search_catalog <search_string>`: Search the U of U course catalog for a course. Searches course code, title, and description.
 - `/reactme`: Allow KingFisher automatic reactions to reply to your messages (including luck). Enables other features as well.
 - `/ignoreme`: Disallow KingFisher automatic reactions to reply to your messages and disables other features.
 - `/woof`: Add @Bark role
