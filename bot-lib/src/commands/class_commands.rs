@@ -14,6 +14,7 @@ fn get_class_roles(roles: HashMap<RoleId, Role>) -> impl Iterator<Item = Role> {
     roles
         .into_values()
         .filter(|role| CLASS_ROLE_REGEX.is_match(&role.name))
+        .sorted()
 }
 
 /// List all classes you can join
