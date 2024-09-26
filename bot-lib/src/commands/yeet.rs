@@ -289,6 +289,7 @@ async fn fail_to_yeet_after_vote(
     Ok(())
 }
 
+#[tracing::instrument(level = "trace", skip(ctx, is_yeet_amongus_easter_egg, timeout_end))]
 async fn successful_yeet(
     ctx: CloneableCtx,
     channel_id: ChannelId,
@@ -380,11 +381,12 @@ pub async fn handle_yeeting(ctx: &Context, data: &AppState, message: &Message) -
     };
 
     let duration = yeet_data.start_time.elapsed();
+    let current_instant = Instant::now();
     let parried = YEET_PARRY_MAP
         .lock()
         .remove(&yeet_data.victim)
         .map(|(parry_time, attempts)| {
-            (yeet_data.start_time - parry_time).as_secs() < YEET_PARRY_SECONDS && attempts == 0
+            (current_instant - parry_time).as_secs() < YEET_PARRY_SECONDS && attempts == 0
         })
         .unwrap_or(false);
 
