@@ -117,17 +117,3 @@ pub async fn search_catalog(ctx: PoiseContext<'_>, search_string: String) -> Res
 
     Ok(())
 }
-
-// #[poise::command(slash_command, rename = "catalog_search")]
-// pub async fn course_catalog_search(ctx: PoiseContext<'_>, search_string: String) -> Result<()> {
-//     ctx.defer().await?;
-
-//     let mut search_string = search_string
-//         .to_uppercase()
-//         .collect::<String>();
-
-//     if search_string.is_empty() {
-//         ctx.reply("Please provide a valid search string").await?;
-//         return Ok(());
-//     }
-// }
