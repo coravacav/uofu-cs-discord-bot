@@ -1,14 +1,77 @@
 use crate::{commands::get_member, courses::get_course, data::PoiseContext};
 use color_eyre::eyre::{bail, OptionExt, Result, WrapErr};
+use itertools::Itertools;
 use poise::serenity_prelude::{
     ChannelType, CreateChannel, EditRole, PermissionOverwrite, PermissionOverwriteType,
-    Permissions, RoleId,
+    Permissions, Role, RoleId,
 };
 use regex::Regex;
+use std::{collections::HashMap, sync::LazyLock};
+
+static CLASS_ROLE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\w+ \d+$").unwrap());
+
+fn get_class_roles(roles: HashMap<RoleId, Role>) -> impl Iterator<Item = Role> {
+    roles
+        .into_values()
+        .filter(|role| CLASS_ROLE_REGEX.is_match(&role.name))
+}
+
+/// List all classes you can join
+#[poise::command(slash_command, ephemeral = true)]
+pub async fn list_classes(ctx: PoiseContext<'_>) -> Result<()> {
+    let guild_id = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
+    let roles = guild_id.roles(ctx).await?;
+
+    let mut message_text =
+        String::from("### Classes:\nJoin any of them with `/join_class <role name>`\n\n");
+
+    for role in get_class_roles(roles) {
+        message_text.push_str(&format!("`{}` ", role.name));
+    }
+
+    ctx.say(message_text).await?;
+
+    Ok(())
+}
+
+/// List the classes you're in via roles
+#[poise::command(slash_command, ephemeral = true)]
+pub async fn my_classes(ctx: PoiseContext<'_>) -> Result<()> {
+    let user = ctx.author();
+    let guild_id = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
+    let roles = guild_id.roles(ctx).await?;
+
+    let Some(user_roles) = guild_id.member(ctx, user.id).await?.roles(ctx) else {
+        ctx.say("You don't have any roles?").await?;
+
+        return Ok(());
+    };
+
+    let mut message_text = String::from("");
+
+    let user_roles_formatted = get_class_roles(roles)
+        .filter(|role| user_roles.contains(role))
+        .map(|role| format!("`{}`", role.name))
+        .collect_vec();
+
+    if user_roles_formatted.is_empty() {
+        message_text.push_str("You don't have any class roles.");
+    } else {
+        message_text.push_str("Your classes: ");
+        for role_str in user_roles_formatted {
+            message_text.push_str(&role_str);
+            message_text.push(' ');
+        }
+    }
+
+    ctx.say(message_text).await?;
+
+    Ok(())
+}
 
 pub async fn get_role(ctx: PoiseContext<'_>, number: u32) -> Result<RoleId> {
-    let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
-    let roles = guild.roles(ctx).await?;
+    let guild_id = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
+    let roles = guild_id.roles(ctx).await?;
 
     let role_name = format!("CS {}", number);
     let Some(role_id) = roles
