@@ -6,16 +6,16 @@ edition = "2021"
 [dependencies]
 color-eyre = { workspace = true }
 tracing-subscriber = { workspace = true }
-candle-core = { git = "https://github.com/huggingface/candle.git", version = "0.6", features = [
+candle-core = { git = "https://github.com/huggingface/candle.git", version = "0.7", features = [
     "cuda",
 ] }
-candle-nn = { git = "https://github.com/huggingface/candle.git", version = "0.6", features = [
+candle-nn = { git = "https://github.com/huggingface/candle.git", version = "0.7", features = [
     "cuda",
 ] }
-candle-transformers = { git = "https://github.com/huggingface/candle.git", version = "0.6", features = [
+candle-transformers = { git = "https://github.com/huggingface/candle.git", version = "0.7", features = [
     "cuda",
 ] }
-candle-examples = { git = "https://github.com/huggingface/candle.git", version = "0.6", features = [
+candle-examples = { git = "https://github.com/huggingface/candle.git", version = "0.7", features = [
     "cuda",
 ] }
 tokenizers = "0.19.1"

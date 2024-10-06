@@ -1,4 +1,5 @@
 mod admin;
+mod anon_notify;
 mod aur_search;
 mod bank;
 mod cice;
@@ -15,6 +16,7 @@ mod timeout;
 mod yeet;
 
 pub use admin::*;
+pub use anon_notify::*;
 pub use aur_search::*;
 pub use bank::*;
 pub use cice::*;
