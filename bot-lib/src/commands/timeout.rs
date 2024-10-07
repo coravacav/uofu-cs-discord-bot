@@ -4,15 +4,13 @@ use humantime::parse_duration;
 use poise::serenity_prelude::{EditMember, Mentionable};
 use std::time::Duration;
 
-#[poise::command(slash_command)]
+#[poise::command(slash_command, ephemeral = true)]
 pub async fn timeout(
     ctx: PoiseContext<'_>,
     #[description = "The amount of time to time yourself out, like '1h' or '3m'"] time_text: String,
     #[description = "Hide the announcement of how long you'll be timed out"]
     hide_notification: Option<bool>,
 ) -> Result<()> {
-    tracing::trace!("timeout command");
-
     if time_text.len() > 20 {
         ctx.say("Send something reasonable, please.").await?;
         return Ok(());
@@ -20,12 +18,6 @@ pub async fn timeout(
 
     let author = ctx.author();
     let Ok(time) = parse_duration(&time_text) else {
-        tracing::info!(
-            "{} tried to time out with invalid time '{}'",
-            author.tag(),
-            time_text
-        );
-
         ctx.say("Invalid time format! Say something like '1h' or '3m'")
             .await?;
 
@@ -94,8 +86,6 @@ pub async fn timeout(
             timeout_end.discord_relative_timestamp(),
         ))
         .await?;
-
-    tracing::trace!("Announced timeout");
 
     tokio::time::sleep(time - std::time::Duration::from_secs(1)).await;
 
