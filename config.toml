@@ -354,3 +354,10 @@ or
 r (?i)um\s+actually
 '''
 content = "https://tenor.com/view/nerd-nerd-glasses-uhm-aktually-glasses-gif-4161113894351475297"
+
+[[responses]]
+name = "fall break"
+ruleset = """
+r (?i)((fall|spring) (break|vacation))
+"""
+content = "A course at a prestigious university should be a marathon. My favorites are the ones where attendance is required so you can see over time the lesser minds dropping out of the race in exhaustion. And finally at the end of the day the fittest survived and are rewarded with an honest grade in the class. So what’s the purpose of this ‘fall’ break? Have you ever watched a race on TV where they pause in the middle of the track to let everyone catch up and rest? What an absurd picture of injustice. What was the point of the first half of you’re going to start up again momentarily? Fall break is just a huge scam and serves to make waste of the entire first half of the semester. It makes me sick to my stomach - completely ill - to see this ritualistic sacrifice of my time happening year after year."
