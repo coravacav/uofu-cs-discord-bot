@@ -356,8 +356,24 @@ r (?i)um\s+actually
 content = "https://tenor.com/view/nerd-nerd-glasses-uhm-aktually-glasses-gif-4161113894351475297"
 
 [[responses]]
-name = "fall break"
+name = "breaks"
 ruleset = """
 r (?i)((fall|spring) (break|vacation))
 """
-content = "A course at a prestigious university should be a marathon. My favorites are the ones where attendance is required so you can see over time the lesser minds dropping out of the race in exhaustion. And finally at the end of the day the fittest survived and are rewarded with an honest grade in the class. So what’s the purpose of this ‘fall’ break? Have you ever watched a race on TV where they pause in the middle of the track to let everyone catch up and rest? What an absurd picture of injustice. What was the point of the first half of you’re going to start up again momentarily? Fall break is just a huge scam and serves to make waste of the entire first half of the semester. It makes me sick to my stomach - completely ill - to see this ritualistic sacrifice of my time happening year after year."
+content = [
+'''First off I’m a cs major. Just keep that in mind and don’t run to the comments to tell me you’re a hard major.
+I saw that last post here and it reminded me of how angry I feel every year when this fall ‘break’ comes along and muddies the competition. It completely defeats the point of school, and I don’t want to pay all that money to sit at home living on peanut butter and popcorn, and watching young Sheldon for a whole week.
+I’m sure most of you agree with me, right?''',
+
+'''First off I’m a cs major. Just keep that in mind and don’t run to the comments to tell me you’re a hard major.
+A course at a prestigious university should be a marathon. My favorites are the ones where attendance is required so you can see over time the lesser minds dropping out of the race in exhaustion. And finally at the end of the day the fittest survived and are rewarded with an honest grade in the class.
+I’m sure most of you agree with me, right?''',
+
+'''First off I’m a cs major. Just keep that in mind and don’t run to the comments to tell me you’re a hard major.
+So what’s the purpose of this ‘fall’ break? Have you ever watched a race on TV where they pause in the middle of the track to let everyone catch up and rest? What an absurd picture of injustice. What was the point of the first half of you’re going to start up again momentarily?
+I’m sure most of you agree with me, right?''',
+
+'''First off I’m a cs major. Just keep that in mind and don’t run to the comments to tell me you’re a hard major.
+Fall break is just a huge scam and serves to make waste of the entire first half of the semester. It makes me sick to my stomach - completely ill - to see this ritualistic sacrifice of my time happening year after year.
+I’m sure most of you agree with me, right?''',
+]
