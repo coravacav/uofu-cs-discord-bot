@@ -6,7 +6,7 @@ use poise::serenity_prelude::{
     Permissions, Role, RoleId,
 };
 use regex::Regex;
-use std::{collections::HashMap, sync::LazyLock};
+use std::{collections::HashMap, fmt::Write, sync::LazyLock};
 
 static CLASS_ROLE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\w+ \d+$").unwrap());
 
@@ -48,23 +48,21 @@ pub async fn my_classes(ctx: PoiseContext<'_>) -> Result<()> {
         return Ok(());
     };
 
-    let mut message_text = String::from("");
-
     let user_roles_formatted = get_class_roles(roles)
         .filter(|role| user_roles.contains(role))
-        .map(|role| format!("`{}`", role.name))
+        .map(|role| role.name)
         .collect_vec();
 
-    if user_roles_formatted.is_empty() {
-        message_text.push_str("You don't have any class roles.");
+    let message_text = if user_roles_formatted.is_empty() {
+        String::from("You don't have any class roles.")
     } else {
-        message_text.push_str("Your classes:\n");
+        let mut text = String::from("Your classes:");
         for role_str in user_roles_formatted {
-            message_text.push_str("- ");
-            message_text.push_str(&role_str);
-            message_text.push('\n');
+            writeln!(&mut text, "- `{role_str}`")?;
         }
-    }
+
+        text
+    };
 
     ctx.say(message_text).await?;
 
