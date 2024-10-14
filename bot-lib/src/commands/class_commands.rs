@@ -56,7 +56,7 @@ pub async fn my_classes(ctx: PoiseContext<'_>) -> Result<()> {
     let message_text = if user_roles_formatted.is_empty() {
         String::from("You don't have any class roles.")
     } else {
-        let mut text = String::from("Your classes:");
+        let mut text = String::from("Your classes:\n");
         for role_str in user_roles_formatted {
             writeln!(&mut text, "- `{role_str}`")?;
         }
