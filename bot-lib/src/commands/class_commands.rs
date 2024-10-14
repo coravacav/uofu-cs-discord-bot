@@ -58,10 +58,11 @@ pub async fn my_classes(ctx: PoiseContext<'_>) -> Result<()> {
     if user_roles_formatted.is_empty() {
         message_text.push_str("You don't have any class roles.");
     } else {
-        message_text.push_str("Your classes: ");
+        message_text.push_str("Your classes:\n");
         for role_str in user_roles_formatted {
+            message_text.push_str("- ");
             message_text.push_str(&role_str);
-            message_text.push(' ');
+            message_text.push('\n');
         }
     }
 
