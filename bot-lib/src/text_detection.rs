@@ -32,7 +32,7 @@ pub async fn text_detection(ctx: &Context, data: &AppState, message: &Message) -
     }
 
     if let Some(message_response) = data.find_response(&message.content, &message.link()).await {
-        data.run_action(&message_response, message, ctx).await?;
+        data.respond(&message_response, message, ctx).await?;
     }
 
     Ok(())

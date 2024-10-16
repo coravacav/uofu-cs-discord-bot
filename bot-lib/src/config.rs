@@ -113,10 +113,6 @@ pub enum ResponseKind {
     Text { content: String },
     /// A random text response.
     RandomText { content: Vec<String> },
-    /// An image response.
-    Image { path: String },
-    /// A text and image response.
-    TextAndImage { content: String, path: String },
 }
 
 #[serde_as]

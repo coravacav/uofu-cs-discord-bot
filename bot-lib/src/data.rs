@@ -82,7 +82,7 @@ impl AppState {
             .find_map(|response| response.find_valid_response(message, &config, message_link))
     }
 
-    pub async fn run_action(
+    pub async fn respond(
         &self,
         message_response: &ResponseKind,
         reply_target: &Message,
@@ -98,35 +98,6 @@ impl AppState {
                     .ok_or_eyre("The responses list is empty")?;
 
                 reply_target.reply(ctx, response).await?;
-            }
-            ResponseKind::Image { path } => {
-                reply_target
-                    .channel_id
-                    .send_message(
-                        ctx,
-                        serenity::CreateMessage::new()
-                            .reference_message(reply_target)
-                            .allowed_mentions(
-                                serenity::CreateAllowedMentions::new().replied_user(false),
-                            )
-                            .add_file(serenity::CreateAttachment::path(&path).await?),
-                    )
-                    .await?;
-            }
-            ResponseKind::TextAndImage { content, path } => {
-                reply_target
-                    .channel_id
-                    .send_message(
-                        ctx,
-                        serenity::CreateMessage::new()
-                            .reference_message(reply_target)
-                            .allowed_mentions(
-                                serenity::CreateAllowedMentions::new().replied_user(false),
-                            )
-                            .content(content)
-                            .add_file(serenity::CreateAttachment::path(&path).await?),
-                    )
-                    .await?;
             }
             ResponseKind::None => {}
         }
