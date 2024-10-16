@@ -20,7 +20,7 @@ pub struct AppState {
     /// The path to the config file.
     /// This is to allow for saving / reloading the config.
     pub config_path: Box<Path>,
-    pub llm_tx: crossbeam_channel::Sender<(String, tokio::sync::oneshot::Sender<String>)>,
+    pub llms: llm::LLMS,
     pub db: KingFisherDb,
 }
 
@@ -28,7 +28,7 @@ impl AppState {
     pub fn new(config: Config, config_path: String) -> Result<AppState> {
         let config = Arc::new(RwLock::new(config));
 
-        let llm_tx = llm::setup_llm()?;
+        let llm_tx = llm::setup_llms()?;
         let db = KingFisherDb::new()?;
 
         use notify::{
@@ -62,7 +62,7 @@ impl AppState {
             config,
             _watcher: watcher,
             config_path,
-            llm_tx,
+            llms: llm_tx,
             db,
         })
     }

@@ -1,5 +1,5 @@
 use crate::data::PoiseContext;
-use color_eyre::eyre::{bail, Context, OptionExt, Result};
+use color_eyre::eyre::{bail, OptionExt, Result};
 use parking_lot::Mutex;
 use poise::{
     serenity_prelude::{ChannelId, CreateEmbed, UserId},
@@ -60,7 +60,7 @@ async fn try_lock_llm(ctx: PoiseContext<'_>) -> Result<()> {
 /// Ask kingfisher anything!
 #[poise::command(slash_command, rename = "llm")]
 pub async fn llm_prompt(ctx: PoiseContext<'_>, prompt: String) -> Result<()> {
-    if try_lock_llm(ctx).await.ok().is_none() {
+    if try_lock_llm(ctx).await.is_err() {
         return Ok(());
     }
 
@@ -79,12 +79,30 @@ pub async fn llm_prompt(ctx: PoiseContext<'_>, prompt: String) -> Result<()> {
     ctx.defer().await?;
 
     let (reply, reply_rx) = tokio::sync::oneshot::channel();
-    ctx.data()
-        .llm_tx
-        .send((prompt, reply))
-        .wrap_err("Failed to send LLM task")?;
 
-    let reply = reply_rx.await.wrap_err("LLM task failed")?;
+    if ctx.data().llms.big.send((prompt, reply)).is_err() {
+        ctx.send(
+            CreateReply::default()
+                .content("LLM is currently disabled. Please try again later.")
+                .reply(true)
+                .ephemeral(true),
+        )
+        .await?;
+
+        return Ok(());
+    };
+
+    let Ok(reply) = reply_rx.await else {
+        ctx.send(
+            CreateReply::default()
+                .content("LLM is currently disabled. Please try again later.")
+                .reply(true)
+                .ephemeral(true),
+        )
+        .await?;
+
+        return Ok(());
+    };
 
     ctx.send(
         CreateReply::default()

@@ -1,39 +1,37 @@
 use color_eyre::eyre::Result;
 
-struct _LLMRunner {
-    tx: crossbeam_channel::Sender<String>,
-}
-
 type LLMTxValue = (String, tokio::sync::oneshot::Sender<String>);
 type LLMTx = crossbeam_channel::Sender<LLMTxValue>;
 
-pub fn setup_llm() -> Result<LLMTx> {
+#[derive(Debug)]
+pub struct LLMS {
+    pub big: LLMTx,
+    pub small: LLMTx,
+}
+
+const BIG_MODEL_PATH: &str = "llms/big/Meta-Llama-3.1-8B-Instruct-Q8_0.gguf";
+const BIG_TOKENIZER_PATH: &str = "llms/big/tokenizer.json";
+const SMALL_MODEL_PATH: &str = "llms/small/llama-3.2-3b-instruct-q8_0.gguf";
+const SMALL_TOKENIZER_PATH: &str = "llms/small/tokenizer.json";
+
+fn setup_one_llm(model_path: &'static str, tokenizer_path: &'static str) -> Result<LLMTx> {
     let (tx, rx) = crossbeam_channel::bounded::<LLMTxValue>(100);
 
     tokio::task::spawn_blocking(move || -> Result<()> {
-        let mut model = match bot_llm::load_model() {
-            Ok(model) => model,
-            Err(e) => {
-                tracing::warn!("Failed to create LLM config, the commands will not work: {e}");
-                while let Ok((_, return_channel)) = rx.recv() {
-                    return_channel
-                        .send("Error: LLM failed to run".to_owned())
-                        .ok();
-                }
-
-                return Ok(());
-            }
-        };
+        let mut model = bot_llm::load_model(model_path)?;
+        let tokenizer = bot_llm::load_tokenizer(tokenizer_path)?;
 
         while let Ok((prompt, return_channel)) = rx.recv() {
             tracing::info!("prompt: {}", prompt);
-            let Ok(result) = bot_llm::run_the_model(&mut model, &prompt) else {
+            let now = std::time::Instant::now();
+            let Ok(result) = bot_llm::run_the_model(&mut model, &tokenizer, &prompt) else {
                 return_channel
                     .send("Error: LLM failed to run".to_owned())
                     .ok();
                 continue;
             };
             tracing::info!("result: {:?}", result);
+            tracing::info!("LLM took {}ms", now.elapsed().as_millis());
             return_channel.send(result).ok();
         }
 
@@ -41,4 +39,11 @@ pub fn setup_llm() -> Result<LLMTx> {
     });
 
     Ok(tx)
+}
+
+pub fn setup_llms() -> Result<LLMS> {
+    Ok(LLMS {
+        big: setup_one_llm(BIG_MODEL_PATH, BIG_TOKENIZER_PATH)?,
+        small: setup_one_llm(SMALL_MODEL_PATH, SMALL_TOKENIZER_PATH)?,
+    })
 }
