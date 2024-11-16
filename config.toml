@@ -49,6 +49,14 @@ ignored_channel_ids = [
 ]
 
 [[responses]]
+name = "too long bro"
+ruleset = '''
+r .{800,}
+'''
+content = '''
+not reading allat, happy for you or sorry for your loss'''
+
+[[responses]]
 name = "rust"
 ruleset = '''
 r (?i)\brust
@@ -146,10 +154,10 @@ content = "https://tenor.com/view/jfk-clone-high-i-like-your-funny-words-magic-m
 
 [[responses]]
 name = "arch"
-ruleset = """
-r (?i)arch
+ruleset = '''
+r (?i)\barch
 !r (?i)monarch
-"""
+'''
 content = "i use arch btw."
 
 [[responses]]
@@ -385,8 +393,7 @@ r (?i)github
 or
 r (?i)\bgit\b
 '''
-content = '''I DONT GIVE A FUCK ABOUT THE FUCKING CODE! i just want to download this stupid fucking application and use it <https://github.com/coravacav/uofu-cs-discord-bot/>
-WHY IS THERE CODE??? MAKE A FUCKING .EXE FILE AND GIVE IT TO ME. these dumbfucks think that everyone is a developer and understands code. well i am not and i don’t understand it. I only know to download and install applications. SO WHY THE FUCK IS THERE CODE? make an EXE file and give it to me. STUPID FUCKING SMELLY NERDS'''
+content = '''I DONT GIVE A FUCK ABOUT THE FUCKING CODE! i just want to download this stupid fucking application and use it. WHY IS THERE CODE??? MAKE A FUCKING .EXE FILE AND GIVE IT TO ME. these dumbfucks think that everyone is a developer and understands code. well i am not and i don’t understand it. I only know to download and install applications. SO WHY THE FUCK IS THERE CODE? make an EXE file and give it to me. STUPID FUCKING SMELLY NERDS'''
 
 [[responses]]
 name = "ai"
@@ -396,10 +403,5 @@ or
 r (?i)artificial intelligence
 '''
 content = '''
-I can suggest an equation that has the potential to impact the future:
-
-E = mc² + AI
-
-This equation combines Einstein’s famous equation E=mc², which relates energy (E) to mass (m) and the speed of light (c), with the addition of AI (Artificial Intelligence). By including AI in the equation, it symbolizes the increasing role of artificial intelligence in shaping and transforming our future. This equation highlights the potential for AI to unlock new forms of energy, enhance scientific discoveries, and revolutionize various fields such as healthcare, transport, and technology.
-
+I can suggest an equation that has the potential to impact the future: `E = mc² + AI`
 -# \> what'''

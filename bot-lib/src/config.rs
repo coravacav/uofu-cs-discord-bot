@@ -5,13 +5,13 @@ use chrono::{Duration, Local};
 use color_eyre::eyre::{Result, WrapErr};
 use parking_lot::Mutex;
 use poise::serenity_prelude::ChannelId;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_with::{serde_as, DurationSeconds};
 use std::path::Path;
 use std::sync::Arc;
 
 #[serde_as]
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct Config {
     /// The default cooldown for text detection.
     ///
@@ -41,19 +41,6 @@ pub struct Config {
     pub skip_duration_text: String,
     /// The list of class categories we currently support
     pub class_categories: Vec<ChannelId>,
-}
-
-impl PartialEq for Config {
-    fn eq(&self, other: &Self) -> bool {
-        self.default_text_detect_cooldown == other.default_text_detect_cooldown
-            && self.starboards == other.starboards
-            && self.guild_id == other.guild_id
-            && self.bot_react_role_id == other.bot_react_role_id
-            && self.responses == other.responses
-            && self.default_hit_rate == other.default_hit_rate
-            && self.skip_hit_rate_text == other.skip_hit_rate_text
-            && self.class_categories == other.class_categories
-    }
 }
 
 impl Default for Config {
@@ -88,12 +75,6 @@ impl Config {
             *self = config;
         }
     }
-
-    pub fn save(&self, config_path: impl AsRef<Path>) -> Result<()> {
-        let toml = toml::to_string(&self).wrap_err("Could not serialize config")?;
-
-        std::fs::write(config_path, toml).wrap_err("Could not save config")
-    }
 }
 
 const fn get_default_text_detect_cooldown() -> Duration {
@@ -103,7 +84,7 @@ const fn get_default_text_detect_cooldown() -> Duration {
     }
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Deserialize, Clone, Debug, PartialEq, Eq, Default)]
 #[serde(untagged)]
 pub enum ResponseKind {
     /// There is no response.
@@ -116,7 +97,7 @@ pub enum ResponseKind {
 }
 
 #[serde_as]
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct RegisteredResponse {
     /// The name of the response. Used only for logging.
     name: Arc<str>,
@@ -141,16 +122,6 @@ pub struct RegisteredResponse {
     /// Whether or not the response can be skipped via the `skip_hit_rate_text` config option.
     #[serde(default)]
     unskippable: bool,
-}
-
-impl PartialEq for RegisteredResponse {
-    fn eq(&self, other: &Self) -> bool {
-        self.name == other.name
-            && self.hit_rate == other.hit_rate
-            && self.ruleset == other.ruleset
-            && self.message_response == other.message_response
-            && self.cooldown == other.cooldown
-    }
 }
 
 fn default_time() -> Mutex<DateTime<Utc>> {

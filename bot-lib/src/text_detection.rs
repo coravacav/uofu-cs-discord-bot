@@ -1,6 +1,7 @@
-use crate::data::AppState;
+use crate::{config::ResponseKind, data::AppState};
 use color_eyre::eyre::{OptionExt, Result};
 use poise::serenity_prelude::{Context, Message};
+use rand::seq::SliceRandom;
 
 #[tracing::instrument(level = "trace", skip(ctx, data))]
 pub async fn text_detection(ctx: &Context, data: &AppState, message: &Message) -> Result<()> {
@@ -31,9 +32,25 @@ pub async fn text_detection(ctx: &Context, data: &AppState, message: &Message) -
         return Ok(());
     }
 
-    if let Some(message_response) = data.find_response(&message.content, &message.link()).await {
-        data.respond(&message_response, message, ctx).await?;
-    }
+    let config = data.config.read().await;
+
+    if let Some(response) = config.responses.iter().find_map(|response| {
+        response.find_valid_response(&message.content, &config, &message.link())
+    }) {
+        match &*response {
+            ResponseKind::Text { content } => {
+                message.reply(ctx, content).await?;
+            }
+            ResponseKind::RandomText { content } => {
+                let response = content
+                    .choose(&mut rand::thread_rng())
+                    .ok_or_eyre("The responses list is empty")?;
+
+                message.reply(ctx, response).await?;
+            }
+            ResponseKind::None => {}
+        }
+    };
 
     Ok(())
 }

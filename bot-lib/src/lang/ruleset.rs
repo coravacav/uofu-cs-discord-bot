@@ -1,45 +1,141 @@
 use super::rule::{parse_rules, Rule};
-use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
+use color_eyre::eyre::{Context, ContextCompat, Result};
+use regex::Regex;
+use serde::{de::Visitor, Deserialize, Deserializer};
 
-#[derive(Clone, Debug, PartialEq, Eq, Default)]
+struct UnparsedRegexAndNegated<'a>(&'a str, bool);
+
+#[derive(Clone, Debug)]
+struct RegexAndNegated(Regex, bool);
+
+#[derive(Clone, Debug)]
+struct RegexPair {
+    positive: Option<Regex>,
+    negative: Option<Regex>,
+}
+
+impl RegexPair {
+    fn has_any(&self) -> bool {
+        self.positive.is_some() || self.negative.is_some()
+    }
+}
+
+#[derive(Clone, Debug)]
+enum RegexRules {
+    Single(RegexPair),
+    Multiple(Vec<RegexAndNegated>),
+}
+
+#[derive(Clone, Debug, Default)]
 pub struct Ruleset {
-    rules: Vec<Rule>,
+    rules: Vec<RegexRules>,
 }
 
-impl std::ops::Deref for Ruleset {
-    type Target = Vec<Rule>;
+impl<'a> Ruleset {
+    pub fn new(rules: Vec<Rule<'a>>) -> Result<Self> {
+        let mut single_rules = vec![];
 
-    fn deref(&self) -> &Self::Target {
-        &self.rules
+        let mut completed_rules: Vec<RegexRules> = vec![];
+
+        for rule in rules {
+            match rule.cases.len() {
+                1 => single_rules.push(UnparsedRegexAndNegated(
+                    rule.cases[0].unparsed_regex,
+                    rule.cases[0].negated,
+                )),
+                2.. => {
+                    completed_rules.push(RegexRules::Multiple(
+                        rule.cases
+                            .into_iter()
+                            .map(|case| {
+                                Ok(RegexAndNegated(
+                                    Regex::new(case.unparsed_regex)
+                                        .wrap_err("Regex failed to compile")?,
+                                    case.negated,
+                                ))
+                            })
+                            .collect::<Result<Vec<RegexAndNegated>>>()?,
+                    ));
+                }
+                _ => unreachable!(),
+            }
+        }
+
+        let single_rule = Self::combine_regexes(single_rules)?;
+        if single_rule.has_any() {
+            completed_rules.push(RegexRules::Single(single_rule));
+        }
+
+        Ok(Self {
+            rules: completed_rules,
+        })
     }
-}
 
-impl std::ops::DerefMut for Ruleset {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.rules
+    fn combine_regexes(unparsed_regexes: Vec<UnparsedRegexAndNegated>) -> Result<RegexPair> {
+        let mut efficient_regex_string_positive = String::new();
+        let mut efficient_regex_string_negative = String::new();
+
+        for UnparsedRegexAndNegated(rule, negated) in unparsed_regexes {
+            let regex_string = if negated {
+                &mut efficient_regex_string_negative
+            } else {
+                &mut efficient_regex_string_positive
+            };
+
+            regex_string.push_str("(?:");
+            regex_string.push_str(rule);
+            regex_string.push_str(")|");
+        }
+
+        let mut positive_regex = None;
+        let mut negative_regex = None;
+
+        if !efficient_regex_string_positive.is_empty() {
+            efficient_regex_string_positive.pop();
+            positive_regex = Some(
+                Regex::new(&efficient_regex_string_positive)
+                    .wrap_err("Couldn't compile positive regex")?,
+            );
+        }
+
+        if !efficient_regex_string_negative.is_empty() {
+            efficient_regex_string_negative.pop();
+            negative_regex = Some(
+                Regex::new(&efficient_regex_string_negative)
+                    .wrap_err("Couldn't compile negative regex")?,
+            );
+        }
+
+        Ok(RegexPair {
+            positive: positive_regex,
+            negative: negative_regex,
+        })
     }
-}
 
-impl Ruleset {
-    pub fn new(rules: Vec<Rule>) -> Self {
-        Self { rules }
-    }
-
-    pub fn parse(input: &str) -> Option<Self> {
-        parse_rules(input.trim_start()).map(Self::new)
+    pub fn parse(input: &'a str) -> Result<Self> {
+        Self::new(parse_rules(input.trim_start()).wrap_err("Couldn't parse rules")?)
     }
 
     pub fn matches(&self, input: &str) -> bool {
-        self.rules.iter().any(|rule| {
-            rule.cases.iter().all(|case| {
-                let res = case.regex.is_match(input);
-
-                if case.negated {
-                    !res
-                } else {
-                    res
+        self.rules.iter().any(|rule| match rule {
+            RegexRules::Single(RegexPair { negative, positive }) => match (negative, positive) {
+                (Some(negative), Some(positive)) => {
+                    !negative.is_match(input) && positive.is_match(input)
                 }
-            })
+                (Some(negative), None) => !negative.is_match(input),
+                (None, Some(positive)) => positive.is_match(input),
+                (None, None) => false,
+            },
+            RegexRules::Multiple(regexes) => {
+                regexes.iter().all(|RegexAndNegated(regex, negated)| {
+                    let res = regex.is_match(input);
+                    if *negated {
+                        !res
+                    } else {
+                        res
+                    }
+                })
+            }
         })
     }
 }
@@ -51,10 +147,9 @@ impl RulesetVisitor {
     where
         E: serde::de::Error,
     {
-        if let Some(ruleset) = Ruleset::parse(v) {
-            Ok(ruleset)
-        } else {
-            Err(E::custom("invalid ruleset"))
+        match Ruleset::parse(v) {
+            Ok(ruleset) => Ok(ruleset),
+            Err(e) => Err(E::custom(format!("invalid ruleset: {}", e))),
         }
     }
 }
@@ -94,120 +189,5 @@ impl<'de> Deserialize<'de> for Ruleset {
         D: Deserializer<'de>,
     {
         deserializer.deserialize_str(RulesetVisitor {})
-    }
-}
-
-impl Serialize for Ruleset {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::ser::Serializer,
-    {
-        let mut s = String::new();
-        for rule in &self.rules {
-            for case in &rule.cases {
-                if case.negated {
-                    s.push('!');
-                }
-
-                s.push_str(&format!("r {}\n", case.regex.as_str()));
-            }
-
-            s.push_str("or\n");
-        }
-
-        // Remove the final next
-        // This way is funnier than the better solution
-        s.pop();
-        s.pop();
-        s.pop();
-
-        serializer.serialize_str(&s)
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use regex::Regex;
-
-    use super::*;
-    use crate::{fast_ruleset, lang::case::Case};
-
-    #[test]
-    fn test_deserialize() {
-        let ruleset = fast_ruleset!("r 1234", "!r 4321", "or", "r 3333");
-
-        assert_eq!(
-            ruleset,
-            Ruleset::new(vec![
-                Rule {
-                    cases: vec![
-                        Case {
-                            regex: Regex::new("1234").unwrap(),
-                            negated: false,
-                        },
-                        Case {
-                            regex: Regex::new("4321").unwrap(),
-                            negated: true,
-                        },
-                    ],
-                },
-                Rule {
-                    cases: vec![Case {
-                        regex: Regex::new("3333").unwrap(),
-                        negated: false,
-                    }],
-                },
-            ])
-        );
-    }
-
-    #[test]
-    fn test_serialize() {
-        let ruleset = Ruleset::new(vec![
-            Rule {
-                cases: vec![
-                    Case {
-                        regex: Regex::new("1234").unwrap(),
-                        negated: false,
-                    },
-                    Case {
-                        regex: Regex::new("4321").unwrap(),
-                        negated: true,
-                    },
-                ],
-            },
-            Rule {
-                cases: vec![Case {
-                    regex: Regex::new("3333").unwrap(),
-                    negated: false,
-                }],
-            },
-            Rule {
-                cases: vec![Case {
-                    regex: Regex::new("6969").unwrap(),
-                    negated: true,
-                }],
-            },
-        ]);
-
-        #[derive(Serialize)]
-        struct RulesetContainer {
-            ruleset: Ruleset,
-        }
-
-        let result = toml::to_string(&RulesetContainer { ruleset }).unwrap();
-
-        assert_eq!(
-            result,
-            r#"ruleset = """
-r 1234
-!r 4321
-or
-r 3333
-or
-!r 6969
-"""
-"#
-        );
     }
 }

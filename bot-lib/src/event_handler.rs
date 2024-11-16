@@ -14,11 +14,6 @@ pub async fn event_handler(
 ) -> Result<()> {
     if let Err(e) = match event {
         serenity::FullEvent::Message { new_message } => {
-            let message_text = &new_message.content;
-            let message_link = &new_message.link();
-
-            tracing::trace!("message {} received {}", message_text, message_link);
-
             text_detection(ctx, framework.user_data, new_message).await
         }
         serenity::FullEvent::ReactionAdd {

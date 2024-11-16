@@ -1,12 +1,6 @@
-use crate::{
-    config::{Config, ResponseKind},
-    llm,
-};
+use crate::{config::Config, llm};
 use bot_db::KingFisherDb;
-use color_eyre::eyre::{Error, OptionExt, Result};
-use poise::serenity_prelude as serenity;
-use poise::serenity_prelude::Message;
-use rand::seq::SliceRandom;
+use color_eyre::eyre::{Error, Result};
 use std::{path::Path, sync::Arc};
 use tokio::sync::RwLock;
 
@@ -65,44 +59,6 @@ impl AppState {
             llms: llm_tx,
             db,
         })
-    }
-
-    /// If the message contents match any pattern, return the name of the response type.
-    /// Otherwise, return None
-    pub async fn find_response(
-        &self,
-        message: &str,
-        message_link: &str,
-    ) -> Option<Arc<ResponseKind>> {
-        let config = self.config.read().await;
-
-        config
-            .responses
-            .iter()
-            .find_map(|response| response.find_valid_response(message, &config, message_link))
-    }
-
-    pub async fn respond(
-        &self,
-        message_response: &ResponseKind,
-        reply_target: &Message,
-        ctx: &serenity::Context,
-    ) -> Result<()> {
-        match message_response {
-            ResponseKind::Text { content } => {
-                reply_target.reply(ctx, content).await?;
-            }
-            ResponseKind::RandomText { content } => {
-                let response = content
-                    .choose(&mut rand::thread_rng())
-                    .ok_or_eyre("The responses list is empty")?;
-
-                reply_target.reply(ctx, response).await?;
-            }
-            ResponseKind::None => {}
-        }
-
-        Ok(())
     }
 }
 

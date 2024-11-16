@@ -46,4 +46,48 @@ mod test {
         assert!(!ruleset.matches("123"));
         assert!(ruleset.matches("meow"));
     }
+
+    #[test]
+    fn no_luck() {
+        let ruleset = fast_ruleset!(
+            r"r (?i):.*k+o+p+t+a+.*:",
+            r"!r <:kopta_1:1166893677617090642><:kopta_2:1166893728619831397><:kopta_3:1166893843283710052><:kopta_4:1166893878910124032>"
+        );
+
+        assert!(!ruleset.matches("luck"));
+    }
+
+    #[test]
+    fn alc() {
+        let ruleset = fast_ruleset!(
+            r"r (?i)\balc(?:ohol(?:ism)?)?",
+            r"or",
+            r"r (?i)beer",
+            r"or",
+            r"r (?i)whiskey",
+            r"or",
+            r"r (?i)mezcal",
+            r"or",
+            r"r (?i)tequila",
+            r"or",
+            r"r (?i)soju"
+        );
+
+        assert!(ruleset.matches("alcohol"));
+        assert!(ruleset.matches("beer"));
+        assert!(ruleset.matches("whiskey"));
+        assert!(ruleset.matches("mezcal"));
+        assert!(ruleset.matches("tequila"));
+        assert!(ruleset.matches("soju"));
+        assert!(ruleset.matches("alc"));
+    }
+
+    #[test]
+    fn arch() {
+        let ruleset = fast_ruleset!(r"r (?i)\barch");
+
+        dbg!(&ruleset);
+
+        assert!(ruleset.matches("arch"));
+    }
 }
