@@ -1,25 +1,25 @@
+use std::sync::Arc;
+
 use crate::{
-    commands::handle_yeeting, data::AppState, handle_starboards::handle_starboards,
+    commands::handle_yeeting, data::State, handle_starboards::handle_starboards,
     text_detection::text_detection,
 };
-use color_eyre::eyre::{Error, Result};
+use bot_traits::ForwardRefToTracing;
+use color_eyre::eyre::Result;
 use poise::serenity_prelude as serenity;
-use tap::Pipe;
 
 pub async fn event_handler(
     ctx: &serenity::Context,
     event: &serenity::FullEvent,
-    framework: poise::FrameworkContext<'_, AppState, Error>,
-    _data: &AppState,
+    data: State,
 ) -> Result<()> {
-    if let Err(e) = match event {
+    match event {
         serenity::FullEvent::Message { new_message } => {
-            text_detection(ctx, framework.user_data, new_message).await
+            text_detection(ctx, data, new_message).await.trace_err_ok();
         }
         serenity::FullEvent::ReactionAdd {
             add_reaction: reaction,
         } => {
-            // https://discord.com/channels/1065373537591894086/1065373538258800662/1288309958898880549
             let Ok(message) = reaction.message(ctx).await else {
                 let message_link = format!(
                     "https://discord.com/channels/{}/{}/{}",
@@ -32,24 +32,26 @@ pub async fn event_handler(
                 return Ok(());
             };
 
-            tokio::join!(
-                handle_yeeting(ctx, framework.user_data, &message),
-                handle_starboards(ctx, framework.user_data, &message, reaction)
-            )
-            .pipe(|(err1, err2)| match (err1, err2) {
-                (Err(e), _) => Err(e),
-                (_, Err(e)) => Err(e),
-                _ => Ok(()),
-            })
+            let message = Arc::new(message);
+
+            {
+                let ctx = ctx.clone();
+                let data = data.clone();
+                let message = message.clone();
+                tokio::spawn(
+                    async move { handle_yeeting(&ctx, data, &message).await.trace_err_ok() },
+                );
+            }
+
+            handle_starboards(ctx, data, &message, reaction)
+                .await
+                .trace_err_ok();
         }
         serenity::FullEvent::Ratelimit { data } => {
             tracing::warn!("Ratelimited: {:?}", data);
-            Ok(())
         }
-        _ => Ok(()),
-    } {
-        tracing::error!("Error in event handler: {:?}", e);
-    }
+        _ => {}
+    };
 
     Ok(())
 }

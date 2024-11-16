@@ -1,4 +1,11 @@
-use bot_lib::{commands::*, config, data::AppState, event_handler::event_handler};
+use std::sync::Arc;
+
+use bot_lib::{
+    commands::*,
+    config,
+    data::{RawAppState, State},
+    event_handler::event_handler,
+};
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr};
 use dotenvy::dotenv;
@@ -75,12 +82,12 @@ async fn main() -> Result<()> {
                 llm_prompt(),
                 remove_class_role(),
             ],
-            event_handler: |ctx, event, framework, data| {
-                Box::pin(event_handler(ctx, event, framework, data))
+            event_handler: |ctx, event, _framework, data| {
+                Box::pin(event_handler(ctx, event, data.clone()))
             },
             on_error: |error| {
                 async fn on_error(
-                    error: poise::FrameworkError<'_, AppState, color_eyre::eyre::Error>,
+                    error: poise::FrameworkError<'_, State, color_eyre::eyre::Error>,
                 ) {
                     // Don't care.
                     if let poise::FrameworkError::CommandCheckFailed { .. } = error {
@@ -105,7 +112,7 @@ async fn main() -> Result<()> {
                 )
                 .await?;
 
-                Ok(AppState::new(config, config_path).unwrap())
+                Ok(Arc::new(RawAppState::new(config, config_path).unwrap()))
             })
         });
 
@@ -161,8 +168,7 @@ fn notify_on_executable_update() -> Result<()> {
 
     watcher.watch(&directory, NonRecursive)?;
 
-    // Don't drop it!
-    std::mem::forget(watcher);
+    Box::leak(Box::new(watcher));
 
     Ok(())
 }

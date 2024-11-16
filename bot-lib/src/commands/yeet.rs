@@ -1,5 +1,5 @@
 use crate::{
-    data::{AppState, PoiseContext},
+    data::{PoiseContext, State},
     utils::GetRelativeTimestamp,
     CloneableCtx, IntoCloneableCtx, MentionableExt, TimeoutExt,
 };
@@ -375,7 +375,7 @@ fn should_yeet_someone(message: &Message) -> Option<(YeetData, bool, bool)> {
 }
 
 // Handle a reaction
-pub async fn handle_yeeting(ctx: &Context, data: &AppState, message: &Message) -> Result<()> {
+pub async fn handle_yeeting(ctx: &Context, data: State, message: &Message) -> Result<()> {
     let Some((yeet_data, did_yay, did_nay)) = should_yeet_someone(message) else {
         return Ok(());
     };
@@ -496,7 +496,7 @@ pub async fn handle_yeeting(ctx: &Context, data: &AppState, message: &Message) -
     Ok(())
 }
 
-fn save_to_yeet_leaderboard(data: &AppState, targets: &[UserId]) -> Result<()> {
+fn save_to_yeet_leaderboard(data: State, targets: &[UserId]) -> Result<()> {
     for &target in targets {
         YeetLeaderboard::new(&data.db)?.increment(target)?;
     }

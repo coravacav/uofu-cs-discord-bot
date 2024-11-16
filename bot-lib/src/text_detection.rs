@@ -1,10 +1,10 @@
-use crate::{config::ResponseKind, data::AppState};
+use crate::{config::ResponseKind, data::State};
 use color_eyre::eyre::{OptionExt, Result};
 use poise::serenity_prelude::{Context, Message};
 use rand::seq::SliceRandom;
 
 #[tracing::instrument(level = "trace", skip(ctx, data))]
-pub async fn text_detection(ctx: &Context, data: &AppState, message: &Message) -> Result<()> {
+pub async fn text_detection(ctx: &Context, data: State, message: &Message) -> Result<()> {
     if message.author == **ctx.cache.current_user() {
         return Ok(());
     }

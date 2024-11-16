@@ -4,8 +4,12 @@ use color_eyre::eyre::{Error, Result};
 use std::{path::Path, sync::Arc};
 use tokio::sync::RwLock;
 
+/// The global state of the bot
+/// Arc because I can't be arsed.
+pub type State = Arc<RawAppState>;
+
 #[derive(Debug)]
-pub struct AppState {
+pub struct RawAppState {
     pub config: Arc<RwLock<Config>>,
     /// Config file watcher that refreshes the config if it changes
     ///
@@ -18,8 +22,8 @@ pub struct AppState {
     pub db: KingFisherDb,
 }
 
-impl AppState {
-    pub fn new(config: Config, config_path: String) -> Result<AppState> {
+impl RawAppState {
+    pub fn new(config: Config, config_path: String) -> Result<RawAppState> {
         let config = Arc::new(RwLock::new(config));
 
         let llm_tx = llm::setup_llms()?;
@@ -52,7 +56,7 @@ impl AppState {
             .watch(&config_path, RecursiveMode::NonRecursive)
             .expect("Failed to watch config file");
 
-        Ok(AppState {
+        Ok(RawAppState {
             config,
             _watcher: watcher,
             config_path,
@@ -63,4 +67,4 @@ impl AppState {
 }
 
 // User data, which is stored and accessible in all command invocations
-pub type PoiseContext<'a> = poise::Context<'a, AppState, Error>;
+pub type PoiseContext<'a> = poise::Context<'a, State, Error>;
