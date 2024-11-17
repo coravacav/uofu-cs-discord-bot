@@ -16,6 +16,7 @@ serde = { workspace = true }
 bot-db = { workspace = true }
 itertools = { workspace = true }
 notify = { workspace = true }
+ahash = { workspace = true }
 chrono = "0.4"
 toml = "0.8"
 regex = "1"

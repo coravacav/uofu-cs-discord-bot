@@ -21,7 +21,7 @@ pub async fn sathya(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
         .has_role(
             ctx,
             guild_id,
-            ctx.data().config.read().await.bot_react_role_id,
+            ctx.data().config.read().await.ids.bot_react_role_id,
         )
         .await?;
 

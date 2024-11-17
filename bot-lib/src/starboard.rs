@@ -2,7 +2,7 @@ use color_eyre::eyre::Result;
 use parking_lot::Mutex;
 use poise::serenity_prelude::{
     Channel, ChannelId, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage,
-    GetMessages, Message, MessageId, ReactionType, Timestamp,
+    GetMessages, Message, MessageId, ReactionType,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -47,10 +47,8 @@ impl Starboard {
         reaction_count: u64,
     ) -> bool {
         let check = self.enough_reactions(reaction_count)
-            && self.is_message_recent(&message.timestamp)
             && self.is_channel_allowed(message.channel_id.into())
             && self.is_message_unseen(&message.id)
-            && self.is_message_not_yeet(message).await
             && self.is_channel_missing_reply(ctx, message).await;
 
         let check_msg = if check { "applies" } else { "does not apply" };
@@ -63,15 +61,6 @@ impl Starboard {
         reaction_count >= self.reaction_count
     }
 
-    fn is_message_recent(&self, message_timestamp: &Timestamp) -> bool {
-        const ONE_WEEK: chrono::TimeDelta = match chrono::TimeDelta::try_weeks(1) {
-            Some(time_check) => time_check,
-            None => unreachable!(),
-        };
-
-        message_timestamp.unix_timestamp() > (chrono::Utc::now() - ONE_WEEK).timestamp()
-    }
-
     fn is_channel_allowed(&self, channel_id: u64) -> bool {
         if let Some(ignored_channel_ids) = self.ignored_channel_ids.as_ref() {
             !ignored_channel_ids.contains(&channel_id)
@@ -82,12 +71,6 @@ impl Starboard {
 
     fn is_message_unseen(&self, message_id: &MessageId) -> bool {
         !self.recently_added_messages.lock().contains(message_id)
-    }
-
-    async fn is_message_not_yeet(&self, message: &Message) -> bool {
-        !crate::commands::YEET_STARBOARD_EXCLUSIONS
-            .lock()
-            .contains(&message.id)
     }
 
     async fn is_channel_missing_reply(&self, ctx: &Context, message: &Message) -> bool {

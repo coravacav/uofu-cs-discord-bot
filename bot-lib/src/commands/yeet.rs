@@ -154,7 +154,7 @@ fn create_yeet_message_easter_egg(
 
 #[tracing::instrument(level = "trace", skip(ctx, guild_id))]
 pub async fn can_yeet(ctx: PoiseContext<'_>, victim: &User, guild_id: GuildId) -> Result<bool> {
-    let react_role_id = ctx.data().config.read().await.bot_react_role_id;
+    let react_role_id = ctx.data().config.read().await.ids.bot_react_role_id;
 
     if !victim.has_role(ctx, guild_id, react_role_id).await? {
         ctx.say("You can't yeet a non reactme user!").await?;

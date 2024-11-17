@@ -1,7 +1,8 @@
-use crate::lang::ruleset::Ruleset;
+use crate::lang::ruleset_combinator::RulesetCombinator;
 use crate::starboard::Starboard;
-use chrono::{DateTime, Utc};
-use chrono::{Duration, Local};
+use ahash::AHashMap;
+use chrono::Duration;
+use chrono::{DateTime, TimeDelta, Utc};
 use color_eyre::eyre::{Result, WrapErr};
 use parking_lot::Mutex;
 use poise::serenity_prelude::ChannelId;
@@ -10,27 +11,54 @@ use serde_with::{serde_as, DurationSeconds};
 use std::path::Path;
 use std::sync::Arc;
 
-#[serde_as]
 #[derive(Deserialize, Debug)]
-pub struct Config {
-    /// The default cooldown for text detection.
-    ///
-    /// This can be overridden by the `cooldown` field in a response.
-    #[serde_as(as = "serde_with::DurationSeconds<i64>")]
-    #[serde(default = "get_default_text_detect_cooldown")]
-    pub default_text_detect_cooldown: Duration,
-    /// The starboards that kingfisher will listen for / update.
-    pub starboards: Vec<Arc<Starboard>>,
-    /// The id of the guild the bot is in.
-    pub guild_id: u64,
-    /// The help text for the bot. `/help`
-    pub help_text: Option<Arc<String>>,
+pub struct Ids {
     /// The role id of the bot react role.
     pub bot_react_role_id: u64,
     /// The role id of the woof react role.
     pub dog_react_role_id: u64,
+}
+
+/// This is the raw config file that's read from the config file (config.toml)
+#[derive(Deserialize, Debug)]
+pub struct RawConfig {
+    pub default_text_detect_cooldown: u64,
+    pub starboards: Vec<Arc<Starboard>>,
+    #[serde(flatten)]
+    pub ids: Ids,
+    pub help_text: Option<Arc<String>>,
+    pub responses: Vec<RawRegisteredResponse>,
+    pub default_hit_rate: f64,
+    pub skip_hit_rate_text: String,
+    pub skip_duration_text: String,
+    pub class_categories: Vec<ChannelId>,
+}
+
+impl RawConfig {
+    /// Fetches the config from the config file in the root directory.
+    pub fn create_from_file(config_path: impl AsRef<Path>) -> Result<Self> {
+        let file = std::fs::read_to_string(config_path).wrap_err("Could not read config file")?;
+
+        toml::from_str(&file).wrap_err("Could not parse config file")
+    }
+}
+
+#[derive(Debug)]
+pub struct Config {
+    /// The default cooldown for text detection.
+    ///
+    /// This can be overridden by the `cooldown` field in a response.
+    pub default_text_detect_cooldown: TimeDelta,
+    /// The starboards that kingfisher will listen for / update.
+    pub starboards: Vec<Arc<Starboard>>,
+    /// Contains special ids
+    pub ids: Ids,
+    /// The help text for the bot. `/help`
+    pub help_text: Option<Arc<String>>,
     /// What possible replies kingfisher can make.
-    pub responses: Vec<RegisteredResponse>,
+    pub responses: AHashMap<Arc<str>, RegisteredResponse>,
+    /// The ruleset combinator
+    pub ruleset_combinator: RulesetCombinator,
     /// How often kingfisher replies to a message.
     pub default_hit_rate: f64,
     /// Verbatim text to skip the hit rate check.
@@ -43,30 +71,60 @@ pub struct Config {
     pub class_categories: Vec<ChannelId>,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Config {
-            default_text_detect_cooldown: get_default_text_detect_cooldown(),
-            starboards: vec![],
-            guild_id: 0,
-            dog_react_role_id: 0,
-            skip_duration_text: "".to_owned(),
-            help_text: None,
-            bot_react_role_id: 0,
-            responses: vec![],
-            default_hit_rate: 1.,
-            skip_hit_rate_text: "".to_owned(),
-            class_categories: vec![],
-        }
-    }
-}
-
 impl Config {
+    pub fn new(raw_config: RawConfig) -> Result<Self> {
+        let unparsed_rulesets = raw_config
+            .responses
+            .iter()
+            .map(|response| response.unparsed_ruleset.as_str().try_into())
+            .collect::<Result<Vec<_>>>()?;
+
+        let ruleset_combinator = RulesetCombinator::new(
+            raw_config
+                .responses
+                .iter()
+                .map(|response| response.name.clone())
+                .zip(unparsed_rulesets.into_iter())
+                .map(|a| a.into()),
+        )?;
+
+        let responses = AHashMap::from_iter(raw_config.responses.into_iter().map(|response| {
+            (
+                response.name.clone(),
+                RegisteredResponse {
+                    hit_rate: response.hit_rate,
+                    message_response: response.message_response,
+                    last_triggered: Mutex::new(Utc::now()),
+                    cooldown: response.cooldown,
+                    unskippable: response.unskippable,
+                },
+            )
+        }));
+
+        let default_text_detect_cooldown: i64 =
+            raw_config.default_text_detect_cooldown.try_into()?;
+
+        Ok(Self {
+            default_text_detect_cooldown: TimeDelta::seconds(default_text_detect_cooldown),
+            starboards: raw_config.starboards,
+            skip_duration_text: raw_config.skip_duration_text,
+            help_text: raw_config.help_text,
+            responses,
+            ruleset_combinator,
+            default_hit_rate: raw_config.default_hit_rate,
+            skip_hit_rate_text: raw_config.skip_hit_rate_text,
+            class_categories: raw_config.class_categories,
+            ids: raw_config.ids,
+        })
+    }
+
     /// Fetches the config from the config file in the root directory.
     pub fn create_from_file(config_path: impl AsRef<Path>) -> Result<Config> {
         let file = std::fs::read_to_string(config_path).wrap_err("Could not read config file")?;
 
-        toml::from_str(&file).wrap_err("Could not parse config file")
+        let raw_config = toml::from_str(&file).wrap_err("Could not parse config file")?;
+
+        Self::new(raw_config)
     }
 
     /// Reloads the config file and updates the configuration.
@@ -74,13 +132,6 @@ impl Config {
         if let Ok(config) = Config::create_from_file(config_path) {
             *self = config;
         }
-    }
-}
-
-const fn get_default_text_detect_cooldown() -> Duration {
-    match chrono::TimeDelta::try_seconds(45) {
-        Some(duration) => duration,
-        None => panic!("Could not create default text detect cooldown"),
     }
 }
 
@@ -96,9 +147,27 @@ pub enum ResponseKind {
     RandomText { content: Vec<String> },
 }
 
+#[derive(Debug)]
+pub struct RegisteredResponse {
+    /// The chance that the response will be triggered.
+    ///
+    /// Overrides the default hit rate.
+    hit_rate: Option<f64>,
+    /// This makes it so it pretends the attributes of the enum are attributes of the struct
+    message_response: Arc<ResponseKind>,
+    /// Per response storage of when the response was last triggered.
+    last_triggered: Mutex<DateTime<Utc>>,
+    /// Cooldown in seconds.
+    ///
+    /// Overrides the default cooldown.
+    cooldown: Option<Duration>,
+    /// Whether or not the response can be skipped via the `skip_hit_rate_text` config option.
+    unskippable: bool,
+}
+
 #[serde_as]
 #[derive(Deserialize, Debug)]
-pub struct RegisteredResponse {
+pub struct RawRegisteredResponse {
     /// The name of the response. Used only for logging.
     name: Arc<str>,
     /// The chance that the response will be triggered.
@@ -106,14 +175,11 @@ pub struct RegisteredResponse {
     /// Overrides the default hit rate.
     hit_rate: Option<f64>,
     /// Under what rules the response should be triggered.
-    ruleset: Ruleset,
+    #[serde(rename = "ruleset")]
+    unparsed_ruleset: String,
     /// This makes it so it pretends the attributes of the enum are attributes of the struct
     #[serde(flatten)]
     message_response: Arc<ResponseKind>,
-    /// Per response storage of when the response was last triggered.
-    #[serde(skip)]
-    #[serde(default = "default_time")]
-    last_triggered: Mutex<DateTime<Utc>>,
     /// Cooldown in seconds.
     ///
     /// Overrides the default cooldown.
@@ -124,12 +190,8 @@ pub struct RegisteredResponse {
     unskippable: bool,
 }
 
-fn default_time() -> Mutex<DateTime<Utc>> {
-    DateTime::<Utc>::MIN_UTC.into()
-}
-
 impl RegisteredResponse {
-    pub fn find_valid_response(
+    pub fn can_send(
         &self,
         input: &str,
         Config {
@@ -139,12 +201,7 @@ impl RegisteredResponse {
             skip_duration_text,
             ..
         }: &Config,
-        message_link: &str,
     ) -> Option<Arc<ResponseKind>> {
-        if !self.ruleset.matches(input) {
-            return None;
-        }
-
         let mut last_triggered = self.last_triggered.lock();
         let cooldown = self.cooldown.unwrap_or(*global_cooldown);
         let time_since_last_triggered = Utc::now() - *last_triggered;
@@ -152,27 +209,16 @@ impl RegisteredResponse {
         let blocked = !input.contains(skip_duration_text);
 
         if !allowed && blocked {
-            tracing::debug!(
-                "Cooldown `{}` {} remaining {}",
-                self.name,
-                message_link,
-                cooldown - time_since_last_triggered
-            );
-
             return None;
         }
 
-        let now = Local::now().format("%Y-%m-%d %H:%M:%S");
         let hit_rate = self.hit_rate.unwrap_or(*default_hit_rate);
         let miss = rand::random::<f64>() > hit_rate;
         let blocked = self.unskippable || !input.contains(skip_hit_rate_text);
 
         if miss && blocked {
-            tracing::debug!("Miss `{}` {} {}", self.name, message_link, now);
             return None;
         }
-
-        tracing::debug!("Hit `{}` {} {}", self.name, message_link, now);
 
         *last_triggered = Utc::now();
 

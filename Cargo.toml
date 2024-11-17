@@ -31,6 +31,7 @@ itertools = "0.13"
 notify = { version = "7", default-features = false, features = [
     "macos_kqueue",
 ] }
+ahash = "0.8"
 
 [workspace.lints.rust]
 async_fn_in_trait = "allow"

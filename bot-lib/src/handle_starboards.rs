@@ -1,6 +1,6 @@
 use crate::data::State;
 use color_eyre::eyre::Result;
-use poise::serenity_prelude::{Context, Message, Reaction};
+use poise::serenity_prelude::{Context, Message, Reaction, Timestamp};
 
 pub async fn handle_starboards(
     ctx: &Context,
@@ -8,6 +8,10 @@ pub async fn handle_starboards(
     message: &Message,
     reaction: &Reaction,
 ) -> Result<()> {
+    if is_message_too_recent(&message.timestamp) || is_message_yeet(message) {
+        return Ok(());
+    }
+
     let reaction_type = &reaction.emoji;
 
     let reaction_count = message
@@ -30,4 +34,19 @@ pub async fn handle_starboards(
     futures::future::join_all(futures).await;
 
     Ok(())
+}
+
+fn is_message_too_recent(message_timestamp: &Timestamp) -> bool {
+    const ONE_WEEK: chrono::TimeDelta = match chrono::TimeDelta::try_weeks(1) {
+        Some(time_check) => time_check,
+        None => unreachable!(),
+    };
+
+    message_timestamp.unix_timestamp() > (chrono::Utc::now() - ONE_WEEK).timestamp()
+}
+
+fn is_message_yeet(message: &Message) -> bool {
+    !crate::commands::YEET_STARBOARD_EXCLUSIONS
+        .lock()
+        .contains(&message.id)
 }

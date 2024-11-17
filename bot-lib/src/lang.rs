@@ -1,11 +1,13 @@
 mod case;
 mod rule;
 pub mod ruleset;
+pub mod ruleset_combinator;
 
 #[macro_export]
 macro_rules! fast_ruleset {
     ($($x:expr),*) => {{
-        $crate::lang::ruleset::Ruleset::parse(&[$($x),*].join("\n")).unwrap()
+        let ruleset: $crate::lang::ruleset::Ruleset = $crate::lang::ruleset::UnparsedRuleset::parse(&[$($x),*].join("\n")).unwrap().try_into().unwrap();
+        dbg!(ruleset)
     }};
 }
 
@@ -86,8 +88,13 @@ mod test {
     fn arch() {
         let ruleset = fast_ruleset!(r"r (?i)\barch");
 
-        dbg!(&ruleset);
-
         assert!(ruleset.matches("arch"));
+    }
+
+    #[test]
+    fn not_me() {
+        let ruleset = fast_ruleset!(r"r <@216767618923757568>");
+
+        assert!(!ruleset.matches("rust"));
     }
 }

@@ -5,8 +5,10 @@ use nom::{
     sequence::tuple, Finish, IResult,
 };
 
+/// A rule is a single case of success for a given ruleset
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Rule<'a> {
+    /// The cases of the rule
     pub cases: Vec<Case<'a>>,
 }
 
