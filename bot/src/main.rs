@@ -105,12 +105,7 @@ async fn main() -> Result<()> {
             tokio::spawn(async { update_interval().await });
 
             Box::pin(async move {
-                poise::builtins::register_in_guild(
-                    ctx,
-                    &framework.options().commands,
-                    serenity::GuildId::from(config.guild_id),
-                )
-                .await?;
+                poise::builtins::register_globally(ctx, &framework.options().commands).await?;
 
                 Ok(Arc::new(RawAppState::new(config, config_path).unwrap()))
             })
