@@ -2,7 +2,7 @@ use super::{
     rule::{parse_rules, Rule},
     ruleset_combinator::create_matcher_regex,
 };
-use color_eyre::eyre::{ContextCompat, Result};
+use color_eyre::eyre::{bail, ContextCompat, Result};
 use regex::Regex;
 
 #[derive(Clone, Debug)]
@@ -10,7 +10,7 @@ pub struct UnparsedRegexAndNegated<'a>(pub &'a str, pub bool);
 
 #[derive(Clone, Debug)]
 pub enum UnparsedRegex<'a> {
-    Single(UnparsedRegexAndNegated<'a>),
+    Single(&'a str),
     Multiple(Vec<UnparsedRegexAndNegated<'a>>),
 }
 
@@ -24,10 +24,8 @@ pub struct RegexAndNegated(pub Regex, pub bool);
 
 #[derive(Clone, Debug)]
 pub struct Ruleset {
-    /// If this matches true, the rule is considered a match
+    /// If this matches, the rule is considered a match
     pub single_positive: Option<Regex>,
-    /// If this matches false, the rule is considered a match
-    pub single_negative: Option<Regex>,
     /// If all of these match, the rule is considered a match
     pub multiple: Option<Vec<Vec<RegexAndNegated>>>,
 }
@@ -38,10 +36,13 @@ impl<'a> UnparsedRuleset<'a> {
 
         for rule in rules {
             match rule.cases.len() {
-                1 => completed_rules.push(UnparsedRegex::Single(UnparsedRegexAndNegated(
-                    rule.cases[0].unparsed_regex,
-                    rule.cases[0].negated,
-                ))),
+                1 => {
+                    if rule.cases[0].negated {
+                        bail!("Negative standalone rules are not supported");
+                    }
+
+                    completed_rules.push(UnparsedRegex::Single(rule.cases[0].unparsed_regex))
+                }
                 2.. => {
                     completed_rules.push(UnparsedRegex::Multiple(
                         rule.cases
@@ -77,17 +78,12 @@ impl TryFrom<UnparsedRuleset<'_>> for Ruleset {
 
     fn try_from(unparsed_ruleset: UnparsedRuleset) -> Result<Self> {
         let mut current_ruleset_positive = vec![];
-        let mut current_ruleset_negative = vec![];
         let mut multiple: Vec<Vec<RegexAndNegated>> = vec![];
 
         for unparsed_regex in unparsed_ruleset.regexes {
             match unparsed_regex {
-                UnparsedRegex::Single(UnparsedRegexAndNegated(unparsed_regex, negated)) => {
-                    if negated {
-                        current_ruleset_negative.push(unparsed_regex);
-                    } else {
-                        current_ruleset_positive.push(unparsed_regex);
-                    }
+                UnparsedRegex::Single(unparsed_regex) => {
+                    current_ruleset_positive.push(unparsed_regex);
                 }
                 UnparsedRegex::Multiple(vec) => {
                     let mut this_multiple = vec![];
@@ -102,7 +98,6 @@ impl TryFrom<UnparsedRuleset<'_>> for Ruleset {
         }
 
         let single_positive = create_matcher_regex(&current_ruleset_positive)?;
-        let single_negative = create_matcher_regex(&current_ruleset_negative)?;
 
         let multiple = if multiple.is_empty() {
             None
@@ -110,19 +105,17 @@ impl TryFrom<UnparsedRuleset<'_>> for Ruleset {
             Some(multiple)
         };
 
-        Ok(Self::new(single_positive, single_negative, multiple))
+        Ok(Self::new(single_positive, multiple))
     }
 }
 
 impl Ruleset {
     pub fn new(
         single_positive: Option<Regex>,
-        single_negative: Option<Regex>,
         multiple: Option<Vec<Vec<RegexAndNegated>>>,
     ) -> Self {
         Self {
             single_positive,
-            single_negative,
             multiple,
         }
     }
@@ -134,25 +127,17 @@ impl Ruleset {
             }
         }
 
-        if let Some(negative) = &self.single_negative {
-            if !negative.is_match(input) {
-                return true;
-            }
-        }
-
         if let Some(multi_rules) = &self.multiple {
-            for multi_rule in multi_rules {
-                if multi_rule.iter().all(|RegexAndNegated(regex, negated)| {
+            return multi_rules.iter().any(|multi_rule| {
+                multi_rule.iter().all(|RegexAndNegated(regex, negated)| {
                     let res = regex.is_match(input);
                     if *negated {
                         !res
                     } else {
                         res
                     }
-                }) {
-                    return true;
-                }
-            }
+                })
+            });
         }
 
         false
