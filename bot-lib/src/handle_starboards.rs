@@ -42,11 +42,11 @@ fn is_message_too_recent(message_timestamp: &Timestamp) -> bool {
         None => unreachable!(),
     };
 
-    message_timestamp.unix_timestamp() > (chrono::Utc::now() - ONE_WEEK).timestamp()
+    message_timestamp.unix_timestamp() < (chrono::Utc::now() - ONE_WEEK).timestamp()
 }
 
 fn is_message_yeet(message: &Message) -> bool {
-    !crate::commands::YEET_STARBOARD_EXCLUSIONS
+    crate::commands::YEET_STARBOARD_EXCLUSIONS
         .lock()
         .contains(&message.id)
 }
