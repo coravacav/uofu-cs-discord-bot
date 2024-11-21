@@ -283,7 +283,7 @@ name = "works on my machine"
 ruleset = """
 r (?i)works on my machine
 """
-content = "Oh, it works on your machine but not on my machine? Then perhaps, itdoesn't work, hmm?"
+content = "Oh, it works on your machine but not on my machine? Then perhaps, it doesn't work, hmm?"
 
 [[responses]]
 name = "kopta"
@@ -403,3 +403,10 @@ E = mc² + AI
 This equation combines Einstein’s famous equation E=mc², which relates energy (E) to mass (m) and the speed of light (c), with the addition of AI (Artificial Intelligence). By including AI in the equation, it symbolizes the increasing role of artificial intelligence in shaping and transforming our future. This equation highlights the potential for AI to unlock new forms of energy, enhance scientific discoveries, and revolutionize various fields such as healthcare, transport, and technology.
 
 -# \> what'''
+
+[[responses]]
+name = "steve"
+ruleset = """
+r (?i)steve
+"""
+content = "https://tenor.com/view/jack-black-funny-i-am-steve-minecraft-movie-minecraft-gif-5160011517617965793"
