@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use ahash::{AHashMap, AHashSet};
 use color_eyre::eyre::{bail, Result};
-use regex::Regex;
+use regex::{Regex, RegexSet};
 
 use super::ruleset::{
     RegexAndNegated, Ruleset, UnparsedRegex, UnparsedRegexAndNegated, UnparsedRuleset,
@@ -32,11 +32,11 @@ impl<'a> From<(Name, UnparsedRuleset<'a>)> for UnparsedRulesetWithName<'a> {
 #[derive(Debug)]
 pub struct RulesetCombinator {
     /// If this matches true, at least one of the rules is considered a match.
-    single_positive_matcher: Option<Regex>,
+    single_positive_matcher: Option<RegexSet>,
     /// If this matches true, at least one of the rules is considered a match.
-    multiple_positive_matcher: Option<Regex>,
+    multiple_positive_matcher: Option<RegexSet>,
     /// If this matches false, at least one of the rules is considered a match.
-    multiple_negative_matcher: Option<Regex>,
+    multiple_negative_matcher: Option<RegexSet>,
     /// If single_positive_matcher, one of these rules is considered a match.
     single_positive_rulesets: Vec<Name>,
     multiple_positive_rulesets: Vec<Name>,
@@ -205,20 +205,10 @@ impl RulesetCombinator {
     }
 }
 
-pub fn create_matcher_regex(options: &[&str]) -> Result<Option<Regex>> {
+pub fn create_matcher_regex(options: &[&str]) -> Result<Option<RegexSet>> {
     if options.is_empty() {
         return Ok(None);
     }
 
-    let mut regex_string = String::new();
-
-    for option in options {
-        regex_string.push_str("(?:");
-        regex_string.push_str(option);
-        regex_string.push_str(")|");
-    }
-
-    regex_string.pop();
-
-    Ok(Some(Regex::new(&regex_string)?))
+    Ok(Some(RegexSet::new(options)?))
 }

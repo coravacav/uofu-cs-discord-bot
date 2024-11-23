@@ -35,7 +35,7 @@ There is a way to force KingFisher to reply to a message. Add "KINGFISHER PLEASE
 
 [[starboards]]
 channel_id = 1171176750819053589
-reaction_count = 7
+reaction_count = 8
 ignored_channel_ids = [
     1103414812312088677,
     1187117571267371102,

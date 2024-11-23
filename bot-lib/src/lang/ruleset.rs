@@ -3,7 +3,7 @@ use super::{
     ruleset_combinator::create_matcher_regex,
 };
 use color_eyre::eyre::{bail, ContextCompat, Result};
-use regex::Regex;
+use regex::{Regex, RegexSet};
 
 #[derive(Clone, Debug)]
 pub struct UnparsedRegexAndNegated<'a>(pub &'a str, pub bool);
@@ -25,7 +25,7 @@ pub struct RegexAndNegated(pub Regex, pub bool);
 #[derive(Clone, Debug)]
 pub struct Ruleset {
     /// If this matches, the rule is considered a match
-    pub single_positive: Option<Regex>,
+    pub single_positive: Option<RegexSet>,
     /// If all of these match, the rule is considered a match
     pub multiple: Option<Vec<Vec<RegexAndNegated>>>,
 }
@@ -111,7 +111,7 @@ impl TryFrom<UnparsedRuleset<'_>> for Ruleset {
 
 impl Ruleset {
     pub fn new(
-        single_positive: Option<Regex>,
+        single_positive: Option<RegexSet>,
         multiple: Option<Vec<Vec<RegexAndNegated>>>,
     ) -> Self {
         Self {
