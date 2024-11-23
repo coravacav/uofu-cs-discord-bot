@@ -5,7 +5,7 @@
 
 use std::sync::Arc;
 
-use ahash::{AHashMap, AHashSet};
+use ahash::AHashMap;
 use color_eyre::eyre::{bail, Result};
 use regex::{Regex, RegexSet};
 
@@ -41,7 +41,6 @@ pub struct RulesetCombinator {
     single_positive_rulesets: Vec<Name>,
     multiple_positive_rulesets: Vec<Name>,
     multiple_negative_rulesets: Vec<Name>,
-    multiple_rulesets: Vec<Name>,
     rulesets: AHashMap<Name, Ruleset>,
 }
 
@@ -49,15 +48,15 @@ impl RulesetCombinator {
     pub fn new<'a>(
         unparsed_rulesets: impl Iterator<Item = UnparsedRulesetWithName<'a>>,
     ) -> Result<Self> {
-        let mut single_positive_options: Vec<&str> = vec![];
-        let mut single_positive_rulesets: AHashSet<Name> = AHashSet::new();
-        let mut multiple_positive_rulesets: AHashSet<Name> = AHashSet::new();
-        let mut multiple_negative_rulesets: AHashSet<Name> = AHashSet::new();
-        let mut multiple_rulesets: AHashSet<Name> = AHashSet::new();
         let mut rulesets: AHashMap<Name, Ruleset> = AHashMap::new();
 
+        let mut single_positive_options: Vec<&str> = vec![];
         let mut multiple_positive_options: Vec<&str> = vec![];
         let mut multiple_negative_options: Vec<&str> = vec![];
+
+        let mut single_positive_rulesets: Vec<Name> = vec![];
+        let mut multiple_positive_rulesets: Vec<Name> = vec![];
+        let mut multiple_negative_rulesets: Vec<Name> = vec![];
 
         for UnparsedRulesetWithName {
             name,
@@ -72,13 +71,11 @@ impl RulesetCombinator {
                     UnparsedRegex::Single(unparsed_regex) => {
                         single_positive_options.push(unparsed_regex);
                         single_positive.push(unparsed_regex);
-                        single_positive_rulesets.insert(name.clone());
+                        single_positive_rulesets.push(name.clone());
                     }
                     UnparsedRegex::Multiple(vec) => {
                         let mut has_positive = false;
                         let mut has_negative = false;
-
-                        multiple_rulesets.insert(name.clone());
 
                         let mut new_multiple = vec![];
 
@@ -96,11 +93,11 @@ impl RulesetCombinator {
                         }
 
                         if has_positive {
-                            multiple_positive_rulesets.insert(name.clone());
+                            multiple_positive_rulesets.push(name.clone());
                         }
 
                         if has_negative {
-                            multiple_negative_rulesets.insert(name.clone());
+                            multiple_negative_rulesets.push(name.clone());
                         }
 
                         multiple.push(new_multiple);
@@ -133,75 +130,65 @@ impl RulesetCombinator {
             multiple_negative_matcher,
             multiple_positive_matcher,
             rulesets,
-            single_positive_rulesets: single_positive_rulesets.into_iter().collect(),
-            multiple_positive_rulesets: multiple_positive_rulesets.into_iter().collect(),
-            multiple_negative_rulesets: multiple_negative_rulesets.into_iter().collect(),
-            multiple_rulesets: multiple_rulesets.into_iter().collect(),
+            single_positive_rulesets,
+            multiple_positive_rulesets,
+            multiple_negative_rulesets,
         })
     }
 
     pub fn matches(&self, input: &str) -> bool {
-        if let Some(positive) = &self.single_positive_matcher {
-            if positive.is_match(input) {
-                return true;
-            }
-        }
-
-        if self.multiple_positive_matcher.is_some() {
-            for multi_rule in &self.multiple_rulesets {
-                if self.rulesets[multi_rule].matches(input) {
-                    return true;
-                }
-            }
-        }
-
-        false
+        self.find_iter(input).next().is_some()
     }
 
     pub fn find_iter<'a>(&'a self, input: &'a str) -> impl Iterator<Item = Name> + use<'a> {
-        let name_leads_to_match = |name: &Name| {
-            self.rulesets
-                .get(name)
-                .filter(|ruleset| ruleset.matches(input))
-                .map(|_| name.clone())
-        };
-
         let positive_iter = self.single_positive_matcher.as_ref().and_then(|positive| {
-            positive.is_match(input).then(|| {
-                self.single_positive_rulesets
-                    .iter()
-                    .filter_map(name_leads_to_match)
-            })
+            positive
+                .matches(input)
+                .iter()
+                .next()
+                .map(|idx| self.single_positive_rulesets[idx].clone())
         });
 
-        let multiple_iter = match (
-            &self.multiple_positive_matcher,
-            &self.multiple_negative_matcher,
-        ) {
-            (Some(positive), Some(negative)) => {
-                (positive.is_match(input) || !negative.is_match(input)).then(|| {
-                    self.multiple_rulesets
-                        .iter()
-                        .filter_map(name_leads_to_match)
-                })
-            }
-            (Some(positive), None) => positive.is_match(input).then(|| {
-                self.multiple_positive_rulesets
+        let multiple_positive_iter = self
+            .multiple_positive_matcher
+            .as_ref()
+            .and_then(|positive| {
+                positive
+                    .matches(input)
                     .iter()
-                    .filter_map(name_leads_to_match)
-            }),
-            (None, Some(negative)) => (!negative.is_match(input)).then(|| {
-                self.multiple_negative_rulesets
-                    .iter()
-                    .filter_map(name_leads_to_match)
-            }),
-            (None, None) => None,
-        };
+                    .map(|idx| self.multiple_positive_rulesets[idx].clone())
+                    .find(|name| {
+                        self.rulesets
+                            .get(name)
+                            .map_or(false, |ruleset| ruleset.matches(input))
+                    })
+            });
+
+        let multiple_negative_iter = self
+            .multiple_negative_matcher
+            .as_ref()
+            .and_then(|negative| {
+                // this one is different, I need to get all the indexes of non matched
+                let match_idxs = negative.matches(input);
+
+                if match_idxs.matched_all() {
+                    return None;
+                }
+
+                (0..negative.len())
+                    .filter(|idx| !match_idxs.matched(*idx))
+                    .map(|idx| self.multiple_negative_rulesets[idx].clone())
+                    .find(|name| {
+                        self.rulesets
+                            .get(name)
+                            .map_or(false, |ruleset| ruleset.matches(input))
+                    })
+            });
 
         positive_iter
             .into_iter()
-            .flatten()
-            .chain(multiple_iter.into_iter().flatten())
+            .chain(multiple_positive_iter)
+            .chain(multiple_negative_iter)
     }
 }
 

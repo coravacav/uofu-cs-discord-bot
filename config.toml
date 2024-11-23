@@ -192,8 +192,32 @@ content = "https://tenor.com/view/1984-gif-19260546"
 name = "cs major"
 ruleset = '''
 r (?i)cs\s*major
+or
+r (?i)computer\s*science
+or
+r (?i)cs\s*student
 '''
-content = "I don't get the way you guys think. I want MONEY. 6 figures out of college. 200k a year entry level. I'm in this for MONEY. I don't care about whether I'm \"fulfilled\" I want MONEY. Whatever gets me the most MONEY. What technology gets me PAID THE BEST. All I care about in this major is MONEY. That's why I'm in college, I don't wanna laugh and play with y'all. I don't wanna be buddy buddy with y'all. I'm here for MONEY."
+content = [
+    "I don't get the way you guys think. I want MONEY. 6 figures out of college. 200k a year entry level. I'm in this for MONEY. I don't care about whether I'm \"fulfilled\" I want MONEY. Whatever gets me the most MONEY. What technology gets me PAID THE BEST. All I care about in this major is MONEY. That's why I'm in college, I don't wanna laugh and play with y'all. I don't wanna be buddy buddy with y'all. I'm here for MONEY.",
+    '''
+85% of Computer Science Students Suck Ass
+All of them think they’re the smartest person to roam the halls of campus. What’s more they try to one up each other to prove their clearly superior intellect, but nothing their saying makes sense and nothing actually gets done. It’s like these dudes are larping the scene in movies where they show a montage of people saying smart sounding nonsense, everyone understands it, and then two minutes later you have the finished product. Newsflash that shit isn’t real. This isn’t the goddamn Avengers.
+Anyways, just bitchin’ have a good day.''',
+    '''
+85% of Computer Science Students Suck Ass
+I am beyond annoyed that I have to deal with these manchildren for the rest of the semester. I’m probably coming across as a dick or a bully, but i’ve just had it with these people.
+Anyways, just bitchin’ have a good day.
+''',
+    '''
+For 85% of CS students, the stereotypes are true. It’s a bunch of smelly, antisocial dudes with huge egos whose only interests are video games, porn, and internet culture. I dare claim that I am a normal person, and as a normal person it bums me out. I look into classrooms sometimes and I see normal looking people and think that must be nice.
+Anyways, just bitchin’ have a good day.''',
+    '''
+85% of Computer Science Students Suck Ass
+So, I was assigned a group (all male of course, this is CS we’re talking about) and met them, and for the love of god I have never met such insufferable, incel, dorks in my life.
+One dude found it necessary to comment on nearly every woman’s appearance who walked by. Then basically all of them proceed to eye-fuck them from across the room the entire study session. I’m 1000% sure you’re all virgins. Your hot takes on women are under researched at best.
+Anyways, just bitchin’ have a good day.''',
+
+]
 
 [[responses]]
 name = "stefan"
@@ -219,9 +243,7 @@ r (?i)tequila
 or
 r (?i)soju
 '''
-content = [
-    "<@216767618923757568>"
-]
+content = ["<@216767618923757568>"]
 
 [[responses]]
 name = "league of legends"
@@ -368,19 +390,19 @@ ruleset = """
 r (?i)((fall|spring) (break|vacation))
 """
 content = [
-'''First off I’m a cs major. Just keep that in mind and don’t run to the comments to tell me you’re a hard major.
+    '''First off I’m a cs major. Just keep that in mind and don’t run to the comments to tell me you’re a hard major.
 I saw that last post here and it reminded me of how angry I feel every year when this fall ‘break’ comes along and muddies the competition. It completely defeats the point of school, and I don’t want to pay all that money to sit at home living on peanut butter and popcorn, and watching young Sheldon for a whole week.
 I’m sure most of you agree with me, right?''',
 
-'''First off I’m a cs major. Just keep that in mind and don’t run to the comments to tell me you’re a hard major.
+    '''First off I’m a cs major. Just keep that in mind and don’t run to the comments to tell me you’re a hard major.
 A course at a prestigious university should be a marathon. My favorites are the ones where attendance is required so you can see over time the lesser minds dropping out of the race in exhaustion. And finally at the end of the day the fittest survived and are rewarded with an honest grade in the class.
 I’m sure most of you agree with me, right?''',
 
-'''First off I’m a cs major. Just keep that in mind and don’t run to the comments to tell me you’re a hard major.
+    '''First off I’m a cs major. Just keep that in mind and don’t run to the comments to tell me you’re a hard major.
 So what’s the purpose of this ‘fall’ break? Have you ever watched a race on TV where they pause in the middle of the track to let everyone catch up and rest? What an absurd picture of injustice. What was the point of the first half of you’re going to start up again momentarily?
 I’m sure most of you agree with me, right?''',
 
-'''First off I’m a cs major. Just keep that in mind and don’t run to the comments to tell me you’re a hard major.
+    '''First off I’m a cs major. Just keep that in mind and don’t run to the comments to tell me you’re a hard major.
 Fall break is just a huge scam and serves to make waste of the entire first half of the semester. It makes me sick to my stomach - completely ill - to see this ritualistic sacrifice of my time happening year after year.
 I’m sure most of you agree with me, right?''',
 ]
