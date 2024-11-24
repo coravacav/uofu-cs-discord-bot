@@ -81,6 +81,7 @@ async fn main() -> Result<()> {
                 sathya(),
                 llm_prompt(),
                 remove_class_role(),
+                mod_abuse(),
             ],
             event_handler: |ctx, event, _framework, data| {
                 Box::pin(event_handler(ctx, event, data.clone()))
@@ -106,6 +107,12 @@ async fn main() -> Result<()> {
 
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+                // poise::builtins::register_in_guild(
+                //     ctx,
+                //     &framework.options().commands,
+                //     serenity::GuildId::from(1065373537591894086),
+                // )
+                // .await?;
 
                 Ok(Arc::new(RawAppState::new(config, config_path).unwrap()))
             })

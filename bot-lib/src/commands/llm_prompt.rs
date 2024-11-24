@@ -1,4 +1,4 @@
-use crate::data::PoiseContext;
+use crate::{data::PoiseContext, utils::SendReplyEphemeral};
 use color_eyre::eyre::{bail, OptionExt, Result};
 use parking_lot::Mutex;
 use poise::{
@@ -31,10 +31,8 @@ async fn try_lock_llm(ctx: PoiseContext<'_>) -> Result<()> {
         let old_time = INSTANT_BY_USER_ID.lock().insert(user_id, Instant::now());
         if let Some(last_time) = old_time {
             if last_time.elapsed() < Duration::from_secs(BOTS_CHANNEL_PER_USER_TIMEOUT_SECONDS) {
-                let reply = CreateReply::default()
-                    .ephemeral(true)
-                    .content("Please wait a minute before asking again");
-                ctx.send(reply).await?;
+                ctx.reply_ephemeral("Please wait a minute before asking again")
+                    .await?;
                 bail!("Please wait a minute before asking again");
             }
         }
@@ -45,10 +43,8 @@ async fn try_lock_llm(ctx: PoiseContext<'_>) -> Result<()> {
 
         if let Some(last_time) = old_time {
             if last_time.elapsed() < Duration::from_secs(PER_CHANNEL_TIMEOUT_SECONDS) {
-                let reply = CreateReply::default()
-                    .ephemeral(true)
-                    .content("Please wait 10 minutes before asking again");
-                ctx.send(reply).await?;
+                ctx.reply_ephemeral("Please wait 10 minutes before asking again")
+                    .await?;
                 bail!("Please wait 10 minutes before asking again");
             }
         }
@@ -81,25 +77,15 @@ pub async fn llm_prompt(ctx: PoiseContext<'_>, prompt: String) -> Result<()> {
     let (reply, reply_rx) = tokio::sync::oneshot::channel();
 
     if ctx.data().llms.big.send((prompt, reply)).is_err() {
-        ctx.send(
-            CreateReply::default()
-                .content("LLM is currently disabled. Please try again later.")
-                .reply(true)
-                .ephemeral(true),
-        )
-        .await?;
+        ctx.reply_ephemeral("LLM is currently disabled. Please try again later.")
+            .await?;
 
         return Ok(());
     };
 
     let Ok(reply) = reply_rx.await else {
-        ctx.send(
-            CreateReply::default()
-                .content("LLM is currently disabled. Please try again later.")
-                .reply(true)
-                .ephemeral(true),
-        )
-        .await?;
+        ctx.reply_ephemeral("LLM is currently disabled. Please try again later.")
+            .await?;
 
         return Ok(());
     };
