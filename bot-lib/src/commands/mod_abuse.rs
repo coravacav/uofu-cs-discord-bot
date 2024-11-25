@@ -9,6 +9,7 @@ use poise::{
     serenity_prelude::{EditMember, Mentionable, User},
     CreateReply,
 };
+use rand::seq::SliceRandom;
 use std::time::Duration;
 
 #[poise::command(slash_command, required_permissions = "MODERATE_MEMBERS")]
@@ -55,7 +56,7 @@ pub async fn mod_abuse(
         .await
         .is_err()
     {
-        ctx.say("Everyone laugh at this person with timeout privileges that dared to abuse them and then STILL FAIL.").await?;
+        ctx.say(format!("Everyone laugh at {} with timeout privileges that dared to abuse them (to attempt to kill {}) and then STILL FAIL.", ctx.author().mention(), target.mention())).await?;
 
         return Ok(());
     };
@@ -66,10 +67,28 @@ pub async fn mod_abuse(
         String::new()
     };
 
+    let participate_verbiage: [&str; 2] = [
+        (
+            ["sentenced to not participate", "was previously timed out"],
+            9,
+        ),
+        (
+            [
+                "banished to the shadow realm",
+                "took a vacation in the shadow realm",
+            ],
+            1,
+        ),
+    ]
+    .choose_weighted(&mut rand::thread_rng(), |choice| choice.1)
+    .unwrap()
+    .0;
+
     let reply_handle = ctx
         .say(format!(
-            "❗mod abuse alert❗\n\n{} has been sentenced to not participate by {}{}.\n\nThey will return {}.",  
+            "❗mod abuse alert❗\n\n{} has been {} by {}{}.\n\nThey will return {}.",
             target.mention(),
+            participate_verbiage[0],
             ctx.author().mention(),
             reason,
             timeout_end.discord_relative_timestamp(),
@@ -82,8 +101,9 @@ pub async fn mod_abuse(
         .edit(
             ctx,
             CreateReply::default().content(format!(
-                "❗mod abuse alert❗\n\n{} was previously timed out for {} by {}{}.\n\nThey have since returned.", 
+                "❗mod abuse alert❗\n\n{} {} for {} by {}{}.\n\nThey have since returned.",
                 target.mention(),
+                participate_verbiage[1],
                 time.human_duration(),
                 ctx.author().mention(),
                 reason
