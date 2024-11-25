@@ -2,7 +2,7 @@ use color_eyre::eyre::Result;
 use parking_lot::Mutex;
 use poise::serenity_prelude::{
     Channel, ChannelId, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage,
-    GetMessages, Message, MessageId, ReactionType,
+    GetMessages, Message, MessageId, Reaction, ReactionType,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -10,6 +10,8 @@ use std::collections::HashSet;
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Starboard {
     pub reaction_count: u64,
+    /// Currently only supports unicode emojis.
+    pub banned_reactions: Option<Vec<String>>,
     pub channel_id: u64,
     pub ignored_channel_ids: Option<Vec<u64>>,
     /// This stores a string hash of the message link
@@ -20,6 +22,7 @@ pub struct Starboard {
 impl PartialEq for Starboard {
     fn eq(&self, other: &Self) -> bool {
         self.reaction_count == other.reaction_count
+            && self.banned_reactions == other.banned_reactions
             && self.channel_id == other.channel_id
             && self.ignored_channel_ids == other.ignored_channel_ids
     }
@@ -31,6 +34,7 @@ impl Default for Starboard {
     fn default() -> Self {
         Self {
             reaction_count: 1,
+            banned_reactions: None,
             channel_id: 0,
             ignored_channel_ids: None,
             recently_added_messages: Mutex::new(HashSet::new()),
@@ -44,10 +48,11 @@ impl Starboard {
         &self,
         ctx: &Context,
         message: &Message,
-        reaction_count: u64,
+        reaction: &Reaction,
     ) -> bool {
-        let check = self.enough_reactions(reaction_count)
+        let check = self.is_allowed_reaction(reaction)
             && self.is_channel_allowed(message.channel_id.into())
+            && self.enough_reactions(message, reaction)
             && self.is_message_unseen(&message.id)
             && self.is_channel_missing_reply(ctx, message).await;
 
@@ -57,8 +62,29 @@ impl Starboard {
         check
     }
 
-    fn enough_reactions(&self, reaction_count: u64) -> bool {
+    fn enough_reactions(&self, message: &Message, reaction: &Reaction) -> bool {
+        let reaction_type = &reaction.emoji;
+        let reaction_count = message
+            .reactions
+            .iter()
+            .find(|reaction| reaction.reaction_type == *reaction_type)
+            .map_or(0, |reaction| reaction.count);
+
         reaction_count >= self.reaction_count
+    }
+
+    fn is_allowed_reaction(&self, reaction: &Reaction) -> bool {
+        if !matches!(reaction.emoji, ReactionType::Unicode(_)) {
+            return true;
+        }
+
+        self.banned_reactions
+            .as_ref()
+            .map_or(true, |banned_reactions| {
+                !banned_reactions
+                    .iter()
+                    .any(|banned_reaction| reaction.emoji.unicode_eq(banned_reaction))
+            })
     }
 
     fn is_channel_allowed(&self, channel_id: u64) -> bool {
@@ -95,12 +121,9 @@ impl Starboard {
         !has_already_been_added
     }
 
-    pub async fn reply(
-        &self,
-        ctx: &Context,
-        message: &Message,
-        reaction_type: &ReactionType,
-    ) -> Result<()> {
+    pub async fn reply(&self, ctx: &Context, message: &Message, reaction: &Reaction) -> Result<()> {
+        let reaction_type = &reaction.emoji;
+
         self.recently_added_messages.lock().insert(message.id);
 
         let reply = CreateMessage::new();
