@@ -16,6 +16,7 @@ pub async fn mod_abuse(
     ctx: PoiseContext<'_>,
     #[description = "Target of abuse"] target: User,
     #[description = "The amount of time to time target out, like '1h' or '3m'"] time_text: String,
+    #[description = "Optional reason for the timeout"] reason: Option<String>,
 ) -> Result<()> {
     if time_text.len() > 20 {
         return ctx
@@ -59,12 +60,19 @@ pub async fn mod_abuse(
         return Ok(());
     };
 
+    let reason = if let Some(reason) = reason {
+        format!(" because \"{}\"", reason)
+    } else {
+        String::new()
+    };
+
     let reply_handle = ctx
         .say(format!(
-            "❗mod abuse alert❗\n{} has been sentenced to \"simply not\" for {} by {}",
+            "❗mod abuse alert❗\n\n{} has been sentenced to not participate by {}{}.\n\nThey will return {}.",  
             target.mention(),
+            ctx.author().mention(),
+            reason,
             timeout_end.discord_relative_timestamp(),
-            ctx.author().mention()
         ))
         .await?;
 
@@ -74,10 +82,11 @@ pub async fn mod_abuse(
         .edit(
             ctx,
             CreateReply::default().content(format!(
-                "❗mod abuse alert❗\n{} was shot for {} by {}",
+                "❗mod abuse alert❗\n\n{} was previously timed out for {} by {}{}.\n\nThey have since returned.", 
                 target.mention(),
                 time.human_duration(),
-                ctx.author().mention()
+                ctx.author().mention(),
+                reason
             )),
         )
         .await?;

@@ -49,6 +49,7 @@ ignored_channel_ids = [
 
 [[responses]]
 name = "too long bro"
+hit_rate = 0.3
 ruleset = '''
 r .{800,}
 '''
