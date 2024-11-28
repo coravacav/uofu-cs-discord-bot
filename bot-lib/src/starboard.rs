@@ -5,7 +5,7 @@ use poise::serenity_prelude::{
     GetMessages, Message, MessageId, Reaction, ReactionType,
 };
 use serde::Deserialize;
-use tokio::sync::{Mutex, MutexGuard};
+use tokio::sync::Mutex;
 
 #[derive(Debug, Deserialize)]
 pub struct Starboard {
@@ -26,12 +26,10 @@ impl Starboard {
         ctx: &Context,
         message: &Message,
         reaction: &Reaction,
-        lock: &MutexGuard<'_, AHashSet<MessageId>>,
     ) -> bool {
         self.is_allowed_reaction(reaction)
             && self.is_channel_allowed(message.channel_id.into())
             && self.enough_reactions(message, reaction)
-            && self.is_message_unseen(&message.id, lock)
             && self.is_channel_missing_reply(ctx, message).await
     }
 
@@ -68,14 +66,6 @@ impl Starboard {
         }
     }
 
-    fn is_message_unseen(
-        &self,
-        message_id: &MessageId,
-        lock: &MutexGuard<'_, AHashSet<MessageId>>,
-    ) -> bool {
-        !lock.contains(message_id)
-    }
-
     async fn is_channel_missing_reply(&self, ctx: &Context, message: &Message) -> bool {
         let message_link = message.link();
 
@@ -98,15 +88,7 @@ impl Starboard {
         !has_already_been_added
     }
 
-    pub async fn reply(
-        &self,
-        ctx: &Context,
-        message: &Message,
-        reaction: &Reaction,
-        lock: &mut MutexGuard<'_, AHashSet<MessageId>>,
-    ) -> Result<()> {
-        lock.insert(message.id);
-
+    pub async fn reply(&self, ctx: &Context, message: &Message, reaction: &Reaction) -> Result<()> {
         let reply = CreateMessage::new();
 
         let reply = match &reaction.emoji {

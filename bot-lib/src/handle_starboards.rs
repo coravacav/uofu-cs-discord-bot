@@ -15,16 +15,16 @@ pub async fn handle_starboards(
     let config = data.config.read().await;
 
     let futures = config.starboards.iter().map(|starboard| async {
-        let mut lock = starboard.recently_added_messages.lock().await;
+        let mut recent_messages = starboard.recently_added_messages.lock().await;
 
-        if starboard
-            .does_starboard_apply(ctx, message, reaction, &lock)
-            .await
-        {
-            starboard
-                .reply(ctx, message, reaction, &mut lock)
-                .await
-                .ok();
+        if recent_messages.contains(&message.id) {
+            return;
+        }
+
+        if starboard.does_starboard_apply(ctx, message, reaction).await {
+            recent_messages.insert(message.id);
+
+            starboard.reply(ctx, message, reaction).await.ok();
         }
     });
 
