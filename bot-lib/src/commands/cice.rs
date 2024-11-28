@@ -1,4 +1,4 @@
-use crate::{data::PoiseContext, SayThenDelete};
+use crate::{SayThenDelete, data::PoiseContext};
 use color_eyre::eyre::Result;
 use poise::serenity_prelude::Mentionable;
 use rand::Rng;

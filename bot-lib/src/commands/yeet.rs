@@ -3,6 +3,7 @@ use crate::{
     data::{PoiseContext, State},
     utils::GetRelativeTimestamp,
 };
+use ahash::{AHashMap, AHashSet};
 use bot_db::yeet::YeetLeaderboard;
 use bot_traits::ForwardRefToTracing;
 use chrono::{DateTime, Utc};
@@ -10,27 +11,52 @@ use color_eyre::eyre::{OptionExt, Result, bail};
 use itertools::Itertools;
 use parking_lot::Mutex;
 use poise::serenity_prelude::{
-    CacheHttp, ChannelId, Context, CreateMessage, EditMessage, GuildId, Mentionable, Message,
-    MessageBuilder, MessageId, ReactionType, User, UserId,
+    ChannelId, Context, CreateMessage, EditMessage, GuildId, Mentionable, Message, MessageBuilder,
+    MessageId, ReactionType, User, UserId,
 };
 use rand::Rng;
 use std::{
     cmp::Reverse,
-    collections::{HashMap, HashSet},
     num::Saturating,
     sync::{Arc, LazyLock},
     time::{Duration, Instant},
 };
-use tokio::time::{interval, sleep};
+use tokio::{
+    join,
+    time::{interval, sleep},
+};
 use tokio_stream::wrappers::IntervalStream;
 
 #[derive(Clone)]
-pub struct YeetData {
+pub struct YeetContext {
     yeeter: UserId,
     victim: UserId,
     guild_id: GuildId,
+    channel_id: ChannelId,
+    message_id: MessageId,
     start_time: Instant,
     is_yeet_amongus_easter_egg: bool,
+}
+
+impl YeetContext {
+    fn new(
+        yeeter: UserId,
+        victim: UserId,
+        guild_id: GuildId,
+        channel_id: ChannelId,
+        message_id: MessageId,
+        is_yeet_amongus_easter_egg: bool,
+    ) -> Arc<Self> {
+        Arc::new(Self {
+            yeeter,
+            victim,
+            guild_id,
+            channel_id,
+            message_id,
+            start_time: Instant::now(),
+            is_yeet_amongus_easter_egg,
+        })
+    }
 }
 
 pub const YEET_DEFAULT_OPPORTUNITIES: Saturating<usize> = Saturating(3);
@@ -40,17 +66,17 @@ pub const YEET_YES_REACTION: char = '✅';
 pub const YEET_DURATION_SECONDS: u64 = 300;
 pub const YEET_REFRESH_CHARGE_SECONDS: u64 = 3600;
 pub const YEET_VOTING_SECONDS: u64 = 90;
-pub const YEET_PARRY_SECONDS: u64 = 3;
+pub const YEET_PARRY_SECONDS: u64 = 5;
 pub const YEET_PARRY_COOLDOWN_SECONDS: u64 = 60;
 
-pub(crate) static YEET_MAP: LazyLock<Mutex<HashMap<MessageId, YeetData>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
-pub(crate) static YEET_STARBOARD_EXCLUSIONS: LazyLock<Mutex<HashSet<MessageId>>> =
-    LazyLock::new(|| Mutex::new(HashSet::new()));
+pub(crate) static YEET_MAP: LazyLock<Mutex<AHashMap<MessageId, Arc<YeetContext>>>> =
+    LazyLock::new(|| Mutex::new(AHashMap::new()));
+pub(crate) static YEET_STARBOARD_EXCLUSIONS: LazyLock<Mutex<AHashSet<MessageId>>> =
+    LazyLock::new(|| Mutex::new(AHashSet::new()));
 pub(crate) static YEET_OPPORTUNITIES: LazyLock<Mutex<Saturating<usize>>> =
     LazyLock::new(|| Mutex::new(YEET_DEFAULT_OPPORTUNITIES));
-pub(crate) static YEET_PARRY_MAP: LazyLock<Mutex<HashMap<UserId, (Instant, u64)>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
+pub(crate) static YEET_PARRY_MAP: LazyLock<Mutex<AHashMap<UserId, (Instant, u64)>>> =
+    LazyLock::new(|| Mutex::new(AHashMap::new()));
 
 fn has_yeet_opportunities() -> bool {
     let mut yeet_opportunities = YEET_OPPORTUNITIES.lock();
@@ -70,36 +96,49 @@ fn create_yeet_message(
     channel_id: ChannelId,
     is_yeet_amongus_easter_egg: bool,
 ) -> Result<CreateMessage> {
-    if is_yeet_amongus_easter_egg {
-        create_yeet_message_easter_egg(yeeter, victim, ctx, channel_id)
-    } else {
-        create_yeet_message_basic(yeeter, victim)
-    }
-}
+    let time = (chrono::Utc::now() + Duration::from_secs(YEET_VOTING_SECONDS))
+        .discord_relative_timestamp();
 
-fn create_yeet_message_basic(yeeter: &User, victim: &User) -> Result<CreateMessage> {
+    let message_content = if is_yeet_amongus_easter_egg {
+        let ctx = ctx.clone();
+        tokio::spawn(async move {
+            meeting_message(ctx, channel_id).await.ok();
+        });
+
+        MessageBuilder::new()
+            .push("Is ")
+            .mention(victim)
+            .push("the impostor?\n")
+            .push(format!(
+                "Or, vote {} to yeet the author: ||",
+                YEET_NO_REACTION
+            ))
+            .mention(yeeter)
+            .push("||\n")
+            .push("Otherwise, this will be deleted ")
+            .push(time)
+            .build()
+    } else {
+        MessageBuilder::new()
+            .push("Do you want to yeet ")
+            .mention(victim)
+            .push(format!(
+                "? ({} {}'s needed)\n",
+                YEET_REQUIRED_REACTION_COUNT, YEET_YES_REACTION,
+            ))
+            .push(format!(
+                "Or, vote {} to yeet the author: ||",
+                YEET_NO_REACTION
+            ))
+            .mention(yeeter)
+            .push("||\n")
+            .push("Otherwise, this will be deleted ")
+            .push(time)
+            .build()
+    };
+
     Ok(CreateMessage::new()
-        .content(
-            MessageBuilder::new()
-                .push("Do you want to yeet ")
-                .mention(victim)
-                .push(format!(
-                    "? ({} {}'s needed)\n",
-                    YEET_REQUIRED_REACTION_COUNT, YEET_YES_REACTION,
-                ))
-                .push(format!(
-                    "Or, vote {} to yeet the author: ||",
-                    YEET_NO_REACTION
-                ))
-                .mention(yeeter)
-                .push("||\n")
-                .push("Otherwise, this will be deleted ")
-                .push(
-                    (chrono::Utc::now() + Duration::from_secs(YEET_VOTING_SECONDS))
-                        .discord_relative_timestamp(),
-                )
-                .build(),
-        )
+        .content(message_content)
         .reactions([YEET_YES_REACTION, YEET_NO_REACTION]))
 }
 
@@ -113,47 +152,13 @@ async fn meeting_message(ctx: Context, channel_id: ChannelId) -> Result<()> {
         )
         .await?;
 
-    tokio::time::sleep(Duration::from_secs(5)).await;
+    sleep(Duration::from_secs(5)).await;
 
     message.delete(ctx).await?;
 
     Ok(())
 }
 
-fn create_yeet_message_easter_egg(
-    yeeter: &User,
-    victim: &User,
-    ctx: &Context,
-    channel_id: ChannelId,
-) -> Result<CreateMessage> {
-    let ctx = ctx.clone();
-    tokio::spawn(async move {
-        meeting_message(ctx, channel_id).await.ok();
-    });
-
-    Ok(CreateMessage::new()
-        .content(
-            MessageBuilder::new()
-                .push("Is ")
-                .mention(victim)
-                .push("the impostor?\n")
-                .push(format!(
-                    "Or, vote {} to yeet the author: ||",
-                    YEET_NO_REACTION
-                ))
-                .mention(yeeter)
-                .push("||\n")
-                .push("Otherwise, this will be deleted ")
-                .push(
-                    (chrono::Utc::now() + Duration::from_secs(YEET_VOTING_SECONDS))
-                        .discord_relative_timestamp(),
-                )
-                .build(),
-        )
-        .reactions([YEET_YES_REACTION, YEET_NO_REACTION]))
-}
-
-#[tracing::instrument(level = "trace", skip(ctx, guild_id))]
 pub async fn can_yeet(ctx: PoiseContext<'_>, victim: &User, guild_id: GuildId) -> Result<bool> {
     let react_role_id = ctx.data().config.read().await.ids.bot_react_role_id;
 
@@ -196,13 +201,17 @@ pub async fn yeet(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
         bail!("Couldn't send message announcing yeeting");
     };
 
-    YEET_MAP.lock().insert(msg.id, YeetData {
-        yeeter: yeeter.id,
-        victim: victim.id,
-        guild_id,
-        start_time: Instant::now(),
-        is_yeet_amongus_easter_egg,
-    });
+    YEET_MAP.lock().insert(
+        msg.id,
+        YeetContext::new(
+            yeeter.id,
+            victim.id,
+            guild_id,
+            channel_id,
+            msg.id,
+            is_yeet_amongus_easter_egg,
+        ),
+    );
 
     YEET_STARBOARD_EXCLUSIONS.lock().insert(msg.id);
 
@@ -211,17 +220,22 @@ pub async fn yeet(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
     sleep(Duration::from_secs(YEET_VOTING_SECONDS)).await;
 
     if YEET_MAP.lock().remove(&msg.id).is_some() {
-        msg.delete(ctx).await.ok();
-    }
+        tokio::spawn({
+            let ctx = ctx.serenity_context().clone();
+            async move { msg.delete(ctx).await }
+        });
 
-    if is_yeet_amongus_easter_egg {
-        easter_egg_failure(ctx, channel_id).await.ok();
+        if is_yeet_amongus_easter_egg {
+            easter_egg_failure(ctx.serenity_context(), channel_id)
+                .await
+                .ok();
+        }
     }
 
     Ok(())
 }
 
-async fn easter_egg_failure(ctx: impl CacheHttp, channel_id: ChannelId) -> Result<()> {
+async fn easter_egg_failure(ctx: &Context, channel_id: ChannelId) -> Result<()> {
     channel_id
     .send_message(
         ctx,
@@ -248,14 +262,15 @@ pub async fn update_interval() {
 }
 
 async fn get_unique_non_kingfisher_voters(
-    ctx: &Context,
-    message: &Message,
+    ctx: Context,
+    yeet_context: &YeetContext,
     reaction: impl Into<ReactionType>,
 ) -> Result<Arc<[UserId]>> {
     let kingfisher_id = ctx.cache.current_user().id;
 
-    Ok(message
-        .reaction_users(ctx, reaction, None, None)
+    Ok(yeet_context
+        .channel_id
+        .reaction_users(ctx, yeet_context.message_id, reaction, None, None)
         .await?
         .into_iter()
         .filter(|user| user.id != kingfisher_id)
@@ -265,15 +280,15 @@ async fn get_unique_non_kingfisher_voters(
 
 async fn fail_to_yeet_after_vote(
     ctx: Context,
-    channel_id: ChannelId,
-    is_yeet_amongus_easter_egg: bool,
+    yeet_context: &YeetContext,
     shooters: &[UserId],
     target: &UserId,
 ) -> Result<()> {
-    if is_yeet_amongus_easter_egg {
-        easter_egg_failure(ctx, channel_id).await?;
+    if yeet_context.is_yeet_amongus_easter_egg {
+        easter_egg_failure(&ctx, yeet_context.channel_id).await?;
     } else {
-        channel_id
+        yeet_context
+            .channel_id
             .send_message(
                 ctx,
                 CreateMessage::new().content(format!(
@@ -288,18 +303,17 @@ async fn fail_to_yeet_after_vote(
     Ok(())
 }
 
-#[tracing::instrument(level = "trace", skip(ctx, is_yeet_amongus_easter_egg, timeout_end))]
 async fn successful_yeet(
     ctx: Context,
-    channel_id: ChannelId,
-    is_yeet_amongus_easter_egg: bool,
+    yeet_context: &YeetContext,
     shooters: &[UserId],
     target: &UserId,
     duration: Duration,
     timeout_end: DateTime<Utc>,
 ) -> Result<()> {
-    if is_yeet_amongus_easter_egg {
-        channel_id
+    if yeet_context.is_yeet_amongus_easter_egg {
+        yeet_context
+            .channel_id
             .send_message(
                 &ctx,
                 CreateMessage::new()
@@ -308,13 +322,14 @@ async fn successful_yeet(
             .await?;
     }
 
-    let verb = if is_yeet_amongus_easter_egg {
+    let verb = if yeet_context.is_yeet_amongus_easter_egg {
         "ejected"
     } else {
         "yeeted"
     };
 
-    let mut message_handle = channel_id
+    let mut message_handle = yeet_context
+        .channel_id
         .send_message(
             &ctx,
             CreateMessage::new().content(format!(
@@ -348,18 +363,20 @@ async fn successful_yeet(
     Ok(())
 }
 
-fn should_yeet_someone(message: &Message) -> Option<(YeetData, bool, bool)> {
+fn should_yeet_someone(message: &Message) -> Option<(Arc<YeetContext>, bool, bool)> {
     let mut did_yay = 0;
     let mut did_nay = 0;
 
     for reaction in &message.reactions {
         if let ReactionType::Unicode(emoji) = &reaction.reaction_type {
-            let char = emoji.chars().next().unwrap_or(' ');
-
-            if char == YEET_YES_REACTION {
-                did_yay += reaction.count;
-            } else if char == YEET_NO_REACTION {
-                did_nay += reaction.count;
+            match emoji.chars().next() {
+                Some(YEET_YES_REACTION) => {
+                    did_yay += reaction.count;
+                }
+                Some(YEET_NO_REACTION) => {
+                    did_nay += reaction.count;
+                }
+                _ => {}
             }
         }
     }
@@ -375,123 +392,145 @@ fn should_yeet_someone(message: &Message) -> Option<(YeetData, bool, bool)> {
 
 // Handle a reaction
 pub async fn handle_yeeting(ctx: &Context, data: State, message: &Message) -> Result<()> {
-    let Some((yeet_data, did_yay, did_nay)) = should_yeet_someone(message) else {
+    let Some((yeet_context, did_yay, did_nay)) = should_yeet_someone(message) else {
         return Ok(());
     };
 
-    let duration = yeet_data.start_time.elapsed();
+    let duration = yeet_context.start_time.elapsed();
     let current_instant = Instant::now();
     let parried = YEET_PARRY_MAP
         .lock()
-        .remove(&yeet_data.victim)
+        .remove(&yeet_context.victim)
         .map(|(parry_time, attempts)| {
             (current_instant - parry_time).as_secs() < YEET_PARRY_SECONDS && attempts == 0
         })
         .unwrap_or(false);
 
     // This are costly api calls.
-    let yay = get_unique_non_kingfisher_voters(ctx, message, YEET_YES_REACTION).await?;
-    let nay = get_unique_non_kingfisher_voters(ctx, message, YEET_NO_REACTION).await?;
 
-    let parried = !yay.iter().any(|user| *user == yeet_data.victim) && parried;
+    let (yay, nay) = join!(
+        tokio::spawn({
+            let ctx = ctx.clone();
+            let yeet_context = yeet_context.clone();
+            async move {
+                get_unique_non_kingfisher_voters(ctx, &yeet_context, YEET_YES_REACTION)
+                    .await
+                    .trace_err_ok()
+            }
+        }),
+        tokio::spawn({
+            let ctx = ctx.clone();
+            let yeet_context = yeet_context.clone();
+            async move {
+                get_unique_non_kingfisher_voters(ctx, &yeet_context, YEET_NO_REACTION)
+                    .await
+                    .trace_err_ok()
+            }
+        })
+    );
+
+    let (Ok(Some(yay)), Ok(Some(nay))) = (yay, nay) else {
+        tracing::error!("Yeet failure in counting? This should never happen");
+        return Ok(());
+    };
+
+    let parried = !yay.iter().any(|user| *user == yeet_context.victim) && parried;
 
     // Delete the voting message
     let channel_id = message.channel_id;
-    let guild_id = yeet_data.guild_id;
+    let guild_id = yeet_context.guild_id;
     let message_id = message.id;
-    let ctx_clone = ctx.clone();
-    tokio::spawn(async move {
-        channel_id.delete_message(ctx_clone, message_id).await.ok();
+    tokio::spawn({
+        let ctx = ctx.clone();
+        async move {
+            channel_id.delete_message(ctx, message_id).await.ok();
+        }
     });
 
     let (targets, shooters): (&[UserId], Arc<[UserId]>) = match (did_yay, did_nay, parried) {
         (true, true, _) => {
-            let ctx_clone = ctx.clone();
-            tokio::spawn(async move {
-                channel_id
-                .send_message(
-                    ctx_clone,
-                    CreateMessage::new()
-                        .content("Whoops. Discord decided to be bad and didn't allow KingFisher to yeet only one. How about two? :)"),
-                )
-                .await
-                .ok();
-            });
+            tokio::spawn({
+                let ctx = ctx.clone();
 
-            (
-                &[yeet_data.victim, yeet_data.yeeter],
-                yay.iter().chain(nay.iter()).unique().cloned().collect(),
-            )
-        }
-        (true, false, false) => (&[yeet_data.victim], yay),
-        (true, false, true) => {
-            let ctx_clone = ctx.clone();
-            tokio::spawn(async move {
-                channel_id
-                    .send_message(
-                        ctx_clone,
-                        CreateMessage::new().content(format!(
-                            "{} has successfully parried the yeet! Take that {}!",
-                            yeet_data.victim.mention(),
-                            yeet_data.yeeter.mention()
-                        )),
+                async move {
+                    channel_id.send_message(
+                        ctx,
+                        CreateMessage::new().content("Whoops. Discord decided to be bad and didn't allow KingFisher to yeet only one. How about two? :)")
                     )
                     .await
                     .ok();
+                }
             });
 
             (
-                &[yeet_data.yeeter],
+                &[yeet_context.victim, yeet_context.yeeter],
+                yay.iter().chain(nay.iter()).unique().cloned().collect(),
+            )
+        }
+        (true, false, false) => (&[yeet_context.victim], yay),
+        (true, false, true) => {
+            tokio::spawn({
+                let ctx = ctx.clone();
+                let victim = yeet_context.victim.mention();
+                let yeeter = yeet_context.yeeter.mention();
+                async move {
+                    channel_id
+                        .send_message(
+                            ctx,
+                            CreateMessage::new().content(format!(
+                                "{} has successfully parried the yeet! Take that {}!",
+                                victim, yeeter
+                            )),
+                        )
+                        .await
+                        .ok();
+                }
+            });
+
+            (
+                &[yeet_context.yeeter],
                 nay.iter()
                     .cloned()
-                    .chain(Some(yeet_data.victim))
+                    .chain(Some(yeet_context.victim))
                     .unique()
                     .collect(),
             )
         }
-        (false, true, _) => (&[yeet_data.yeeter], nay),
+        (false, true, _) => (&[yeet_context.yeeter], nay),
         (false, false, _) => {
-            tracing::error!("Yeet failure in counting? This should never happen");
-            return Ok(());
+            bail!("Yeet failure in counting? This should never happen");
         }
     };
 
     save_to_yeet_leaderboard(data, targets).trace_err_ok();
 
     for &target in targets {
-        let ctx_clone = ctx.clone();
         let shooters = shooters.clone();
-        tokio::spawn(async move {
-            match guild_id
-                .timeout(
-                    &ctx_clone,
-                    &target,
-                    Duration::from_secs(YEET_DURATION_SECONDS),
-                )
-                .await
-            {
-                Ok((_, timeout_end)) => successful_yeet(
-                    ctx_clone,
-                    channel_id,
-                    yeet_data.is_yeet_amongus_easter_egg,
-                    &shooters,
-                    &target,
-                    duration,
-                    timeout_end,
-                )
-                .await
-                .trace_err_ok(),
 
-                _ => fail_to_yeet_after_vote(
-                    ctx_clone,
-                    channel_id,
-                    yeet_data.is_yeet_amongus_easter_egg,
-                    &shooters,
-                    &target,
-                )
-                .await
-                .trace_err_ok(),
-            };
+        tokio::spawn({
+            let ctx = ctx.clone();
+            let yeet_context = yeet_context.clone();
+            async move {
+                match guild_id
+                    .timeout(&ctx, &target, Duration::from_secs(YEET_DURATION_SECONDS))
+                    .await
+                {
+                    Ok((_, timeout_end)) => successful_yeet(
+                        ctx,
+                        &yeet_context,
+                        &shooters,
+                        &target,
+                        duration,
+                        timeout_end,
+                    )
+                    .await
+                    .trace_err_ok(),
+
+                    _ => fail_to_yeet_after_vote(ctx, &yeet_context, &shooters, &target)
+                        .await
+                        .trace_err_ok(),
+                };
+            }
         });
     }
 
@@ -500,7 +539,7 @@ pub async fn handle_yeeting(ctx: &Context, data: State, message: &Message) -> Re
 
 fn save_to_yeet_leaderboard(data: State, targets: &[UserId]) -> Result<()> {
     for &target in targets {
-        YeetLeaderboard::new(&data.db)?.increment(target)?;
+        YeetLeaderboard::connect(&data.db)?.increment(target)?;
     }
 
     Ok(())
@@ -511,7 +550,7 @@ fn save_to_yeet_leaderboard(data: State, targets: &[UserId]) -> Result<()> {
 pub async fn yeet_leaderboard(ctx: PoiseContext<'_>) -> Result<()> {
     let mut message_text = String::from("### Yeet leaderboard:\n");
 
-    let yeet_leaderboard = YeetLeaderboard::new(&ctx.data().db)?;
+    let yeet_leaderboard = YeetLeaderboard::connect(&ctx.data().db)?;
 
     for (user_id, count) in yeet_leaderboard
         .iter()
@@ -525,7 +564,7 @@ pub async fn yeet_leaderboard(ctx: PoiseContext<'_>) -> Result<()> {
     Ok(())
 }
 
-/// Parry a yeet for 3 seconds.
+/// Parry a yeet for 5 seconds.
 /// If you do it more than once a minute, it will fail :)
 #[poise::command(slash_command, ephemeral = true)]
 pub async fn parry(ctx: PoiseContext<'_>) -> Result<()> {
@@ -544,7 +583,7 @@ pub async fn parry(ctx: PoiseContext<'_>) -> Result<()> {
         })
         .or_insert((Instant::now(), 0));
 
-    ctx.say("You're now parrying for the next 3 seconds")
+    ctx.say("You're now parrying for the next 5 seconds")
         .await?;
 
     Ok(())

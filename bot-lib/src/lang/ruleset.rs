@@ -1,8 +1,8 @@
 use super::{
-    rule::{parse_rules, Rule},
+    rule::{Rule, parse_rules},
     ruleset_combinator::create_matcher_regex,
 };
-use color_eyre::eyre::{bail, ContextCompat, Result};
+use color_eyre::eyre::{ContextCompat, Result, bail};
 use regex::{Regex, RegexSet};
 
 #[derive(Clone, Debug)]
@@ -131,11 +131,7 @@ impl Ruleset {
             return multi_rules.iter().any(|multi_rule| {
                 multi_rule.iter().all(|RegexAndNegated(regex, negated)| {
                     let res = regex.is_match(input);
-                    if *negated {
-                        !res
-                    } else {
-                        res
-                    }
+                    if *negated { !res } else { res }
                 })
             });
         }

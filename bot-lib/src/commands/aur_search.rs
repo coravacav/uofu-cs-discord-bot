@@ -1,7 +1,7 @@
 use crate::data::PoiseContext;
 use color_eyre::eyre::Result;
 use itertools::Itertools;
-use poise::{serenity_prelude as serenity, CreateReply};
+use poise::{CreateReply, serenity_prelude as serenity};
 use raur::Raur;
 use std::cmp::Reverse;
 

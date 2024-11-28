@@ -78,20 +78,19 @@ impl BankDb {
         Ok(account.map(|account| account.changes.into_iter()))
     }
 
-    pub fn get_global_rankings(&self) -> Result<impl Iterator<Item = (UserId, BankAccount)> + use<>> {
+    pub fn get_global_rankings(
+        &self,
+    ) -> Result<impl Iterator<Item = (UserId, BankAccount)> + use<>> {
         Ok(self
             .0
             .typed_iter::<u64, BankAccount>()?
             .map(|(user_id, account)| (user_id, account.balance))
             .sorted_by_key(|(_, balance)| Reverse(*balance))
             .map(|(user_id, balance)| {
-                (
-                    UserId::from(user_id),
-                    BankAccount {
-                        balance,
-                        ..Default::default()
-                    },
-                )
+                (UserId::from(user_id), BankAccount {
+                    balance,
+                    ..Default::default()
+                })
             }))
     }
 }

@@ -3,7 +3,7 @@ pub mod yeet;
 
 use bot_traits::ForwardRefToTracing;
 use color_eyre::eyre::{Context, Result};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use sled::{Db, Tree};
 use std::fmt::Debug;
 

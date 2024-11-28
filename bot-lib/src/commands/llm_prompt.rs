@@ -1,9 +1,9 @@
 use crate::{data::PoiseContext, utils::SendReplyEphemeral};
-use color_eyre::eyre::{bail, OptionExt, Result};
+use color_eyre::eyre::{OptionExt, Result, bail};
 use parking_lot::Mutex;
 use poise::{
-    serenity_prelude::{ChannelId, CreateEmbed, UserId},
     CreateReply,
+    serenity_prelude::{ChannelId, CreateEmbed, UserId},
 };
 use std::{
     collections::HashMap,

@@ -30,8 +30,8 @@ impl RawAppState {
         let db = KingFisherDb::new()?;
 
         use notify::{
-            event::{AccessKind, AccessMode},
             Event, EventKind, RecursiveMode, Watcher,
+            event::{AccessKind, AccessMode},
         };
 
         let config_clone = Arc::clone(&config);

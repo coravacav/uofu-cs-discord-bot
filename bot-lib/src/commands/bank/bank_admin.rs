@@ -1,6 +1,6 @@
 use super::build_history_message;
 use crate::data::PoiseContext;
-use crate::{commands::is_stefan, SayThenDelete};
+use crate::{SayThenDelete, commands::is_stefan};
 use bot_db::bank::BankDb;
 use color_eyre::eyre::Result;
 use poise::serenity_prelude::{Mentionable, User};

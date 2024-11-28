@@ -1,8 +1,8 @@
-use super::case::{parse_all_cases, Case};
+use super::case::{Case, parse_all_cases};
 use bot_traits::ForwardRefToTracing;
 use nom::{
-    bytes::complete::tag, character::complete::multispace1, multi::separated_list1,
-    sequence::tuple, Finish, IResult,
+    Finish, IResult, bytes::complete::tag, character::complete::multispace1,
+    multi::separated_list1, sequence::tuple,
 };
 
 /// A rule is a single case of success for a given ruleset

@@ -1,11 +1,11 @@
 use ahash::AHashSet;
 use color_eyre::eyre::Result;
-use parking_lot::Mutex;
 use poise::serenity_prelude::{
     Channel, ChannelId, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage,
     GetMessages, Message, MessageId, Reaction, ReactionType,
 };
 use serde::Deserialize;
+use tokio::sync::{Mutex, MutexGuard};
 
 #[derive(Debug, Deserialize)]
 pub struct Starboard {
@@ -26,11 +26,12 @@ impl Starboard {
         ctx: &Context,
         message: &Message,
         reaction: &Reaction,
+        lock: &MutexGuard<'_, AHashSet<MessageId>>,
     ) -> bool {
         self.is_allowed_reaction(reaction)
             && self.is_channel_allowed(message.channel_id.into())
             && self.enough_reactions(message, reaction)
-            && self.is_message_unseen(&message.id)
+            && self.is_message_unseen(&message.id, lock)
             && self.is_channel_missing_reply(ctx, message).await
     }
 
@@ -67,8 +68,12 @@ impl Starboard {
         }
     }
 
-    fn is_message_unseen(&self, message_id: &MessageId) -> bool {
-        !self.recently_added_messages.lock().contains(message_id)
+    fn is_message_unseen(
+        &self,
+        message_id: &MessageId,
+        lock: &MutexGuard<'_, AHashSet<MessageId>>,
+    ) -> bool {
+        !lock.contains(message_id)
     }
 
     async fn is_channel_missing_reply(&self, ctx: &Context, message: &Message) -> bool {
@@ -93,14 +98,18 @@ impl Starboard {
         !has_already_been_added
     }
 
-    pub async fn reply(&self, ctx: &Context, message: &Message, reaction: &Reaction) -> Result<()> {
-        let reaction_type = &reaction.emoji;
-
-        self.recently_added_messages.lock().insert(message.id);
+    pub async fn reply(
+        &self,
+        ctx: &Context,
+        message: &Message,
+        reaction: &Reaction,
+        lock: &mut MutexGuard<'_, AHashSet<MessageId>>,
+    ) -> Result<()> {
+        lock.insert(message.id);
 
         let reply = CreateMessage::new();
 
-        let reply = match reaction_type {
+        let reply = match &reaction.emoji {
             ReactionType::Unicode(emoji) => reply.content(emoji),
             ReactionType::Custom { animated, id, .. } => reply.add_file(
                 CreateAttachment::url(

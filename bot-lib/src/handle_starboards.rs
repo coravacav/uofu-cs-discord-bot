@@ -15,8 +15,16 @@ pub async fn handle_starboards(
     let config = data.config.read().await;
 
     let futures = config.starboards.iter().map(|starboard| async {
-        if starboard.does_starboard_apply(ctx, message, reaction).await {
-            starboard.reply(ctx, message, reaction).await.ok();
+        let mut lock = starboard.recently_added_messages.lock().await;
+
+        if starboard
+            .does_starboard_apply(ctx, message, reaction, &lock)
+            .await
+        {
+            starboard
+                .reply(ctx, message, reaction, &mut lock)
+                .await
+                .ok();
         }
     });
 
@@ -26,12 +34,8 @@ pub async fn handle_starboards(
 }
 
 fn is_message_too_recent(message_timestamp: &Timestamp) -> bool {
-    const ONE_WEEK: chrono::TimeDelta = match chrono::TimeDelta::try_weeks(1) {
-        Some(time_check) => time_check,
-        None => unreachable!(),
-    };
-
-    message_timestamp.unix_timestamp() < (chrono::Utc::now() - ONE_WEEK).timestamp()
+    message_timestamp.unix_timestamp()
+        < (chrono::Utc::now() - chrono::TimeDelta::weeks(1)).timestamp()
 }
 
 fn is_message_yeet(message: &Message) -> bool {

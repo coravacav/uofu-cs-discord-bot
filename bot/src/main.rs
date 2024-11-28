@@ -134,6 +134,8 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
+    tracing::info!("Starting bot");
+
     client
         .wrap_err("Failed to start bot (serenity)")?
         .start()

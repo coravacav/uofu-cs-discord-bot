@@ -1,14 +1,14 @@
 use super::build_history_message;
-use crate::{data::PoiseContext, SayThenDelete};
+use crate::{SayThenDelete, data::PoiseContext};
 use bot_db::bank::BankDb;
 use color_eyre::eyre::Result;
 use parking_lot::Mutex;
 use poise::{
+    CreateReply,
     serenity_prelude::{
         CreateActionRow, CreateButton, CreateInteractionResponse, CreateInteractionResponseMessage,
         UserId,
     },
-    CreateReply,
 };
 use rand::Rng;
 use std::{
@@ -180,10 +180,9 @@ pub async fn casino(ctx: PoiseContext<'_>) -> Result<()> {
         .send(
             CreateReply::default()
                 .content("Pick a game")
-                .components(vec![CreateActionRow::Buttons(vec![CreateButton::new(
-                    "Test button",
-                )
-                .label("WOWIE")])]),
+                .components(vec![CreateActionRow::Buttons(vec![
+                    CreateButton::new("Test button").label("WOWIE"),
+                ])]),
         )
         .await?;
 
@@ -201,10 +200,9 @@ pub async fn casino(ctx: PoiseContext<'_>) -> Result<()> {
                     CreateInteractionResponse::UpdateMessage(
                         CreateInteractionResponseMessage::new()
                             .content("Done")
-                            .components(vec![CreateActionRow::Buttons(vec![CreateButton::new(
-                                "IT WORKED",
-                            )
-                            .label("IT WORKED")])]),
+                            .components(vec![CreateActionRow::Buttons(vec![
+                                CreateButton::new("IT WORKED").label("IT WORKED"),
+                            ])]),
                     ),
                 )
                 .await?;

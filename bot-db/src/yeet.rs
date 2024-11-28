@@ -6,7 +6,7 @@ use sled::Tree;
 pub struct YeetLeaderboard(Tree);
 
 impl YeetLeaderboard {
-    pub fn new(db: &KingFisherDb) -> Result<Self> {
+    pub fn connect(db: &KingFisherDb) -> Result<Self> {
         let db = db.open_tree("yeet_leaderboard")?;
 
         fn increment(

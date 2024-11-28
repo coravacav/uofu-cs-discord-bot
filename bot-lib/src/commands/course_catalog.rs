@@ -1,10 +1,10 @@
 use crate::{
-    courses::{get_course, Course, COURSES},
+    courses::{COURSES, Course, get_course},
     data::PoiseContext,
 };
 use color_eyre::eyre::Result;
 use itertools::Itertools;
-use poise::{serenity_prelude as serenity, CreateReply};
+use poise::{CreateReply, serenity_prelude as serenity};
 
 #[poise::command(slash_command)]
 pub async fn catalog(ctx: PoiseContext<'_>, course_id: String) -> Result<()> {

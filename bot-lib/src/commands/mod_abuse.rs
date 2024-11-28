@@ -6,8 +6,8 @@ use color_eyre::eyre::{ContextCompat, Result};
 use human_repr::HumanDuration;
 use humantime::parse_duration;
 use poise::{
-    serenity_prelude::{EditMember, Mentionable, User},
     CreateReply,
+    serenity_prelude::{EditMember, Mentionable, User},
 };
 use rand::seq::SliceRandom;
 use std::time::Duration;
