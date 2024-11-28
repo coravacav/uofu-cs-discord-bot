@@ -20,6 +20,17 @@ pub(crate) static COURSES: LazyLock<RwLock<HashMap<String, Course>>> = LazyLock:
         courses.insert((*course.course_id).clone(), course);
     }
 
+    // Make a fake CS 7777 "showering" course
+
+    courses.insert("CS7777".to_string(), Course {
+        course_id: "CS7777".to_string().into(),
+        long_name: "Intro to Showering".to_string(),
+        description: "This semester, we're tackling the age-old problem: the unwashed masses of Comp Sci. From the basics of soap application to advanced techniques for hiding B.O., we'll cover it all. By the end of this course, you'll be able to shower without needing a Hazmat suit. And honestly, that's all we can ask for. Bonus points if you make it through the semester without forgetting your toothbrush.".to_string(),
+        url_override: Some("https://heeeeeeeey.com/".to_string()),
+        course_group_id: None,
+        are_there_duplicates: false,
+    });
+
     let elapsed = instant.elapsed();
 
     tracing::info!(
@@ -55,7 +66,9 @@ pub struct Course {
     /// The description of the course
     pub description: String,
     /// Some arbitrary number the U gave
-    pub course_group_id: String,
+    pub course_group_id: Option<String>,
+    /// URL override :)
+    pub url_override: Option<String>,
     /// Whether or not there are duplicates. The U has a bad API.
     #[serde(skip)]
     pub are_there_duplicates: bool,

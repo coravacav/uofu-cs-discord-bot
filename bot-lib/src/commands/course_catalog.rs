@@ -1,6 +1,7 @@
 use crate::{
     courses::{COURSES, Course, get_course},
     data::PoiseContext,
+    utils::SendReplyEphemeral,
 };
 use color_eyre::eyre::Result;
 use itertools::Itertools;
@@ -15,7 +16,8 @@ pub async fn catalog(ctx: PoiseContext<'_>, course_id: String) -> Result<()> {
         .collect::<String>();
 
     if course_id.is_empty() {
-        ctx.reply("Please provide a valid course id").await?;
+        ctx.reply_ephemeral("Please provide a valid course id")
+            .await?;
         return Ok(());
     }
 
@@ -24,7 +26,7 @@ pub async fn catalog(ctx: PoiseContext<'_>, course_id: String) -> Result<()> {
     }
 
     let Some(course) = get_course(&course_id) else {
-        ctx.reply(format!("Could not find a course with id {}", course_id))
+        ctx.reply_ephemeral(format!("Could not find a course with id {}", course_id))
             .await?;
         return Ok(());
     };
@@ -49,10 +51,14 @@ fn get_course_reply(course: &Course) -> CreateReply {
                     }
                 ))
                 .description(course.description.clone())
-                .url(format!(
-                    "https://catalog.utah.edu/courses/{}",
-                    course.course_group_id
-                )),
+                .url(if let Some(url) = &course.url_override {
+                    url.clone()
+                } else {
+                    format!(
+                        "https://catalog.utah.edu/courses/{}",
+                        course.course_group_id.clone().unwrap_or_default()
+                    )
+                }),
         )
         .reply(true)
 }

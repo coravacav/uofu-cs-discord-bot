@@ -1,15 +1,10 @@
 use crate::{config::ResponseKind, data::State};
-use color_eyre::eyre::{OptionExt, Result};
+use color_eyre::eyre::{OptionExt, Result, bail};
 use poise::serenity_prelude::{Context, Message};
 use rand::seq::SliceRandom;
 
-#[tracing::instrument(level = "trace", skip(ctx, data))]
 pub async fn text_detection(ctx: &Context, data: State, message: &Message) -> Result<()> {
-    if message.author == **ctx.cache.current_user() {
-        return Ok(());
-    }
-
-    if message.author.bot {
+    if message.author == **ctx.cache.current_user() || message.author.bot {
         return Ok(());
     }
 
@@ -25,14 +20,6 @@ pub async fn text_detection(ctx: &Context, data: State, message: &Message) -> Re
         .await?;
 
     if !author_has_role {
-        let author_name = &message.author.name;
-
-        tracing::event!(
-            tracing::Level::DEBUG,
-            "User {} doesn't have the bot react role",
-            author_name
-        );
-
         return Ok(());
     }
 
@@ -62,7 +49,9 @@ pub async fn text_detection(ctx: &Context, data: State, message: &Message) -> Re
 
                 message.reply(ctx, response).await?;
             }
-            ResponseKind::None => {}
+            ResponseKind::None => {
+                bail!("No response found for message");
+            }
         }
     };
 
