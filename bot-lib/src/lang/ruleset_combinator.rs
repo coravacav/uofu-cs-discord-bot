@@ -6,7 +6,7 @@
 use std::sync::Arc;
 
 use ahash::AHashMap;
-use color_eyre::eyre::{bail, Result};
+use color_eyre::eyre::{Result, bail};
 use regex::{Regex, RegexSet};
 
 use super::ruleset::{
@@ -140,7 +140,7 @@ impl RulesetCombinator {
         self.find_iter(input).next().is_some()
     }
 
-    pub fn find_iter<'a>(&'a self, input: &'a str) -> impl Iterator<Item = Name> + use<'a> {
+    pub fn find_iter<'a>(&'a self, input: &'a str) -> impl Iterator<Item = Name> {
         let positive_iter = self.single_positive_matcher.as_ref().and_then(|positive| {
             positive
                 .matches(input)
@@ -160,7 +160,7 @@ impl RulesetCombinator {
                     .find(|name| {
                         self.rulesets
                             .get(name)
-                            .map_or(false, |ruleset| ruleset.matches(input))
+                            .is_some_and(|ruleset| ruleset.matches(input))
                     })
             });
 
@@ -181,7 +181,7 @@ impl RulesetCombinator {
                     .find(|name| {
                         self.rulesets
                             .get(name)
-                            .map_or(false, |ruleset| ruleset.matches(input))
+                            .is_some_and(|ruleset| ruleset.matches(input))
                     })
             });
 

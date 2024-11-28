@@ -1,12 +1,12 @@
 use crate::{
+    MentionableExt, TimeoutExt,
     data::{PoiseContext, State},
     utils::GetRelativeTimestamp,
-    CloneableCtx, IntoCloneableCtx, MentionableExt, TimeoutExt,
 };
 use bot_db::yeet::YeetLeaderboard;
 use bot_traits::ForwardRefToTracing;
 use chrono::{DateTime, Utc};
-use color_eyre::eyre::{bail, OptionExt, Result};
+use color_eyre::eyre::{OptionExt, Result, bail};
 use itertools::Itertools;
 use parking_lot::Mutex;
 use poise::serenity_prelude::{
@@ -66,7 +66,7 @@ fn has_yeet_opportunities() -> bool {
 fn create_yeet_message(
     yeeter: &User,
     victim: &User,
-    ctx: CloneableCtx,
+    ctx: &Context,
     channel_id: ChannelId,
     is_yeet_amongus_easter_egg: bool,
 ) -> Result<CreateMessage> {
@@ -103,7 +103,7 @@ fn create_yeet_message_basic(yeeter: &User, victim: &User) -> Result<CreateMessa
         .reactions([YEET_YES_REACTION, YEET_NO_REACTION]))
 }
 
-async fn meeting_message(ctx: CloneableCtx, channel_id: ChannelId) -> Result<()> {
+async fn meeting_message(ctx: Context, channel_id: ChannelId) -> Result<()> {
     let message = channel_id
         .send_message(
             &ctx,
@@ -123,9 +123,10 @@ async fn meeting_message(ctx: CloneableCtx, channel_id: ChannelId) -> Result<()>
 fn create_yeet_message_easter_egg(
     yeeter: &User,
     victim: &User,
-    ctx: CloneableCtx,
+    ctx: &Context,
     channel_id: ChannelId,
 ) -> Result<CreateMessage> {
+    let ctx = ctx.clone();
     tokio::spawn(async move {
         meeting_message(ctx, channel_id).await.ok();
     });
@@ -185,7 +186,7 @@ pub async fn yeet(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
     let msg = create_yeet_message(
         yeeter,
         &victim,
-        (&ctx).into(),
+        ctx.serenity_context(),
         channel_id,
         is_yeet_amongus_easter_egg,
     )?;
@@ -195,16 +196,13 @@ pub async fn yeet(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
         bail!("Couldn't send message announcing yeeting");
     };
 
-    YEET_MAP.lock().insert(
-        msg.id,
-        YeetData {
-            yeeter: yeeter.id,
-            victim: victim.id,
-            guild_id,
-            start_time: Instant::now(),
-            is_yeet_amongus_easter_egg,
-        },
-    );
+    YEET_MAP.lock().insert(msg.id, YeetData {
+        yeeter: yeeter.id,
+        victim: victim.id,
+        guild_id,
+        start_time: Instant::now(),
+        is_yeet_amongus_easter_egg,
+    });
 
     YEET_STARBOARD_EXCLUSIONS.lock().insert(msg.id);
 
@@ -232,6 +230,7 @@ async fn easter_egg_failure(ctx: impl CacheHttp, channel_id: ChannelId) -> Resul
         ),
     )
     .await.ok();
+
     Ok(())
 }
 
@@ -265,7 +264,7 @@ async fn get_unique_non_kingfisher_voters(
 }
 
 async fn fail_to_yeet_after_vote(
-    ctx: CloneableCtx,
+    ctx: Context,
     channel_id: ChannelId,
     is_yeet_amongus_easter_egg: bool,
     shooters: &[UserId],
@@ -291,7 +290,7 @@ async fn fail_to_yeet_after_vote(
 
 #[tracing::instrument(level = "trace", skip(ctx, is_yeet_amongus_easter_egg, timeout_end))]
 async fn successful_yeet(
-    ctx: CloneableCtx,
+    ctx: Context,
     channel_id: ChannelId,
     is_yeet_amongus_easter_egg: bool,
     shooters: &[UserId],
@@ -397,22 +396,21 @@ pub async fn handle_yeeting(ctx: &Context, data: State, message: &Message) -> Re
     let parried = !yay.iter().any(|user| *user == yeet_data.victim) && parried;
 
     // Delete the voting message
-    let cloneable_ctx = ctx.get_cloneable_ctx();
     let channel_id = message.channel_id;
     let guild_id = yeet_data.guild_id;
     let message_id = message.id;
-    let http = cloneable_ctx.clone();
+    let ctx_clone = ctx.clone();
     tokio::spawn(async move {
-        channel_id.delete_message(http, message_id).await.ok();
+        channel_id.delete_message(ctx_clone, message_id).await.ok();
     });
 
     let (targets, shooters): (&[UserId], Arc<[UserId]>) = match (did_yay, did_nay, parried) {
         (true, true, _) => {
-            let http = cloneable_ctx.clone();
+            let ctx_clone = ctx.clone();
             tokio::spawn(async move {
                 channel_id
                 .send_message(
-                    http,
+                    ctx_clone,
                     CreateMessage::new()
                         .content("Whoops. Discord decided to be bad and didn't allow KingFisher to yeet only one. How about two? :)"),
                 )
@@ -427,11 +425,11 @@ pub async fn handle_yeeting(ctx: &Context, data: State, message: &Message) -> Re
         }
         (true, false, false) => (&[yeet_data.victim], yay),
         (true, false, true) => {
-            let http = cloneable_ctx.clone();
+            let ctx_clone = ctx.clone();
             tokio::spawn(async move {
                 channel_id
                     .send_message(
-                        http,
+                        ctx_clone,
                         CreateMessage::new().content(format!(
                             "{} has successfully parried the yeet! Take that {}!",
                             yeet_data.victim.mention(),
@@ -461,15 +459,19 @@ pub async fn handle_yeeting(ctx: &Context, data: State, message: &Message) -> Re
     save_to_yeet_leaderboard(data, targets).trace_err_ok();
 
     for &target in targets {
-        let ctx = ctx.get_cloneable_ctx();
+        let ctx_clone = ctx.clone();
         let shooters = shooters.clone();
         tokio::spawn(async move {
             match guild_id
-                .timeout(&ctx, &target, Duration::from_secs(YEET_DURATION_SECONDS))
+                .timeout(
+                    &ctx_clone,
+                    &target,
+                    Duration::from_secs(YEET_DURATION_SECONDS),
+                )
                 .await
             {
                 Ok((_, timeout_end)) => successful_yeet(
-                    ctx,
+                    ctx_clone,
                     channel_id,
                     yeet_data.is_yeet_amongus_easter_egg,
                     &shooters,
@@ -481,7 +483,7 @@ pub async fn handle_yeeting(ctx: &Context, data: State, message: &Message) -> Re
                 .trace_err_ok(),
 
                 _ => fail_to_yeet_after_vote(
-                    ctx,
+                    ctx_clone,
                     channel_id,
                     yeet_data.is_yeet_amongus_easter_egg,
                     &shooters,

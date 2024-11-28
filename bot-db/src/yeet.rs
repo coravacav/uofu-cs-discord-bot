@@ -44,7 +44,7 @@ impl YeetLeaderboard {
         self.0.typed_get::<u64, u64>(&user_id)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (UserId, u64)> {
+    pub fn iter(&self) -> impl Iterator<Item = (UserId, u64)> + use<> {
         self.0
             .iter()
             .filter_map(|i| i.ok())

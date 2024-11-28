@@ -1,15 +1,19 @@
+//! Welcome to Kingfisher's internals.
+//!
+//! It's not all documented yet, but, damn it, it probably will never be.
+//! :thum:
+
 use chrono::{DateTime, Utc};
 use color_eyre::eyre::{Context, Result};
 use data::PoiseContext;
 use itertools::Itertools;
-use poise::serenity_prelude::{
-    Cache, CacheHttp, EditMember, GuildId, Http, Member, Mentionable, User, UserId,
-};
-use std::{sync::Arc, time::Duration};
+use poise::serenity_prelude::{CacheHttp, EditMember, GuildId, Member, Mentionable, User, UserId};
+use std::time::Duration;
 
+pub(crate) mod automated_replies;
 pub mod commands;
 pub mod config;
-pub mod courses;
+pub(crate) mod courses;
 pub mod data;
 pub mod event_handler;
 mod handle_starboards;
@@ -23,7 +27,7 @@ trait SayThenDelete {
     async fn say_then_delete(self, message: impl Into<String>) -> Result<()>;
 }
 
-impl<'a> SayThenDelete for PoiseContext<'a> {
+impl SayThenDelete for PoiseContext<'_> {
     async fn say_then_delete(self, message: impl Into<String>) -> Result<()> {
         let message = self.say(message).await?;
 
@@ -31,58 +35,6 @@ impl<'a> SayThenDelete for PoiseContext<'a> {
         message.delete(self).await.ok();
 
         Ok(())
-    }
-}
-
-struct CloneableCtx(Arc<Cache>, Arc<Http>);
-
-trait IntoCloneableCtx {
-    fn get_cloneable_ctx(self) -> CloneableCtx;
-}
-
-impl IntoCloneableCtx for &PoiseContext<'_> {
-    fn get_cloneable_ctx(self) -> CloneableCtx {
-        CloneableCtx(
-            Arc::clone(&self.serenity_context().cache),
-            Arc::clone(&self.serenity_context().http),
-        )
-    }
-}
-
-impl IntoCloneableCtx for &poise::serenity_prelude::Context {
-    fn get_cloneable_ctx(self) -> CloneableCtx {
-        CloneableCtx(Arc::clone(&self.cache), Arc::clone(&self.http))
-    }
-}
-
-impl From<&PoiseContext<'_>> for CloneableCtx {
-    fn from(ctx: &PoiseContext<'_>) -> Self {
-        Self(
-            Arc::clone(&ctx.serenity_context().cache),
-            Arc::clone(&ctx.serenity_context().http),
-        )
-    }
-}
-
-impl AsRef<Http> for CloneableCtx {
-    fn as_ref(&self) -> &Http {
-        &self.1
-    }
-}
-
-impl CacheHttp for CloneableCtx {
-    fn http(&self) -> &Http {
-        &self.1
-    }
-
-    fn cache(&self) -> Option<&Arc<Cache>> {
-        Some(&self.0)
-    }
-}
-
-impl Clone for CloneableCtx {
-    fn clone(&self) -> Self {
-        Self(Arc::clone(&self.0), Arc::clone(&self.1))
     }
 }
 

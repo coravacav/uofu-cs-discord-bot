@@ -70,7 +70,7 @@ impl BankDb {
     pub fn get_history(
         &self,
         user_id: UserId,
-    ) -> Result<Option<impl DoubleEndedIterator<Item = Change>>> {
+    ) -> Result<Option<impl DoubleEndedIterator<Item = Change> + use<>>> {
         let user_id: u64 = user_id.into();
 
         let account = self.0.typed_get::<u64, BankAccount>(&user_id)?;
@@ -78,7 +78,7 @@ impl BankDb {
         Ok(account.map(|account| account.changes.into_iter()))
     }
 
-    pub fn get_global_rankings(&self) -> Result<impl Iterator<Item = (UserId, BankAccount)>> {
+    pub fn get_global_rankings(&self) -> Result<impl Iterator<Item = (UserId, BankAccount)> + use<>> {
         Ok(self
             .0
             .typed_iter::<u64, BankAccount>()?

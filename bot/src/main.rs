@@ -12,15 +12,17 @@ use dotenvy::dotenv;
 use poise::serenity_prelude as serenity;
 use tracing_subscriber::prelude::*;
 
-/// The cli arguments for the bot
+/// The CLI arguments for the bot
+///
+/// In general, not used very often, but, can be nice for testing.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
-    /// Don't start the discord bot
+    /// Don't start the discord bot, do all setup checks.
     #[arg(short, long, default_value = "false")]
     pub dry_run: bool,
 
-    /// Path to the config file
+    /// Path to the config file, if you want to use a different one.
     #[arg(short, long, default_value_t = String::from("config.toml"))]
     pub config: String,
 }
@@ -106,13 +108,9 @@ async fn main() -> Result<()> {
             tokio::spawn(async { update_interval().await });
 
             Box::pin(async move {
+                // Register in guild is faster - but, makes testing and other things harder.
+                // Restarting discord for new commands is plenty fine (or just waiting for the cache bust).
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                // poise::builtins::register_in_guild(
-                //     ctx,
-                //     &framework.options().commands,
-                //     serenity::GuildId::from(1065373537591894086),
-                // )
-                // .await?;
 
                 Ok(Arc::new(RawAppState::new(config, config_path).unwrap()))
             })
@@ -136,20 +134,18 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
-    tracing::info!("Starting bot");
-
     client
         .wrap_err("Failed to start bot (serenity)")?
         .start()
         .await
-        .wrap_err("Failed to start bot (startup)")
+        .wrap_err("Failed to start bot (startup / runtime)")
 }
 
 fn notify_on_executable_update() -> Result<()> {
-    use notify::event::CreateKind;
     use notify::EventKind;
     use notify::RecursiveMode::NonRecursive;
     use notify::Watcher;
+    use notify::event::CreateKind;
 
     let current_exe = std::env::current_exe()?;
     let directory = current_exe.parent().unwrap().to_owned();
@@ -170,6 +166,7 @@ fn notify_on_executable_update() -> Result<()> {
 
     watcher.watch(&directory, NonRecursive)?;
 
+    // Don't want to drop it. Also, only done once, so it's fine.
     Box::leak(Box::new(watcher));
 
     Ok(())

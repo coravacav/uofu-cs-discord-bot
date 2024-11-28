@@ -7,7 +7,7 @@ use color_eyre::eyre::{Result, WrapErr};
 use parking_lot::Mutex;
 use poise::serenity_prelude::ChannelId;
 use serde::Deserialize;
-use serde_with::{serde_as, DurationSeconds};
+use serde_with::{DurationSeconds, serde_as};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -56,7 +56,7 @@ pub struct Config {
     /// The help text for the bot. `/help`
     pub help_text: Option<Arc<String>>,
     /// What possible replies kingfisher can make.
-    pub responses: AHashMap<Arc<str>, RegisteredResponse>,
+    pub responses: AHashMap<Arc<str>, AutomatedKingfisherReplyConfig>,
     /// The ruleset combinator
     pub ruleset_combinator: RulesetCombinator,
     /// How often kingfisher replies to a message.
@@ -89,16 +89,13 @@ impl Config {
         )?;
 
         let responses = AHashMap::from_iter(raw_config.responses.into_iter().map(|response| {
-            (
-                response.name.clone(),
-                RegisteredResponse {
-                    hit_rate: response.hit_rate,
-                    message_response: response.message_response,
-                    last_triggered: Mutex::new(Utc::now()),
-                    cooldown: response.cooldown,
-                    unskippable: response.unskippable,
-                },
-            )
+            (response.name.clone(), AutomatedKingfisherReplyConfig {
+                hit_rate: response.hit_rate,
+                message_response: response.message_response,
+                last_triggered: Mutex::new(Utc::now()),
+                cooldown: response.cooldown,
+                unskippable: response.unskippable,
+            })
         }));
 
         let default_text_detect_cooldown: i64 =
@@ -135,6 +132,9 @@ impl Config {
     }
 }
 
+/// All different ways for a message detection to reply.
+///
+/// Future plans include something like images or embeds, but, that's not implemented yet.
 #[derive(Deserialize, Clone, Debug, PartialEq, Eq, Default)]
 #[serde(untagged)]
 pub enum ResponseKind {
@@ -147,8 +147,9 @@ pub enum ResponseKind {
     RandomText { content: Vec<String> },
 }
 
+/// A nice little configuration object containing all individually configurable message settings and responses.
 #[derive(Debug)]
-pub struct RegisteredResponse {
+pub struct AutomatedKingfisherReplyConfig {
     /// The chance that the response will be triggered.
     ///
     /// Overrides the default hit rate.
@@ -190,7 +191,7 @@ pub struct RawRegisteredResponse {
     unskippable: bool,
 }
 
-impl RegisteredResponse {
+impl AutomatedKingfisherReplyConfig {
     pub fn can_send(
         &self,
         input: &str,

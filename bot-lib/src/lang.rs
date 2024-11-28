@@ -5,7 +5,7 @@ pub mod ruleset_combinator;
 
 #[macro_export]
 macro_rules! fast_ruleset {
-    ($($x:expr),*) => {{
+    ($($x:expr_2021),*) => {{
         let ruleset: $crate::lang::ruleset::Ruleset = $crate::lang::ruleset::UnparsedRuleset::parse(&[$($x),*].join("\n")).unwrap().try_into().unwrap();
         dbg!(ruleset)
     }};

@@ -1,13 +1,13 @@
+use ahash::AHashSet;
 use color_eyre::eyre::Result;
 use parking_lot::Mutex;
 use poise::serenity_prelude::{
     Channel, ChannelId, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage,
     GetMessages, Message, MessageId, Reaction, ReactionType,
 };
-use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use serde::Deserialize;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize)]
 pub struct Starboard {
     pub reaction_count: u64,
     /// Currently only supports unicode emojis.
@@ -16,30 +16,7 @@ pub struct Starboard {
     pub ignored_channel_ids: Option<Vec<u64>>,
     /// This stores a string hash of the message link
     #[serde(skip)]
-    pub recently_added_messages: Mutex<HashSet<MessageId>>,
-}
-
-impl PartialEq for Starboard {
-    fn eq(&self, other: &Self) -> bool {
-        self.reaction_count == other.reaction_count
-            && self.banned_reactions == other.banned_reactions
-            && self.channel_id == other.channel_id
-            && self.ignored_channel_ids == other.ignored_channel_ids
-    }
-}
-
-impl Eq for Starboard {}
-
-impl Default for Starboard {
-    fn default() -> Self {
-        Self {
-            reaction_count: 1,
-            banned_reactions: None,
-            channel_id: 0,
-            ignored_channel_ids: None,
-            recently_added_messages: Mutex::new(HashSet::new()),
-        }
-    }
+    pub recently_added_messages: Mutex<AHashSet<MessageId>>,
 }
 
 impl Starboard {
@@ -50,16 +27,11 @@ impl Starboard {
         message: &Message,
         reaction: &Reaction,
     ) -> bool {
-        let check = self.is_allowed_reaction(reaction)
+        self.is_allowed_reaction(reaction)
             && self.is_channel_allowed(message.channel_id.into())
             && self.enough_reactions(message, reaction)
             && self.is_message_unseen(&message.id)
-            && self.is_channel_missing_reply(ctx, message).await;
-
-        let check_msg = if check { "applies" } else { "does not apply" };
-        tracing::trace!("starboard {}", check_msg);
-
-        check
+            && self.is_channel_missing_reply(ctx, message).await
     }
 
     fn enough_reactions(&self, message: &Message, reaction: &Reaction) -> bool {
