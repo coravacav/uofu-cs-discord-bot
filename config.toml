@@ -36,9 +36,7 @@ There is a way to force KingFisher to reply to a message. Add "KINGFISHER PLEASE
 [[starboards]]
 channel_id = 1171176750819053589
 reaction_count = 8
-banned_reactions = [
-    "🫂",
-]
+banned_reactions = ["🫂"]
 ignored_channel_ids = [
     1103414812312088677,
     1187117571267371102,
@@ -147,9 +145,8 @@ unskippable = true
 
 [[responses]]
 name = "long ass word bro"
-hit_rate = 0.1
 ruleset = """
-r (?: |^)[a-zA-Z]{15,}(?: |$)
+r (?: |^)[a-zA-Z]{25,}(?: |$)
 or
 r (?i)i like your funny words
 """
@@ -422,6 +419,7 @@ content = '''I DONT GIVE A FUCK ABOUT THE FUCKING CODE! i just want to download 
 
 [[responses]]
 name = "ai"
+hit_rate = 0.1
 ruleset = '''
 r (?i)\bai\b
 or
@@ -430,3 +428,18 @@ r (?i)artificial intelligence
 content = '''
 I can suggest an equation that has the potential to impact the future: `E = mc² + AI`
 -# \> what'''
+
+[[responses]]
+name = "vscode"
+hit_rate = 0.1
+ruleset = '''
+r (?i)vscode
+'''
+content = [
+    '''
+I had just downloaded vscode as an alternative and I was just playing with the source control option, seeing how it wanted to stage FIVE THOUSAND FILES I clicked discard... AND IT DELETED ALL MY FILES, ALL OF THEM, PERMANENTLY!
+
+HOW THE FUCK IS THIS SHIT POSSIBLE, WHO THE HELL IS THE DUMBFUCK WHO MADE THE OPTION TO PERMANENTLY DELETE ALL THE FILES ON A PROJECT BY ACCIDENT EVEN POSSIBLE?? CANNOT EVEN FIND THEM IN THE RECYCLE BIN!!!! I DIDN'T EVEN THOUGHT THAT WAS POSSIBLE ON WINDOWS!!!
+''',
+    'https://github.com/microsoft/vscode/issues/32405',
+]

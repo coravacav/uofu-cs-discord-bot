@@ -90,7 +90,7 @@ impl Config {
 
         let responses = AHashMap::from_iter(raw_config.responses.into_iter().map(|response| {
             (response.name.clone(), AutomatedKingfisherReplyConfig {
-                hit_rate: response.hit_rate,
+                hit_rate: response.hit_rate.unwrap_or(raw_config.default_hit_rate),
                 message_response: response.message_response,
                 last_triggered: Mutex::new(Utc::now()),
                 cooldown: response.cooldown,
@@ -152,8 +152,8 @@ pub enum ResponseKind {
 pub struct AutomatedKingfisherReplyConfig {
     /// The chance that the response will be triggered.
     ///
-    /// Overrides the default hit rate.
-    hit_rate: Option<f64>,
+    /// This is set to the global hit rate if not set.
+    hit_rate: f64,
     /// This makes it so it pretends the attributes of the enum are attributes of the struct
     message_response: Arc<ResponseKind>,
     /// Per response storage of when the response was last triggered.
@@ -198,7 +198,6 @@ impl AutomatedKingfisherReplyConfig {
         Config {
             default_text_detect_cooldown: global_cooldown,
             skip_hit_rate_text,
-            default_hit_rate,
             skip_duration_text,
             ..
         }: &Config,
@@ -213,7 +212,7 @@ impl AutomatedKingfisherReplyConfig {
             return None;
         }
 
-        let hit_rate = self.hit_rate.unwrap_or(*default_hit_rate);
+        let hit_rate = self.hit_rate;
         let miss = rand::random::<f64>() > hit_rate;
         let blocked = self.unskippable || !input.contains(skip_hit_rate_text);
 

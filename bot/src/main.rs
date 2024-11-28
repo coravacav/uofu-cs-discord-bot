@@ -84,6 +84,7 @@ async fn main() -> Result<()> {
                 llm_prompt(),
                 remove_class_role(),
                 mod_abuse(),
+                clip_that(),
             ],
             event_handler: |ctx, event, _framework, data| {
                 Box::pin(event_handler(ctx, event, data.clone()))
