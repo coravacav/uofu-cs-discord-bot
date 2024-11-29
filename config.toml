@@ -430,6 +430,16 @@ I can suggest an equation that has the potential to impact the future: `E = mc²
 -# \> what'''
 
 [[responses]]
+name = "holiday"
+ruleset = '''
+r (?i)\bholiday\b
+'''
+content = '''
+Holidays are just an excuse people use to justify procrastination. But if you’re serious about achieving your goals, you need to approach life with the same mindset Kobe had. It’s not about skipping Thanksgiving forever—it’s about using the time you have wisely. That hour spent solving a few Leetcode problems is one step closer to the life you’ve been working toward.
+
+Your family will still be there when you’ve made it. In fact, they’ll be even prouder of you when you land that six-figure offer or that prestigious internship. Success isn’t about making excuses; it’s about staying consistent, even when the world says to take a break.'''
+
+[[responses]]
 name = "vscode"
 hit_rate = 0.1
 ruleset = '''

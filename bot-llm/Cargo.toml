@@ -12,29 +12,25 @@ rand.workspace = true
 
 [dependencies.candle-core]
 git = "https://github.com/huggingface/candle.git"
-rev="f856b5c3a75028d384c26e36501d429091662cd3"
-version = "0.7"
+rev="23ed8a9ded155df7b5961d6a5ae12b4e8096a9c2"
 features = [
     "cuda",
 ]
 [dependencies.candle-nn]
 git = "https://github.com/huggingface/candle.git"
-rev="f856b5c3a75028d384c26e36501d429091662cd3"
-version = "0.7"
+rev="23ed8a9ded155df7b5961d6a5ae12b4e8096a9c2"
 features = [
     "cuda",
 ]
 [dependencies.candle-transformers]
 git = "https://github.com/huggingface/candle.git"
-rev="f856b5c3a75028d384c26e36501d429091662cd3"
-version = "0.7"
+rev="23ed8a9ded155df7b5961d6a5ae12b4e8096a9c2"
 features = [
     "cuda",
 ]
 [dependencies.candle-examples]
 git = "https://github.com/huggingface/candle.git"
-rev="f856b5c3a75028d384c26e36501d429091662cd3"
-version = "0.7"
+rev="23ed8a9ded155df7b5961d6a5ae12b4e8096a9c2"
 features = [
     "cuda",
 ]

@@ -120,3 +120,22 @@ pub fn run_the_model(
 
     Ok(result)
 }
+
+#[cfg(test)]
+mod test {
+    use crate::{load_model, load_tokenizer, run_the_model};
+
+    #[test]
+    fn test_run_the_model() {
+        let mut model = load_model("../llms/small/llama-3.2-3b-instruct-q8_0.gguf").unwrap();
+        let tokenizer = load_tokenizer("../llms/small/tokenizer.json").unwrap();
+
+        let prompt = "What is the capital of France?";
+
+        let result = run_the_model(&mut model, &tokenizer, prompt).unwrap();
+
+        dbg!(&result);
+
+        assert!(result.contains("Paris"));
+    }
+}
