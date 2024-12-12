@@ -152,9 +152,10 @@ async fn meeting_message(ctx: Context, channel_id: ChannelId) -> Result<()> {
         )
         .await?;
 
-    sleep(Duration::from_secs(5)).await;
-
-    message.delete(ctx).await?;
+    tokio::spawn(async move {
+        sleep(Duration::from_secs(5)).await;
+        message.delete(ctx).await.trace_err_ok();
+    });
 
     Ok(())
 }

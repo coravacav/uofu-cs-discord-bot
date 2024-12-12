@@ -19,7 +19,7 @@ tracing-subscriber = { version = "0.3", features = [
     "parking_lot",
 ] }
 color-eyre = "0.6"
-poise = "0.6"
+poise = {git = "https://github.com/serenity-rs/poise/", rev = "db10b12"}
 tracing = "0.1"
 bot-llm = { path = 'bot-llm' }
 bot-lib = { path = 'bot-lib' }

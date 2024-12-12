@@ -207,7 +207,6 @@ pub async fn casino(ctx: PoiseContext<'_>) -> Result<()> {
                 )
                 .await?;
 
-            // wait 500 ms
             tokio::time::sleep(Duration::from_millis(500)).await;
 
             interaction.delete_response(ctx).await.ok();

@@ -29,10 +29,14 @@ trait SayThenDelete {
 
 impl SayThenDelete for PoiseContext<'_> {
     async fn say_then_delete(self, message: impl Into<String>) -> Result<()> {
-        let message = self.say(message).await?;
+        let message = self.say(message).await?.into_message().await?;
 
-        tokio::time::sleep(std::time::Duration::from_secs(15)).await;
-        message.delete(self).await.ok();
+        let ctx = self.serenity_context().clone();
+
+        tokio::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_secs(15)).await;
+            message.delete(ctx).await.ok();
+        });
 
         Ok(())
     }

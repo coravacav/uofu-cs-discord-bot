@@ -51,7 +51,7 @@ impl Starboard {
 
         self.banned_reactions
             .as_ref()
-            .map_or(true, |banned_reactions| {
+            .is_none_or(|banned_reactions| {
                 !banned_reactions
                     .iter()
                     .any(|banned_reaction| reaction.emoji.unicode_eq(banned_reaction))
