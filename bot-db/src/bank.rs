@@ -93,4 +93,11 @@ impl BankDb {
                 })
             }))
     }
+
+    pub fn iter_all(&self) -> Result<impl Iterator<Item = (UserId, BankAccount)>> {
+        Ok(self
+            .0
+            .typed_iter::<u64, BankAccount>()?
+            .map(|(user_id, account)| (UserId::from(user_id), account)))
+    }
 }
