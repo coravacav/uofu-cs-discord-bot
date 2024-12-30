@@ -9,7 +9,6 @@ tokio = { workspace = true }
 color-eyre = { workspace = true }
 poise = { workspace = true }
 tracing = { workspace = true }
-bot-llm = { workspace = true }
 bot-traits = { workspace = true }
 rand = { workspace = true }
 serde = { workspace = true }
