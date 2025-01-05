@@ -456,3 +456,28 @@ HOW THE FUCK IS THIS SHIT POSSIBLE, WHO THE HELL IS THE DUMBFUCK WHO MADE THE OP
 ''',
     'https://github.com/microsoft/vscode/issues/32405',
 ]
+
+[[responses]]
+name = "leetcode"
+hit_rate = 0.1
+ruleset = '''
+r (?i)leetcode
+'''
+content = [
+    '''
+Gonna post about how hard it is to get a job? __Drop your LC count.__
+Respectfully if you haven't at least done 100 leetcode problems you can't be complaining. Yeah bro okay we get it the market is rough. But I can't take you seriously if you aren't even about the grind. You thought the six figures offers were easy? Make cash quick at home type beat? Nah get your money up then get your funny up
+''',
+]
+
+[[responses]]
+name = "pick a struggle"
+hit_rate = 0.1
+ruleset = '''
+r (?i)\w+ is .+? (?:and|or) .+?\?
+'''
+content = [
+    '''
+Pick a struggle.
+''',
+]
