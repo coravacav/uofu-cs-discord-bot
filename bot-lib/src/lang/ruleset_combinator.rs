@@ -74,30 +74,19 @@ impl RulesetCombinator {
                         single_positive_rulesets.push(name.clone());
                     }
                     UnparsedRegex::Multiple(vec) => {
-                        let mut has_positive = false;
-                        let mut has_negative = false;
-
                         let mut new_multiple = vec![];
 
                         for UnparsedRegexAndNegated(unparsed_regex, negated) in vec {
                             if negated {
-                                has_negative = true;
                                 multiple_negative_options.push(unparsed_regex);
+                                multiple_negative_rulesets.push(name.clone());
                             } else {
-                                has_positive = true;
                                 multiple_positive_options.push(unparsed_regex);
+                                multiple_positive_rulesets.push(name.clone());
                             }
 
                             new_multiple
                                 .push(RegexAndNegated(Regex::new(unparsed_regex)?, negated));
-                        }
-
-                        if has_positive {
-                            multiple_positive_rulesets.push(name.clone());
-                        }
-
-                        if has_negative {
-                            multiple_negative_rulesets.push(name.clone());
                         }
 
                         multiple.push(new_multiple);
@@ -198,4 +187,30 @@ pub fn create_matcher_regex(options: &[&str]) -> Result<Option<RegexSet>> {
     }
 
     Ok(Some(RegexSet::new(options)?))
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_create_matcher_regex() {
+        let matcher = RulesetCombinator::new(
+            vec![UnparsedRulesetWithName {
+                name: "test".into(),
+                unparsed_ruleset: UnparsedRuleset {
+                    regexes: vec![UnparsedRegex::Multiple(vec![
+                        UnparsedRegexAndNegated(r"goth", false),
+                        UnparsedRegexAndNegated(r"woman", false),
+                    ])],
+                },
+            }]
+            .into_iter(),
+        )
+        .unwrap();
+
+        assert!(matcher.matches("goth woman"));
+        assert!(matcher.matches("woman goth"));
+        assert!(!matcher.matches("woman"));
+    }
 }

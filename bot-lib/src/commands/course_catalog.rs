@@ -7,6 +7,9 @@ use color_eyre::eyre::Result;
 use itertools::Itertools;
 use poise::{CreateReply, serenity_prelude as serenity};
 
+/// Enter the course id of a course you want to see the catalog for.
+///
+/// If prefix is ommitted, it will assume it's CS.
 #[poise::command(slash_command)]
 pub async fn catalog(ctx: PoiseContext<'_>, course_id: String) -> Result<()> {
     let mut course_id = course_id
