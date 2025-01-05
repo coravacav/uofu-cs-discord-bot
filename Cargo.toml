@@ -35,3 +35,8 @@ ahash = "0.8"
 [workspace.lints.rust]
 async_fn_in_trait = "allow"
 unsafe_code = "forbid"
+
+# override the serenity package
+# [patch.crates-io]
+# serenity = { path = "/_/contrib/serenity" }
+# I have a patch to make the extract work with forwarding, but, I am too lazy to make it good or correct for actual contribution

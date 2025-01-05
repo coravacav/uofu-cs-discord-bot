@@ -6,7 +6,7 @@ use poise::serenity_prelude::{
     Permissions, Role, RoleId,
 };
 use regex::Regex;
-use std::{collections::HashMap, fmt::Write, sync::LazyLock};
+use std::{collections::HashMap, fmt::Write, sync::LazyLock, time::Duration};
 
 static CLASS_ROLE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\w+ \d+$").unwrap());
 
@@ -250,88 +250,60 @@ pub async fn delete_class_category(
     Ok(())
 }
 
-// pub async fn reset_class_category_backend(ctx: PoiseContext<'_>, number: u32) -> Result<()> {
-//     let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
-//     let members = guild.members(ctx, None, None).await?;
-
-//     let general_channel_name = format!("{}-general", number);
-//     let gotten_channels = get_channels(ctx, guild, Regex::new(&general_channel_name)?).await?;
-//     let general_channel = gotten_channels
-//         .first()
-//         .ok_or_eyre("Could not find general channel!")?;
-
-//     let role_id = get_role(ctx, number).await?;
-
-//     let category_id = general_channel
-//         .parent_id
-//         .ok_or_eyre("Couldn't get category ID!")?;
-
-//     general_channel.delete(ctx).await?;
-
-//     guild
-//         .create_channel(
-//             ctx,
-//             CreateChannel::new(general_channel_name)
-//                 .kind(ChannelType::Text)
-//                 .category(category_id),
-//         )
-//         .await
-//         .wrap_err("Couldn't create general channel")?;
-
-//     let members_with_role = members
-//         .iter()
-//         .filter(|member| member.roles.contains(&role_id));
-
-//     for member in members_with_role {
-//         member.remove_role(ctx, role_id).await?;
-//     }
-
-//     Ok(())
-// }
-
+/// Reset the current channel you're in - aka - delete all the messages
 #[poise::command(
     slash_command,
     required_permissions = "MANAGE_CHANNELS",
-    description_localized(
-        "en-US",
-        "Resets a class category (clears the general channel, removes the role from everyone)"
-    )
+    ephemeral = true
 )]
-pub async fn reset_class_category(
-    ctx: PoiseContext<'_>,
-    #[description = "The class number, eg. for CS2420 put in \"2420\""] _number: u32,
-) -> Result<()> {
-    // reset_class_category_backend(ctx, number).await?;
-    // ctx.say("Success!").await?;
-    ctx.say("This command is currently not implemented").await?;
-    Ok(())
-}
+pub async fn reset_class_category(ctx: PoiseContext<'_>) -> Result<()> {
+    let channel_id = ctx.channel_id();
 
-#[poise::command(
-    slash_command,
-    required_permissions = "MANAGE_CHANNELS",
-    description_localized("en-US", "Resets all class categories")
-)]
-pub async fn reset_class_categories(ctx: PoiseContext<'_>) -> Result<()> {
-    // let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
-    // let removed_categories = get_channels(ctx, guild, Regex::new(r"\d{4}-general").unwrap())
-    //     .await?
-    //     .into_iter()
-    //     .map(|channel| {
-    //         channel
-    //             .name
-    //             .get(0..4)
-    //             .unwrap_or("Intentional parse error")
-    //             .parse::<u32>()
-    //             .context("Parse error")
-    //     });
+    let Some(channel) = channel_id.to_channel(&ctx).await?.guild() else {
+        ctx.say("This channel is not in a guild").await?;
+        return Ok(());
+    };
 
-    // for category in removed_categories {
-    //     reset_class_category_backend(ctx, category?).await?;
-    // }
+    let Some(parent_id) = channel.parent_id else {
+        ctx.say("This channel is not in a class category").await?;
 
-    // ctx.say("Success!").await?;
-    ctx.say("This command is currently not implemented").await?;
+        return Ok(());
+    };
+
+    if let 1105657058424016926 | 1105656100856025138 | 1105654574175502376 | 1281025666694910086
+    | 1200645054436491356 | 1105659164119801907 = u64::from(parent_id)
+    {
+        ctx.say("Channels in this category are not resettable")
+            .await?;
+
+        return Ok(());
+    }
+
+    let Some(topic) = channel.topic else {
+        ctx.say("This channel has no topic, which is weird, so, cancelling for safety.")
+            .await?;
+        return Ok(());
+    };
+
+    channel
+        .guild_id
+        .create_channel(
+            &ctx,
+            CreateChannel::new(channel.name)
+                .category(parent_id)
+                .kind(ChannelType::Text)
+                .permissions(channel.permission_overwrites)
+                .position(channel.position)
+                .topic(topic),
+        )
+        .await?;
+
+    ctx.say("Success! Deleting current channel in 5 seconds!")
+        .await?;
+
+    tokio::time::sleep(Duration::from_secs(5)).await;
+
+    channel_id.delete(&ctx).await?;
 
     Ok(())
 }

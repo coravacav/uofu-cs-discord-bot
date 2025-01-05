@@ -68,10 +68,10 @@ async fn main() -> Result<()> {
                 reset_class_category(),
                 // course_catalog_search(),
                 send_feedback(),
-                reset_class_categories(),
                 my_classes(),
                 delete_class_category(),
                 yeet_leaderboard(),
+                extract_current_channel(),
                 add_dog_role(),
                 bank(),
                 bank_admin(),
@@ -94,7 +94,9 @@ async fn main() -> Result<()> {
                     error: poise::FrameworkError<'_, State, color_eyre::eyre::Error>,
                 ) {
                     // Don't care.
-                    if let poise::FrameworkError::CommandCheckFailed { .. } = error {
+                    if let poise::FrameworkError::CommandCheckFailed { .. }
+                    | poise::FrameworkError::MissingUserPermissions { .. } = error
+                    {
                         return;
                     }
 
