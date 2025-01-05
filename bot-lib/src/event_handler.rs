@@ -4,7 +4,7 @@ use crate::{
     commands::handle_yeeting,
     data::State,
     handle_starboards::handle_starboards,
-    text_detection::{delete_message_if_user_trashcans, text_detection_and_reaction},
+    text_detection::{kingfisher_reply_reactions, text_detection_and_reaction},
 };
 use bot_traits::ForwardRefToTracing;
 use color_eyre::eyre::Result;
@@ -53,7 +53,7 @@ pub async fn event_handler(
                 let reaction = reaction.emoji.clone();
 
                 tokio::spawn(async move {
-                    delete_message_if_user_trashcans(&ctx, reaction_user.as_ref(), reaction).await
+                    kingfisher_reply_reactions(&ctx, reaction_user.as_ref(), reaction).await
                 });
             }
 

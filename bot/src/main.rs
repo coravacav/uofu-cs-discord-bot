@@ -84,6 +84,7 @@ async fn main() -> Result<()> {
                 llm_prompt(),
                 remove_class_role(),
                 mod_abuse(),
+                reroll_reply(),
                 clip_that(),
             ],
             event_handler: |ctx, event, _framework, data| {

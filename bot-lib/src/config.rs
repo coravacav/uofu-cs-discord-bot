@@ -6,6 +6,7 @@ use chrono::{DateTime, TimeDelta, Utc};
 use color_eyre::eyre::{Result, WrapErr};
 use parking_lot::Mutex;
 use poise::serenity_prelude::ChannelId;
+use rand::seq::SliceRandom;
 use serde::Deserialize;
 use serde_with::{DurationSeconds, serde_as};
 use std::path::Path;
@@ -142,9 +143,21 @@ pub enum ResponseKind {
     #[default]
     None,
     /// A text response.
-    Text { content: String },
+    Text { content: Arc<str> },
     /// A random text response.
-    RandomText { content: Vec<String> },
+    RandomText { content: Vec<Arc<str>> },
+}
+
+impl ResponseKind {
+    pub fn get_reply_text(&self) -> Option<Arc<str>> {
+        match self {
+            ResponseKind::Text { content } => Some(content.clone()),
+            ResponseKind::RandomText { content } => {
+                content.choose(&mut rand::thread_rng()).map(Arc::clone)
+            }
+            ResponseKind::None => None,
+        }
+    }
 }
 
 /// A nice little configuration object containing all individually configurable message settings and responses.
