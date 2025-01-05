@@ -1,8 +1,10 @@
 use std::sync::Arc;
 
 use crate::{
-    commands::handle_yeeting, data::State, handle_starboards::handle_starboards,
-    text_detection::text_detection,
+    commands::handle_yeeting,
+    data::State,
+    handle_starboards::handle_starboards,
+    text_detection::{delete_message_if_user_trashcans, text_detection_and_reaction},
 };
 use bot_traits::ForwardRefToTracing;
 use color_eyre::eyre::Result;
@@ -15,7 +17,9 @@ pub async fn event_handler(
 ) -> Result<()> {
     match event {
         serenity::FullEvent::Message { new_message } => {
-            text_detection(ctx, data, new_message).await.trace_err_ok();
+            text_detection_and_reaction(ctx, data, new_message)
+                .await
+                .trace_err_ok();
         }
         serenity::FullEvent::ReactionAdd {
             add_reaction: reaction,
@@ -41,6 +45,16 @@ pub async fn event_handler(
                 tokio::spawn(
                     async move { handle_yeeting(&ctx, data, &message).await.trace_err_ok() },
                 );
+            }
+
+            {
+                let ctx = ctx.clone();
+                let reaction_user = reaction.user_id;
+                let reaction = reaction.emoji.clone();
+
+                tokio::spawn(async move {
+                    delete_message_if_user_trashcans(&ctx, reaction_user.as_ref(), reaction).await
+                });
             }
 
             handle_starboards(ctx, data, &message, reaction)
