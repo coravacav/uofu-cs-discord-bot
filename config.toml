@@ -27,6 +27,7 @@ help_text = """
 - `/aur <query> <amount>`: Queries the AUR. Can only display the top 20 entries at maximum.
 - `/bank income`: Get some income (5 coins once per minute)
 - `/bank balance`: What's my balance?
+- `/reroll_reply`: Reroll the last reply kingfisher made to you.
 
 KingFisher also sometimes really likes to react to messages. That's why he replies sometimes (21% rate, unless you're pinging Stefan or typing "luck").
 
@@ -332,15 +333,6 @@ content = [
     "https://tenor.com/view/discord-gif-27442765",
 ]
 
-# [[responses]]
-# name = "hey chat"
-# cooldown = 300
-# ruleset = """
-# r (?i)chat
-# !r chatgpt
-# """
-# content = "https://tenor.com/view/xqc-what-xqc-what-xqc-search-gif-25343378"
-
 [[responses]]
 name = "uh, meow?"
 ruleset = '''
@@ -480,4 +472,15 @@ content = [
     '''
 Pick a struggle.
 ''',
+]
+
+
+[[responses]]
+name = "goth women"
+ruleset = '''
+r (?i)goth
+r (?i)wom[ae]n
+'''
+content = [
+    "<@501488255519162368>", # Henry
 ]
