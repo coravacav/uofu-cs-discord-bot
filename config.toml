@@ -487,9 +487,9 @@ content = [
 ]
 
 [[responses]]
-name = "ooh"
+name = "oooh"
 ruleset = '''
-r (?i)o{2,}h
+r (?i)o{3,}h
 '''
 content = [
     "https://tenor.com/view/mr-peabody-hypnotize-gif-18017563854157472082",
