@@ -485,3 +485,12 @@ content = [
     "<@501488255519162368>", # Henry
     "<@221857169962827776>", # Aco
 ]
+
+[[responses]]
+name = "oooh"
+ruleset = '''
+r (?i)o{3,}h
+'''
+content = [
+    "https://tenor.com/view/mr-peabody-hypnotize-gif-18017563854157472082",
+]
