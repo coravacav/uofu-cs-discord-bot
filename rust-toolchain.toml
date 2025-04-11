@@ -1,6 +1,0 @@
-[toolchain]
-channel = "nightly"
-components = ["rust-analyzer"]
-profile = "default"
-
-# can probably remove after 2024 is released frfr

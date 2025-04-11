@@ -127,7 +127,7 @@ pub async fn gamble(
     }
 
     let winnings = (amount as f64 / odds_of_success).round() as i64 - 1 - amount;
-    let success = rand::thread_rng().gen_bool(odds_of_success);
+    let success = rand::rng().random_bool(odds_of_success);
 
     let change = if success { winnings } else { -amount };
 

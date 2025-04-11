@@ -11,7 +11,6 @@ tokio = { version = "1", features = [
     "rt",
     "macros",
     "rt-multi-thread",
-    "tracing",
 ] }
 tracing-subscriber = { version = "0.3", features = [
     "env-filter",
@@ -24,10 +23,10 @@ tracing = "0.1"
 bot-lib = { path = 'bot-lib' }
 bot-traits = { path = 'bot-traits' }
 bot-db = { path = 'bot-db' }
-rand = "0.8"
+rand = "0.9"
 serde = { version = "1", features = ["derive", "rc"] }
-itertools = "0.13"
-notify = { version = "7", default-features = false, features = [
+itertools = "0.14"
+notify = { version = "8", default-features = false, features = [
     "macos_kqueue",
 ] }
 ahash = "0.8"

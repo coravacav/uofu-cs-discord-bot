@@ -6,7 +6,7 @@ use chrono::{DateTime, TimeDelta, Utc};
 use color_eyre::eyre::{Result, WrapErr};
 use parking_lot::Mutex;
 use poise::serenity_prelude::ChannelId;
-use rand::seq::SliceRandom;
+use rand::prelude::*;
 use serde::Deserialize;
 use serde_with::{DurationSeconds, serde_as};
 use std::path::Path;
@@ -90,13 +90,16 @@ impl Config {
         )?;
 
         let responses = AHashMap::from_iter(raw_config.responses.into_iter().map(|response| {
-            (response.name.clone(), AutomatedKingfisherReplyConfig {
-                hit_rate: response.hit_rate.unwrap_or(raw_config.default_hit_rate),
-                message_response: response.message_response,
-                last_triggered: Mutex::new(Utc::now()),
-                cooldown: response.cooldown,
-                unskippable: response.unskippable,
-            })
+            (
+                response.name.clone(),
+                AutomatedKingfisherReplyConfig {
+                    hit_rate: response.hit_rate.unwrap_or(raw_config.default_hit_rate),
+                    message_response: response.message_response,
+                    last_triggered: Mutex::new(DateTime::UNIX_EPOCH),
+                    cooldown: response.cooldown,
+                    unskippable: response.unskippable,
+                },
+            )
         }));
 
         let default_text_detect_cooldown: i64 =
@@ -153,7 +156,7 @@ impl ResponseKind {
         match self {
             ResponseKind::Text { content } => Some(content.clone()),
             ResponseKind::RandomText { content } => {
-                content.choose(&mut rand::thread_rng()).map(Arc::clone)
+                content.choose(&mut rand::rng()).map(Arc::clone)
             }
             ResponseKind::None => None,
         }

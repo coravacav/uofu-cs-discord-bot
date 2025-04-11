@@ -126,3 +126,16 @@ pub async fn search_catalog(ctx: PoiseContext<'_>, search_string: String) -> Res
 
     Ok(())
 }
+
+/// Posts a link for course requests
+#[poise::command(slash_command)]
+pub async fn course_request(ctx: PoiseContext<'_>) -> Result<()> {
+    ctx.send(
+        CreateReply::default()
+            .content("https://www.cs.utah.edu/undergraduate/current-students/permission-codes/")
+            .reply(false),
+    )
+    .await?;
+
+    Ok(())
+}

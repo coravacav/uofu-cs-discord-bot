@@ -33,7 +33,7 @@ async fn main() -> Result<()> {
     color_eyre::install()?;
 
     tracing_subscriber::registry()
-        .with(console_subscriber::spawn())
+        // .with(console_subscriber::spawn())
         .with(tracing_subscriber::fmt::layer().compact().with_filter(
             tracing_subscriber::filter::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
                 tracing_subscriber::filter::EnvFilter::new("serenity=warn,bot=info,bot-lib=info")
@@ -67,6 +67,7 @@ async fn main() -> Result<()> {
                 coinflip(),
                 reset_class_category(),
                 // course_catalog_search(),
+                course_request(),
                 send_feedback(),
                 my_classes(),
                 delete_class_category(),

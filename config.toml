@@ -118,7 +118,7 @@ name = "physics"
 ruleset = '''
 r (?i)\bphysics
 '''
-content = ["<@237717840818470913>"]
+content = ["<@237717840818470913>", "<:physics_major:1344054907505737849>"]
 
 [[responses]]
 name = "india"
@@ -203,21 +203,21 @@ content = [
     "I don't get the way you guys think. I want MONEY. 6 figures out of college. 200k a year entry level. I'm in this for MONEY. I don't care about whether I'm \"fulfilled\" I want MONEY. Whatever gets me the most MONEY. What technology gets me PAID THE BEST. All I care about in this major is MONEY. That's why I'm in college, I don't wanna laugh and play with y'all. I don't wanna be buddy buddy with y'all. I'm here for MONEY.",
     '''
 85% of Computer Science Students Suck Ass
-All of them think they’re the smartest person to roam the halls of campus. What’s more they try to one up each other to prove their clearly superior intellect, but nothing their saying makes sense and nothing actually gets done. It’s like these dudes are larping the scene in movies where they show a montage of people saying smart sounding nonsense, everyone understands it, and then two minutes later you have the finished product. Newsflash that shit isn’t real. This isn’t the goddamn Avengers.
-Anyways, just bitchin’ have a good day.''',
+All of them think they're the smartest person to roam the halls of campus. What's more they try to one up each other to prove their clearly superior intellect, but nothing their saying makes sense and nothing actually gets done. It's like these dudes are larping the scene in movies where they show a montage of people saying smart sounding nonsense, everyone understands it, and then two minutes later you have the finished product. Newsflash that shit isn't real. This isn't the goddamn Avengers.
+Anyways, just bitchin' have a good day.''',
     '''
 85% of Computer Science Students Suck Ass
-I am beyond annoyed that I have to deal with these manchildren for the rest of the semester. I’m probably coming across as a dick or a bully, but i’ve just had it with these people.
-Anyways, just bitchin’ have a good day.
+I am beyond annoyed that I have to deal with these manchildren for the rest of the semester. I'm probably coming across as a dick or a bully, but i've just had it with these people.
+Anyways, just bitchin' have a good day.
 ''',
     '''
-For 85% of CS students, the stereotypes are true. It’s a bunch of smelly, antisocial dudes with huge egos whose only interests are video games, porn, and internet culture. I dare claim that I am a normal person, and as a normal person it bums me out. I look into classrooms sometimes and I see normal looking people and think that must be nice.
-Anyways, just bitchin’ have a good day.''',
+For 85% of CS students, the stereotypes are true. It's a bunch of smelly, antisocial dudes with huge egos whose only interests are video games, porn, and internet culture. I dare claim that I am a normal person, and as a normal person it bums me out. I look into classrooms sometimes and I see normal looking people and think that must be nice.
+Anyways, just bitchin' have a good day.''',
     '''
 85% of Computer Science Students Suck Ass
-So, I was assigned a group (all male of course, this is CS we’re talking about) and met them, and for the love of god I have never met such insufferable, incel, dorks in my life.
-One dude found it necessary to comment on nearly every woman’s appearance who walked by. Then basically all of them proceed to eye-fuck them from across the room the entire study session. I’m 1000% sure you’re all virgins. Your hot takes on women are under researched at best.
-Anyways, just bitchin’ have a good day.''',
+So, I was assigned a group (all male of course, this is CS we're talking about) and met them, and for the love of god I have never met such insufferable, incel, dorks in my life.
+One dude found it necessary to comment on nearly every woman's appearance who walked by. Then basically all of them proceed to eye-fuck them from across the room the entire study session. I'm 1000% sure you're all virgins. Your hot takes on women are under researched at best.
+Anyways, just bitchin' have a good day.''',
 
 ]
 
@@ -386,21 +386,21 @@ ruleset = """
 r (?i)((fall|spring) (break|vacation))
 """
 content = [
-    '''First off I’m a cs major. Just keep that in mind and don’t run to the comments to tell me you’re a hard major.
-I saw that last post here and it reminded me of how angry I feel every year when this fall ‘break’ comes along and muddies the competition. It completely defeats the point of school, and I don’t want to pay all that money to sit at home living on peanut butter and popcorn, and watching young Sheldon for a whole week.
-I’m sure most of you agree with me, right?''',
+    '''First off I'm a cs major. Just keep that in mind and don't run to the comments to tell me you're a hard major.
+I saw that last post here and it reminded me of how angry I feel every year when this fall 'break' comes along and muddies the competition. It completely defeats the point of school, and I don't want to pay all that money to sit at home living on peanut butter and popcorn, and watching young Sheldon for a whole week.
+I'm sure most of you agree with me, right?''',
 
-    '''First off I’m a cs major. Just keep that in mind and don’t run to the comments to tell me you’re a hard major.
+    '''First off I'm a cs major. Just keep that in mind and don't run to the comments to tell me you're a hard major.
 A course at a prestigious university should be a marathon. My favorites are the ones where attendance is required so you can see over time the lesser minds dropping out of the race in exhaustion. And finally at the end of the day the fittest survived and are rewarded with an honest grade in the class.
-I’m sure most of you agree with me, right?''',
+I'm sure most of you agree with me, right?''',
 
-    '''First off I’m a cs major. Just keep that in mind and don’t run to the comments to tell me you’re a hard major.
-So what’s the purpose of this ‘fall’ break? Have you ever watched a race on TV where they pause in the middle of the track to let everyone catch up and rest? What an absurd picture of injustice. What was the point of the first half of you’re going to start up again momentarily?
-I’m sure most of you agree with me, right?''',
+    '''First off I'm a cs major. Just keep that in mind and don't run to the comments to tell me you're a hard major.
+So what's the purpose of this 'fall' break? Have you ever watched a race on TV where they pause in the middle of the track to let everyone catch up and rest? What an absurd picture of injustice. What was the point of the first half of you're going to start up again momentarily?
+I'm sure most of you agree with me, right?''',
 
-    '''First off I’m a cs major. Just keep that in mind and don’t run to the comments to tell me you’re a hard major.
+    '''First off I'm a cs major. Just keep that in mind and don't run to the comments to tell me you're a hard major.
 Fall break is just a huge scam and serves to make waste of the entire first half of the semester. It makes me sick to my stomach - completely ill - to see this ritualistic sacrifice of my time happening year after year.
-I’m sure most of you agree with me, right?''',
+I'm sure most of you agree with me, right?''',
 ]
 
 [[responses]]
@@ -410,7 +410,7 @@ r (?i)github
 or
 r (?i)\bgit\b
 '''
-content = '''I DONT GIVE A FUCK ABOUT THE FUCKING CODE! i just want to download this stupid fucking application and use it. WHY IS THERE CODE??? MAKE A FUCKING .EXE FILE AND GIVE IT TO ME. these dumbfucks think that everyone is a developer and understands code. well i am not and i don’t understand it. I only know to download and install applications. SO WHY THE FUCK IS THERE CODE? make an EXE file and give it to me. STUPID FUCKING SMELLY NERDS'''
+content = '''I DONT GIVE A FUCK ABOUT THE FUCKING CODE! i just want to download this stupid fucking application and use it. WHY IS THERE CODE??? MAKE A FUCKING .EXE FILE AND GIVE IT TO ME. these dumbfucks think that everyone is a developer and understands code. well i am not and i don't understand it. I only know to download and install applications. SO WHY THE FUCK IS THERE CODE? make an EXE file and give it to me. STUPID FUCKING SMELLY NERDS'''
 
 [[responses]]
 name = "ai"
@@ -430,9 +430,9 @@ ruleset = '''
 r (?i)\bholiday\b
 '''
 content = '''
-Holidays are just an excuse people use to justify procrastination. But if you’re serious about achieving your goals, you need to approach life with the same mindset Kobe had. It’s not about skipping Thanksgiving forever—it’s about using the time you have wisely. That hour spent solving a few Leetcode problems is one step closer to the life you’ve been working toward.
+Holidays are just an excuse people use to justify procrastination. But if you're serious about achieving your goals, you need to approach life with the same mindset Kobe had. It's not about skipping Thanksgiving forever—it's about using the time you have wisely. That hour spent solving a few Leetcode problems is one step closer to the life you've been working toward.
 
-Your family will still be there when you’ve made it. In fact, they’ll be even prouder of you when you land that six-figure offer or that prestigious internship. Success isn’t about making excuses; it’s about staying consistent, even when the world says to take a break.'''
+Your family will still be there when you've made it. In fact, they'll be even prouder of you when you land that six-figure offer or that prestigious internship. Success isn't about making excuses; it's about staying consistent, even when the world says to take a break.'''
 
 [[responses]]
 name = "vscode"
@@ -468,11 +468,9 @@ hit_rate = 0.1
 ruleset = '''
 r (?i)\w+ is .+? (?:and|or) .+?\?
 '''
-content = [
-    '''
+content = ['''
 Pick a struggle.
-''',
-]
+''']
 
 
 [[responses]]
@@ -493,4 +491,21 @@ r (?i)o{3,}h
 '''
 content = [
     "https://tenor.com/view/mr-peabody-hypnotize-gif-18017563854157472082",
+]
+
+[[responses]]
+name = "skong"
+ruleset = '''
+r (?i)skong
+or
+r (?i)silk ?song
+or
+r (?i)Team Cherry
+or
+r (?i)nintendo ?direct
+'''
+content = [
+    '''
+TODAY IS APRIL 2ND, 2025. THIS IS ARARAURA YOUR HOST FOR TODAY BRINGING YOU YOUR DAILY SILKSONG NEWS AND THERE HAS BEEN YES NEWS, YES NEWS, YES YES YES YES YES NEWS TO REPORT FOR SILKSONG TODAY!!!!!! ON TODAY'S NINTENDO DIRECT FOR THE SWITCH 2 THEY SHOWED US FOOTAGE, NEW FOOTAGE OF SILKSONG!!! NEW FOOTAGE OF SILKSONG!!!!! THREE different sections!!! First, we see Hornet jumping around the Moss Grotto. Now this is an area we already know, nothing much new there. BUT THEN... IT TRANSITIONS TO THE SECOND AREA AND WE SEE HORNET SLIDING DOWN SLOPES!!! She's sliding down, I repeat, SLOPES!!!!! THERE ARE SLOPES IN SILKSONG, this is why it took so long!!! And finally, finally after this we see Hornet fight a bunch of bugs... with cloth masks on and one of them is a spider... and then she killed it we see her killing it... and those are the three clips, the new three clips that we saw, with a new area AND with slopes. Apparently there was a FOURTH clip right at the end where it wraps up all the games of Hornet fighting the massive bug, a new clip of her fighting the massive bug, I JUST noticed that. BUT... The most important thing to know... 2025 RELEASE WINDOWWWW!!!!! They showed RIGHT THERE, RIGHT THERE that Silksong is coming out in 2025!!!!! Everybody.... This is THE END, THE END.... THE CAKE WAS REAL... IT WAS REAL IT WAS NOT A LIE!!! It was REALLLLLL!!!!!! And the Steam copyright year change, that was also real!!! We won!!! WE WON!!!!! This has been your daily news for Silksong for today, April 2nd, 2025.
+''',
 ]

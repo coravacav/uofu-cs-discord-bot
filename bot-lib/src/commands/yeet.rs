@@ -187,7 +187,7 @@ pub async fn yeet(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
         return Ok(());
     }
 
-    let is_yeet_amongus_easter_egg = rand::thread_rng().gen_bool(0.02);
+    let is_yeet_amongus_easter_egg = rand::rng().random_bool(0.02);
 
     let msg = create_yeet_message(
         yeeter,

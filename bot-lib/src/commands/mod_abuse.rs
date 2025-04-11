@@ -9,7 +9,7 @@ use poise::{
     CreateReply,
     serenity_prelude::{EditMember, Mentionable, User},
 };
-use rand::seq::SliceRandom;
+use rand::prelude::*;
 use std::time::Duration;
 
 #[poise::command(slash_command, required_permissions = "MODERATE_MEMBERS")]
@@ -80,7 +80,7 @@ pub async fn mod_abuse(
             1,
         ),
     ]
-    .choose_weighted(&mut rand::thread_rng(), |choice| choice.1)
+    .choose_weighted(&mut rand::rng(), |choice| choice.1)
     .unwrap()
     .0;
 
