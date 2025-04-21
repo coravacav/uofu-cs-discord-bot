@@ -132,7 +132,7 @@ pub async fn search_catalog(ctx: PoiseContext<'_>, search_string: String) -> Res
 pub async fn course_request(ctx: PoiseContext<'_>) -> Result<()> {
     ctx.send(
         CreateReply::default()
-            .content("https://www.cs.utah.edu/undergraduate/current-students/permission-codes/")
+            .content("<https://www.cs.utah.edu/undergraduate/current-students/permission-codes/>")
             .reply(false),
     )
     .await?;

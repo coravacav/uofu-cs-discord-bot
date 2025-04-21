@@ -29,6 +29,7 @@ pub async fn text_detection_and_reaction(
 
     let author = &message.author;
     let guild_id = message.guild_id.ok_or_eyre("should have guild id")?;
+    let channel_id = message.channel_id;
 
     let author_has_role = author
         .has_role(
@@ -60,6 +61,11 @@ pub async fn text_detection_and_reaction(
         let Some(response_text) = response.get_reply_text() else {
             bail!("No response found for message");
         };
+
+        if channel_id == 1283207974751309914 && response_text.contains("216767618923757568") {
+            tracing::info!("Message in politics silenced for pinging stefan.");
+            return Ok(());
+        }
 
         let response_message = message.reply(&ctx, response_text.as_ref()).await?;
 
