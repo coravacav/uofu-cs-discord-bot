@@ -21,7 +21,10 @@ pub async fn handle_starboards(
             return;
         }
 
-        if starboard.does_starboard_apply(ctx, message, reaction).await {
+        if starboard
+            .does_starboard_apply(ctx, message, reaction, &mut recent_messages)
+            .await
+        {
             recent_messages.insert(message.id);
 
             starboard.reply(ctx, message, reaction).await.ok();

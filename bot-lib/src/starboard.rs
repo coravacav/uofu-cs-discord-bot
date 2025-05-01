@@ -5,7 +5,7 @@ use poise::serenity_prelude::{
     GetMessages, Message, MessageId, Reaction, ReactionType,
 };
 use serde::Deserialize;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, MutexGuard};
 
 #[derive(Debug, Deserialize)]
 pub struct Starboard {
@@ -21,15 +21,17 @@ pub struct Starboard {
 
 impl Starboard {
     #[tracing::instrument(level = "trace", skip(self, ctx, message), fields(message_link = %message.link()))]
+    /// `recent_messages` is used to prevent all starboarding when a single banned reaction is used
     pub async fn does_starboard_apply(
         &self,
         ctx: &Context,
         message: &Message,
         reaction: &Reaction,
+        recent_messages: &mut MutexGuard<'_, AHashSet<MessageId>>,
     ) -> bool {
-        self.is_allowed_reaction(reaction)
+        self.enough_reactions(message, reaction)
+            && self.is_allowed_reaction(reaction, message, recent_messages)
             && self.is_channel_allowed(message.channel_id.into())
-            && self.enough_reactions(message, reaction)
             && self.is_channel_missing_reply(ctx, message).await
     }
 
@@ -44,18 +46,31 @@ impl Starboard {
         reaction_count >= self.reaction_count
     }
 
-    fn is_allowed_reaction(&self, reaction: &Reaction) -> bool {
+    fn is_allowed_reaction(
+        &self,
+        reaction: &Reaction,
+        message: &Message,
+        recent_messages: &mut MutexGuard<'_, AHashSet<MessageId>>,
+    ) -> bool {
         if !matches!(reaction.emoji, ReactionType::Unicode(_)) {
             return true;
         }
 
-        self.banned_reactions
+        let banned = !self
+            .banned_reactions
             .as_ref()
-            .is_none_or(|banned_reactions| {
-                !banned_reactions
+            .is_some_and(|banned_reactions| {
+                banned_reactions
                     .iter()
                     .any(|banned_reaction| reaction.emoji.unicode_eq(banned_reaction))
-            })
+            });
+
+        // Prevent future reactions from starboarding.
+        if banned {
+            recent_messages.insert(message.id);
+        }
+
+        banned
     }
 
     fn is_channel_allowed(&self, channel_id: u64) -> bool {
