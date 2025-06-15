@@ -5,9 +5,29 @@ use color_eyre::eyre::Result;
 use futures::StreamExt;
 use poise::serenity_prelude::{ChannelId, Context, CreateMessage};
 
-use crate::data::PoiseContext;
+use crate::{
+    commands::{get_all_class_general_channels, is_stefan},
+    data::PoiseContext,
+};
 
-#[poise::command(slash_command, ephemeral = true)]
+#[poise::command(slash_command, ephemeral = true, check = is_stefan)]
+pub async fn extract_all_class_channels(ctx: PoiseContext<'_>) -> Result<()> {
+    ctx.defer_ephemeral().await?;
+
+    for channel in get_all_class_general_channels(&ctx).unwrap_or_default() {
+        let ctx = ctx.serenity_context().clone();
+
+        tokio::spawn(async move {
+            read_chat(ctx, channel.id).await.ok();
+        });
+    }
+
+    ctx.reply("Process started!").await?;
+
+    Ok(())
+}
+
+#[poise::command(slash_command, ephemeral = true, check = is_stefan)]
 pub async fn extract_current_channel(ctx: PoiseContext<'_>) -> Result<()> {
     let channel_id = ctx.channel_id();
 

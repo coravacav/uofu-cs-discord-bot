@@ -31,11 +31,9 @@ notify = { version = "8", default-features = false, features = [
 ] }
 ahash = "0.8"
 
+[patch.crates-io]
+serenity = { git = "https://github.com/serenity-rs/serenity.git" }
+
 [workspace.lints.rust]
 async_fn_in_trait = "allow"
 unsafe_code = "forbid"
-
-# override the serenity package
-# [patch.crates-io]
-# serenity = { path = "/_/contrib/serenity" }
-# I have a patch to make the extract work with forwarding, but, I am too lazy to make it good or correct for actual contribution

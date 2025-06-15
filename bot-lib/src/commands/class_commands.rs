@@ -1,9 +1,13 @@
-use crate::{commands::get_member, courses::get_course, data::PoiseContext};
+use crate::{
+    commands::{get_member, is_stefan},
+    courses::get_course,
+    data::PoiseContext,
+};
 use color_eyre::eyre::{OptionExt, Result, WrapErr};
 use itertools::Itertools;
 use poise::serenity_prelude::{
-    ChannelType, CreateChannel, EditRole, PermissionOverwrite, PermissionOverwriteType,
-    Permissions, Role, RoleId,
+    ChannelType, Context, CreateChannel, EditRole, GuildChannel, PermissionOverwrite,
+    PermissionOverwriteType, Permissions, Role, RoleId,
 };
 use regex::Regex;
 use std::{collections::HashMap, fmt::Write, sync::LazyLock, time::Duration};
@@ -250,11 +254,102 @@ pub async fn delete_class_category(
     Ok(())
 }
 
+#[poise::command(
+    slash_command,
+    ephemeral = true,
+    check = is_stefan
+)]
+pub async fn debug_print_channel_names(ctx: PoiseContext<'_>) -> Result<()> {
+    for channel in get_all_class_general_channels(&ctx).unwrap_or_default() {
+        tracing::info!("Found channel {}", channel.name);
+    }
+
+    ctx.reply("Process started!").await?;
+
+    Ok(())
+}
+
+#[poise::command(
+    slash_command,
+    required_permissions = "MANAGE_CHANNELS",
+    ephemeral = true,
+    check = is_stefan
+)]
+pub async fn reset_all_class_categories(ctx: PoiseContext<'_>) -> Result<()> {
+    ctx.defer_ephemeral().await?;
+
+    for channel in get_all_class_general_channels(&ctx).unwrap_or_default() {
+        let ctx = ctx.serenity_context().clone();
+
+        tokio::spawn(async move {
+            if let Err(e) = delete_and_replace_channel(ctx, channel).await {
+                tracing::warn!("Failed to delete and replace channel: {:?}", e);
+            }
+        });
+    }
+
+    ctx.reply("Process started!").await?;
+
+    Ok(())
+}
+
+pub(crate) fn get_all_class_general_channels(ctx: &PoiseContext<'_>) -> Option<Vec<GuildChannel>> {
+    ctx.guild().map(|guild| {
+        guild
+            .channels
+            .values()
+            .filter(|c| c.parent_id.is_some_and(is_parent_category_ok_to_automate))
+            .filter(|c| !c.name.contains("-resources"))
+            .cloned()
+            .collect::<Vec<_>>()
+    })
+}
+
+pub(crate) fn is_parent_category_ok_to_automate(parent_id: impl Into<u64>) -> bool {
+    !matches!(
+        parent_id.into(),
+        1105656100856025138
+            | 1105654574175502376
+            | 1105657058424016926
+            | 1281025666694910086
+            | 1200645054436491356
+            | 1105659164119801907
+    )
+}
+
+async fn delete_and_replace_channel(ctx: Context, channel: GuildChannel) -> Result<()> {
+    let Some(parent_id) = channel.parent_id else {
+        return Ok(());
+    };
+
+    let Some(topic) = channel.topic else {
+        return Ok(());
+    };
+
+    channel
+        .guild_id
+        .create_channel(
+            &ctx,
+            CreateChannel::new(channel.name)
+                .category(parent_id)
+                .kind(ChannelType::Text)
+                .permissions(channel.permission_overwrites)
+                .position(channel.position)
+                .topic(topic),
+        )
+        .await?;
+
+    channel.id.delete(&ctx).await?;
+
+    Ok(())
+}
+
 /// Reset the current channel you're in - aka - delete all the messages
 #[poise::command(
     slash_command,
     required_permissions = "MANAGE_CHANNELS",
-    ephemeral = true
+    ephemeral = true,
+    check = is_stefan
 )]
 pub async fn reset_class_category(ctx: PoiseContext<'_>) -> Result<()> {
     let channel_id = ctx.channel_id();
@@ -270,9 +365,7 @@ pub async fn reset_class_category(ctx: PoiseContext<'_>) -> Result<()> {
         return Ok(());
     };
 
-    if let 1105657058424016926 | 1105656100856025138 | 1105654574175502376 | 1281025666694910086
-    | 1200645054436491356 | 1105659164119801907 = u64::from(parent_id)
-    {
+    if !is_parent_category_ok_to_automate(parent_id) {
         ctx.say("Channels in this category are not resettable")
             .await?;
 
