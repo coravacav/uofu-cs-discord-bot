@@ -6,13 +6,13 @@ use serde::{Deserialize, Serialize};
 use sled::Tree;
 use std::cmp::Reverse;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct Change {
     pub amount: i64,
     pub reason: String,
 }
 
-#[derive(Debug, Deserialize, Serialize, Default)]
+#[derive(Deserialize, Serialize, Default)]
 pub struct BankAccount {
     pub balance: i64,
     pub changes: Vec<Change>,
@@ -87,10 +87,13 @@ impl BankDb {
             .map(|(user_id, account)| (user_id, account.balance))
             .sorted_by_key(|(_, balance)| Reverse(*balance))
             .map(|(user_id, balance)| {
-                (UserId::from(user_id), BankAccount {
-                    balance,
-                    ..Default::default()
-                })
+                (
+                    UserId::from(user_id),
+                    BankAccount {
+                        balance,
+                        ..Default::default()
+                    },
+                )
             }))
     }
 

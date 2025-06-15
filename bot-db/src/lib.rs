@@ -118,7 +118,7 @@ impl KingFisherDb {
         Ok(Self(sled::open("kingfisher.db")?))
     }
 
-    fn create_update_with_deserialization<V: DeserializeOwned + Serialize + Debug>(
+    fn create_update_with_deserialization<V: DeserializeOwned + Serialize>(
         old_value: Option<&[u8]>,
         update_function: impl FnMut(V) -> V,
         mut get_default_value: impl FnMut() -> V,
