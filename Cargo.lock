@@ -294,7 +294,6 @@ dependencies = [
  "bot-traits",
  "chrono",
  "color-eyre",
- "crossbeam-channel",
  "futures",
  "human-repr",
  "humantime",

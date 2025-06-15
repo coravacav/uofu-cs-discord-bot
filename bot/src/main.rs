@@ -74,7 +74,6 @@ async fn main() -> Result<()> {
                 extract_current_channel(),
                 help(),
                 list_classes(),
-                llm_prompt(),
                 mod_abuse(),
                 my_classes(),
                 parry(),

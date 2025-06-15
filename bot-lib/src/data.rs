@@ -1,4 +1,4 @@
-use crate::{config::Config, llm};
+use crate::config::Config;
 use bot_db::KingFisherDb;
 use color_eyre::eyre::{Error, Result};
 use std::{path::Path, sync::Arc};
@@ -17,7 +17,6 @@ pub struct RawAppState {
     /// The path to the config file.
     /// This is to allow for saving / reloading the config.
     pub config_path: Box<Path>,
-    pub llms: llm::LLMS,
     pub db: KingFisherDb,
 }
 
@@ -25,7 +24,6 @@ impl RawAppState {
     pub fn new(config: Config, config_path: String) -> Result<RawAppState> {
         let config = Arc::new(RwLock::new(config));
 
-        let llm_tx = llm::setup_llms()?;
         let db = KingFisherDb::new()?;
 
         use notify::{
@@ -59,7 +57,6 @@ impl RawAppState {
             config,
             _watcher: watcher,
             config_path,
-            llms: llm_tx,
             db,
         })
     }
