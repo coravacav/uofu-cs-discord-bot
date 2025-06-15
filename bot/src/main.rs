@@ -15,7 +15,7 @@ use tracing_subscriber::prelude::*;
 /// The CLI arguments for the bot
 ///
 /// In general, not used very often, but, can be nice for testing.
-#[derive(Parser, Debug)]
+#[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     /// Don't start the discord bot, do all setup checks.
@@ -105,7 +105,7 @@ async fn main() -> Result<()> {
                         return;
                     }
 
-                    tracing::error!("{:?}", error);
+                    tracing::error!("{}", error.to_string());
                 }
 
                 Box::pin(on_error(error))

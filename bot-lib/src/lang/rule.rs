@@ -6,7 +6,7 @@ use nom::{
 };
 
 /// A rule is a single case of success for a given ruleset
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Rule<'a> {
     /// The cases of the rule
     pub cases: Vec<Case<'a>>,

@@ -1,13 +1,13 @@
-use ahash::AHashSet;
 use color_eyre::eyre::Result;
 use poise::serenity_prelude::{
     Channel, ChannelId, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage,
     GetMessages, Message, MessageId, Reaction, ReactionType,
 };
+use rustc_hash::FxHashSet;
 use serde::Deserialize;
 use tokio::sync::{Mutex, MutexGuard};
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct Starboard {
     pub reaction_count: u64,
     /// Currently only supports unicode emojis.
@@ -16,7 +16,7 @@ pub struct Starboard {
     pub ignored_channel_ids: Option<Vec<u64>>,
     /// This stores a string hash of the message link
     #[serde(skip)]
-    pub recently_added_messages: Mutex<AHashSet<MessageId>>,
+    pub recently_added_messages: Mutex<FxHashSet<MessageId>>,
 }
 
 impl Starboard {
@@ -27,7 +27,7 @@ impl Starboard {
         ctx: &Context,
         message: &Message,
         reaction: &Reaction,
-        recent_messages: &mut MutexGuard<'_, AHashSet<MessageId>>,
+        recent_messages: &mut MutexGuard<'_, FxHashSet<MessageId>>,
     ) -> bool {
         self.enough_reactions(message, reaction)
             && self.is_allowed_reaction(reaction, message, recent_messages)
@@ -50,7 +50,7 @@ impl Starboard {
         &self,
         reaction: &Reaction,
         message: &Message,
-        recent_messages: &mut MutexGuard<'_, AHashSet<MessageId>>,
+        recent_messages: &mut MutexGuard<'_, FxHashSet<MessageId>>,
     ) -> bool {
         if !matches!(reaction.emoji, ReactionType::Unicode(_)) {
             return true;

@@ -3,7 +3,6 @@ use crate::{
     data::{PoiseContext, State},
     utils::GetRelativeTimestamp,
 };
-use ahash::{AHashMap, AHashSet};
 use bot_db::yeet::YeetLeaderboard;
 use bot_traits::ForwardRefToTracing;
 use chrono::{DateTime, Utc};
@@ -15,6 +14,7 @@ use poise::serenity_prelude::{
     MessageId, ReactionType, User, UserId,
 };
 use rand::Rng;
+use rustc_hash::{FxHashMap, FxHashSet};
 use std::{
     cmp::Reverse,
     num::Saturating,
@@ -69,14 +69,14 @@ pub const YEET_VOTING_SECONDS: u64 = 90;
 pub const YEET_PARRY_SECONDS: u64 = 5;
 pub const YEET_PARRY_COOLDOWN_SECONDS: u64 = 60;
 
-pub(crate) static YEET_MAP: LazyLock<Mutex<AHashMap<MessageId, Arc<YeetContext>>>> =
-    LazyLock::new(|| Mutex::new(AHashMap::new()));
-pub(crate) static YEET_STARBOARD_EXCLUSIONS: LazyLock<Mutex<AHashSet<MessageId>>> =
-    LazyLock::new(|| Mutex::new(AHashSet::new()));
+pub(crate) static YEET_MAP: LazyLock<Mutex<FxHashMap<MessageId, Arc<YeetContext>>>> =
+    LazyLock::new(|| Mutex::new(FxHashMap::default()));
+pub(crate) static YEET_STARBOARD_EXCLUSIONS: LazyLock<Mutex<FxHashSet<MessageId>>> =
+    LazyLock::new(|| Mutex::new(FxHashSet::default()));
 pub(crate) static YEET_OPPORTUNITIES: LazyLock<Mutex<Saturating<usize>>> =
     LazyLock::new(|| Mutex::new(YEET_DEFAULT_OPPORTUNITIES));
-pub(crate) static YEET_PARRY_MAP: LazyLock<Mutex<AHashMap<UserId, (Instant, u64)>>> =
-    LazyLock::new(|| Mutex::new(AHashMap::new()));
+pub(crate) static YEET_PARRY_MAP: LazyLock<Mutex<FxHashMap<UserId, (Instant, u64)>>> =
+    LazyLock::new(|| Mutex::new(FxHashMap::default()));
 
 fn has_yeet_opportunities() -> bool {
     let mut yeet_opportunities = YEET_OPPORTUNITIES.lock();

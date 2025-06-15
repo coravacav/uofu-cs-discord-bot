@@ -5,7 +5,6 @@ use std::{
 };
 
 use crate::{SayThenDelete, data::PoiseContext};
-use ahash::{AHashMap, AHashSet};
 use bot_traits::ForwardRefToTracing;
 use color_eyre::eyre::Result;
 use futures::StreamExt;
@@ -14,6 +13,7 @@ use poise::serenity_prelude::{
     CreateAllowedMentions, CreateMessage, MessageBuilder, MessageId, Timestamp, UserId,
 };
 use regex::{Captures, Regex};
+use rustc_hash::{FxHashMap, FxHashSet};
 use tokio::sync::Mutex;
 
 /// Take the last X mesasges and make a nice new message that contains them all.
@@ -32,8 +32,8 @@ pub async fn clip_that(
 
     let user_id = ctx.author().id;
 
-    static INSTANT_BY_USER_ID: LazyLock<parking_lot::Mutex<AHashMap<UserId, Instant>>> =
-        LazyLock::new(|| parking_lot::Mutex::new(AHashMap::new()));
+    static INSTANT_BY_USER_ID: LazyLock<parking_lot::Mutex<FxHashMap<UserId, Instant>>> =
+        LazyLock::new(|| parking_lot::Mutex::new(FxHashMap::default()));
 
     let old_time = INSTANT_BY_USER_ID.lock().insert(user_id, Instant::now());
 
@@ -57,8 +57,8 @@ pub async fn clip_that(
     )
     .unwrap();
 
-    static MESSAGES_SENT_BY_THIS: LazyLock<Mutex<AHashSet<Option<MessageId>>>> =
-        LazyLock::new(|| Mutex::new(AHashSet::new()));
+    static MESSAGES_SENT_BY_THIS: LazyLock<Mutex<FxHashSet<Option<MessageId>>>> =
+        LazyLock::new(|| Mutex::new(FxHashSet::default()));
 
     let mut mesages_sent_by_this = MESSAGES_SENT_BY_THIS.lock().await;
 

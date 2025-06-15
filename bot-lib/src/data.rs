@@ -8,7 +8,6 @@ use tokio::sync::RwLock;
 /// Arc because I can't be arsed.
 pub type State = Arc<RawAppState>;
 
-#[derive(Debug)]
 pub struct RawAppState {
     pub config: Arc<RwLock<Config>>,
     /// Config file watcher that refreshes the config if it changes

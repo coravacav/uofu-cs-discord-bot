@@ -5,24 +5,24 @@ use super::{
 use color_eyre::eyre::{ContextCompat, Result, bail};
 use regex::{Regex, RegexSet};
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct UnparsedRegexAndNegated<'a>(pub &'a str, pub bool);
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum UnparsedRegex<'a> {
     Single(&'a str),
     Multiple(Vec<UnparsedRegexAndNegated<'a>>),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct UnparsedRuleset<'a> {
     pub regexes: Vec<UnparsedRegex<'a>>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct RegexAndNegated(pub Regex, pub bool);
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Ruleset {
     /// If this matches, the rule is considered a match
     pub single_positive: Option<RegexSet>,

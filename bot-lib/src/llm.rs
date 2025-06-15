@@ -3,7 +3,6 @@ use color_eyre::eyre::Result;
 type LLMTxValue = (String, tokio::sync::oneshot::Sender<String>);
 type LLMTx = crossbeam_channel::Sender<LLMTxValue>;
 
-#[derive(Debug)]
 pub struct LLMS {
     pub big: LLMTx,
     pub small: LLMTx,

@@ -111,7 +111,6 @@ impl ReadWriteTree for Tree {
     }
 }
 
-#[derive(Debug)]
 pub struct KingFisherDb(Db);
 
 impl KingFisherDb {
@@ -210,7 +209,7 @@ fn perform_migration<
     Ok(())
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 struct DataWithVersion<T> {
     version: u32,
     data: T,

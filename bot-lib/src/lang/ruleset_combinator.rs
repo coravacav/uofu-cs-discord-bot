@@ -5,9 +5,9 @@
 
 use std::sync::Arc;
 
-use ahash::AHashMap;
 use color_eyre::eyre::{Result, bail};
 use regex::{Regex, RegexSet};
+use rustc_hash::FxHashMap;
 
 use super::ruleset::{
     RegexAndNegated, Ruleset, UnparsedRegex, UnparsedRegexAndNegated, UnparsedRuleset,
@@ -29,7 +29,6 @@ impl<'a> From<(Name, UnparsedRuleset<'a>)> for UnparsedRulesetWithName<'a> {
     }
 }
 
-#[derive(Debug)]
 pub struct RulesetCombinator {
     /// If this matches true, at least one of the rules is considered a match.
     single_positive_matcher: Option<RegexSet>,
@@ -41,14 +40,14 @@ pub struct RulesetCombinator {
     single_positive_rulesets: Vec<Name>,
     multiple_positive_rulesets: Vec<Name>,
     multiple_negative_rulesets: Vec<Name>,
-    rulesets: AHashMap<Name, Ruleset>,
+    rulesets: FxHashMap<Name, Ruleset>,
 }
 
 impl RulesetCombinator {
     pub fn new<'a>(
         unparsed_rulesets: impl Iterator<Item = UnparsedRulesetWithName<'a>>,
     ) -> Result<Self> {
-        let mut rulesets: AHashMap<Name, Ruleset> = AHashMap::new();
+        let mut rulesets: FxHashMap<Name, Ruleset> = FxHashMap::default();
 
         let mut single_positive_options: Vec<&str> = vec![];
         let mut multiple_positive_options: Vec<&str> = vec![];

@@ -1,13 +1,13 @@
 use std::sync::{Arc, LazyLock};
 
 use crate::{config::ResponseKind, data::State};
-use ahash::AHashMap;
 use bot_traits::ForwardRefToTracing;
 use color_eyre::eyre::{OptionExt, Result, bail};
 use parking_lot::Mutex;
 use poise::serenity_prelude::{ChannelId, Context, Message, MessageId, ReactionType, UserId};
+use rustc_hash::FxHashMap;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct KingfisherReplyMetadata {
     pub message_id: MessageId,
     pub channel_id: ChannelId,
@@ -15,8 +15,8 @@ pub struct KingfisherReplyMetadata {
 }
 
 pub static KINGFISHER_REPLY_LAST_BY_USER: LazyLock<
-    Mutex<AHashMap<UserId, KingfisherReplyMetadata>>,
-> = LazyLock::new(|| Mutex::new(AHashMap::new()));
+    Mutex<FxHashMap<UserId, KingfisherReplyMetadata>>,
+> = LazyLock::new(|| Mutex::new(FxHashMap::default()));
 
 pub async fn text_detection_and_reaction(
     ctx: &Context,

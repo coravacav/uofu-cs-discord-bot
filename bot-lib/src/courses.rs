@@ -47,14 +47,14 @@ pub fn get_course(course_id: &str) -> Option<Course> {
     COURSES.read().get(course_id).cloned()
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 struct File {
     data: Vec<Course>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct Course {

@@ -1,6 +1,6 @@
 use crate::lang::ruleset_combinator::RulesetCombinator;
 use crate::starboard::Starboard;
-use ahash::AHashMap;
+use rustc_hash::FxHashMap;
 use chrono::Duration;
 use chrono::{DateTime, TimeDelta, Utc};
 use color_eyre::eyre::{Result, WrapErr};
@@ -12,7 +12,7 @@ use serde_with::{DurationSeconds, serde_as};
 use std::path::Path;
 use std::sync::Arc;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 pub struct Ids {
     /// The role id of the bot react role.
     pub bot_react_role_id: u64,
@@ -21,7 +21,7 @@ pub struct Ids {
 }
 
 /// This is the raw config file that's read from the config file (config.toml)
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 pub struct RawConfig {
     pub default_text_detect_cooldown: u64,
     pub starboards: Vec<Arc<Starboard>>,
@@ -44,7 +44,6 @@ impl RawConfig {
     }
 }
 
-#[derive(Debug)]
 pub struct Config {
     /// The default cooldown for text detection.
     ///
@@ -57,7 +56,7 @@ pub struct Config {
     /// The help text for the bot. `/help`
     pub help_text: Option<Arc<String>>,
     /// What possible replies kingfisher can make.
-    pub responses: AHashMap<Arc<str>, AutomatedKingfisherReplyConfig>,
+    pub responses: FxHashMap<Arc<str>, AutomatedKingfisherReplyConfig>,
     /// The ruleset combinator
     pub ruleset_combinator: RulesetCombinator,
     /// How often kingfisher replies to a message.
@@ -89,7 +88,7 @@ impl Config {
                 .map(|a| a.into()),
         )?;
 
-        let responses = AHashMap::from_iter(raw_config.responses.into_iter().map(|response| {
+        let responses = FxHashMap::from_iter(raw_config.responses.into_iter().map(|response| {
             (
                 response.name.clone(),
                 AutomatedKingfisherReplyConfig {
@@ -139,7 +138,7 @@ impl Config {
 /// All different ways for a message detection to reply.
 ///
 /// Future plans include something like images or embeds, but, that's not implemented yet.
-#[derive(Deserialize, Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Deserialize, Clone, PartialEq, Eq, Default)]
 #[serde(untagged)]
 pub enum ResponseKind {
     /// There is no response.
@@ -164,7 +163,6 @@ impl ResponseKind {
 }
 
 /// A nice little configuration object containing all individually configurable message settings and responses.
-#[derive(Debug)]
 pub struct AutomatedKingfisherReplyConfig {
     /// The chance that the response will be triggered.
     ///
@@ -183,7 +181,7 @@ pub struct AutomatedKingfisherReplyConfig {
 }
 
 #[serde_as]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 pub struct RawRegisteredResponse {
     /// The name of the response. Used only for logging.
     name: Arc<str>,
