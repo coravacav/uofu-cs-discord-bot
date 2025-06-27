@@ -1,6 +1,6 @@
 use color_eyre::eyre::Result;
 use poise::serenity_prelude::{
-    Channel, ChannelId, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage,
+    ChannelId, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage,
     GetMessages, Message, MessageId, Reaction, ReactionType,
 };
 use rustc_hash::FxHashSet;
@@ -139,11 +139,10 @@ impl Starboard {
                     .channel(ctx)
                     .await
                     .map(|channel| {
-                        if let Channel::Guild(channel) = channel {
-                            format!(" ({})", channel.name)
-                        } else {
-                            "".to_string()
-                        }
+                        channel
+                            .guild()
+                            .map(|guild_channel| format!(" ({})", guild_channel.name))
+                            .unwrap_or_default()
                     })
                     .unwrap_or("".to_string())
             ))

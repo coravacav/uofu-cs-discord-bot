@@ -50,7 +50,7 @@ async fn read_chat(ctx: Context, channel_id: ChannelId) -> Result<()> {
         fs::create_dir(&directory_name)?;
     }
 
-    let message_output_file = fs::File::create(format!("{}/messages.txt", directory_name))?;
+    let message_output_file = fs::File::create(format!("{directory_name}/messages.txt"))?;
     let mut message_output_file = std::io::BufWriter::new(message_output_file);
 
     let reqwest = reqwest::Client::new();
@@ -85,11 +85,7 @@ async fn read_chat(ctx: Context, channel_id: ChannelId) -> Result<()> {
                 "{}.{}.{}",
                 attachment_count, message.id, attachment.filename
             );
-            write!(
-                attachments,
-                "\nAttachment {}: {}",
-                attachment_count, filename
-            )?;
+            write!(attachments, "\nAttachment {attachment_count}: {filename}")?;
 
             let directory_name = Arc::clone(&directory_name);
             let url = attachment.url.clone();
@@ -135,7 +131,7 @@ async fn read_chat(ctx: Context, channel_id: ChannelId) -> Result<()> {
             )?;
         }
 
-        writeln!(message_output_file, "{}\n", attachments)?;
+        writeln!(message_output_file, "{attachments}\n")?;
     }
 
     let elapsed = start.elapsed();
@@ -149,7 +145,7 @@ async fn read_chat(ctx: Context, channel_id: ChannelId) -> Result<()> {
     ChannelId::new(1274560000102236282)
         .send_message(
             &ctx,
-            CreateMessage::new().content(format!("Done archiving {}", directory_name)),
+            CreateMessage::new().content(format!("Done archiving {directory_name}")),
         )
         .await?;
 
@@ -162,7 +158,7 @@ async fn download_file(
     filename: String,
     directory_name: &str,
 ) -> Result<()> {
-    let output_file = format!("{}/{}", directory_name, filename);
+    let output_file = format!("{directory_name}/{filename}");
     if Path::new(&output_file).exists() {
         return Ok(());
     }

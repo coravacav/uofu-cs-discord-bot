@@ -37,12 +37,12 @@ pub async fn clip_that(
 
     let old_time = INSTANT_BY_USER_ID.lock().insert(user_id, Instant::now());
 
-    if let Some(last_time) = old_time {
-        if last_time.elapsed() < Duration::from_secs(300) {
-            ctx.say_then_delete("300 more seconds of no clipping :)")
-                .await?;
-            return Ok(());
-        }
+    if let Some(last_time) = old_time
+        && last_time.elapsed() < Duration::from_secs(300)
+    {
+        ctx.say_then_delete("300 more seconds of no clipping :)")
+            .await?;
+        return Ok(());
     }
 
     let channel_id = ctx.channel_id();
@@ -105,7 +105,7 @@ pub async fn clip_that(
             time_string.pop();
 
             new_message.mention(&author);
-            new_message.push_safe(format!(" ({})\n", time_string));
+            new_message.push_safe(format!(" ({time_string})\n"));
             new_message.push_safe(clips);
 
             Ok(())

@@ -12,11 +12,9 @@ pub async fn coinflip(ctx: PoiseContext<'_>, optional_explanation: Option<String
         ctx.say(format!(
             "{} flipped a coin and it LANDED ON ITS SIDE??? (0.1% chance){}",
             ctx.author().mention(),
-            if let Some(reason) = optional_explanation {
-                format!(" \"{}\"", reason)
-            } else {
-                String::new()
-            }
+            optional_explanation
+                .map(|reason| format!(" \"{reason}\""))
+                .unwrap_or_default()
         ))
         .await?;
 
@@ -27,11 +25,9 @@ pub async fn coinflip(ctx: PoiseContext<'_>, optional_explanation: Option<String
         "{} flipped a coin and got {}{}",
         ctx.author().mention(),
         if heads { "heads" } else { "tails" },
-        if let Some(reason) = optional_explanation {
-            format!(" \"{}\"", reason)
-        } else {
-            String::new()
-        }
+        optional_explanation
+            .map(|reason| format!(" \"{reason}\""))
+            .unwrap_or_default()
     ))
     .await?;
 

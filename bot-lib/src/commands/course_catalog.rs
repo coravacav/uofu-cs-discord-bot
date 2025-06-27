@@ -25,11 +25,11 @@ pub async fn catalog(ctx: PoiseContext<'_>, course_id: String) -> Result<()> {
     }
 
     if course_id.chars().next().unwrap().is_numeric() {
-        course_id = format!("CS{}", course_id);
+        course_id = format!("CS{course_id}");
     }
 
     let Some(course) = get_course(&course_id) else {
-        ctx.reply_ephemeral(format!("Could not find a course with id {}", course_id))
+        ctx.reply_ephemeral(format!("Could not find a course with id {course_id}"))
             .await?;
         return Ok(());
     };
@@ -103,7 +103,7 @@ pub async fn search_catalog(ctx: PoiseContext<'_>, search_string: String) -> Res
 
         match course_count {
             0 => CreateReply::default()
-                .content(format!("No courses found for \"{}\"", search_string))
+                .content(format!("No courses found for \"{search_string}\""))
                 .reply(true)
                 .ephemeral(true),
             1 => get_course_reply(courses.first().unwrap()),

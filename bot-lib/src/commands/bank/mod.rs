@@ -13,7 +13,7 @@ fn build_history_message(history: impl DoubleEndedIterator<Item = Change>, user:
     message_text.push('\n');
 
     for Change { amount, reason } in history.rev().take(20) {
-        message_text.push_str(&format!("`{:>9}`: {}\n", amount, reason));
+        message_text.push_str(&format!("`{amount:>9}`: {reason}\n"));
     }
 
     message_text

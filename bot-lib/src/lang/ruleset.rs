@@ -22,7 +22,6 @@ pub struct UnparsedRuleset<'a> {
 #[derive(Clone)]
 pub struct RegexAndNegated(pub Regex, pub bool);
 
-#[derive(Clone)]
 pub struct Ruleset {
     /// If this matches, the rule is considered a match
     pub single_positive: Option<RegexSet>,
@@ -121,10 +120,10 @@ impl Ruleset {
     }
 
     pub fn matches(&self, input: &str) -> bool {
-        if let Some(positive) = &self.single_positive {
-            if positive.is_match(input) {
-                return true;
-            }
+        if let Some(positive) = &self.single_positive
+            && positive.is_match(input)
+        {
+            return true;
         }
 
         if let Some(multi_rules) = &self.multiple {

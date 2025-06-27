@@ -159,7 +159,7 @@ impl KingFisherDb {
     ) -> Result<Option<String>> {
         let key = bincode::serialize::<K>(key)?;
         let db = self.open_tree(tree)?;
-        Ok(db.get(&key)?.map(|v| format!("{:?}", v)))
+        Ok(db.get(&key)?.map(|v| format!("{v:?}")))
     }
 }
 
@@ -181,12 +181,12 @@ fn perform_migration<
         };
 
         let Ok(old_key) = bincode::deserialize::<OldKey>(&old_key_bytes) else {
-            eprintln!("Failed to deserialize old key, {:?}", old_key_bytes);
+            eprintln!("Failed to deserialize old key, {old_key_bytes:?}");
             continue;
         };
 
         let Ok(old_value) = bincode::deserialize::<OldValue>(&old_value_bytes) else {
-            eprintln!("Failed to deserialize old value, key={:?}", old_key);
+            eprintln!("Failed to deserialize old value, key={old_key:?}");
             continue;
         };
 

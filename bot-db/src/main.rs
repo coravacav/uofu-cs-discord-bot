@@ -15,7 +15,7 @@ fn main() -> Result<()> {
     let yeet = YeetLeaderboard::connect(&db)?;
 
     for (user_id, count) in yeet.iter() {
-        println!("{}: {}", user_id, count);
+        println!("{user_id}: {count}");
     }
 
     Ok(())

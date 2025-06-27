@@ -61,11 +61,9 @@ pub async fn mod_abuse(
         return Ok(());
     };
 
-    let reason = if let Some(reason) = reason {
-        format!(" because \"{}\"", reason)
-    } else {
-        String::new()
-    };
+    let reason = reason
+        .map(|r| format!(" because \"{r}\""))
+        .unwrap_or_default();
 
     let participate_verbiage: [&str; 2] = [
         (

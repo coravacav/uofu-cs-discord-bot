@@ -105,7 +105,7 @@ async fn get_role(ctx: PoiseContext<'_>, identifier: &str) -> Result<GetRoleResu
         .skip_while(|c| c.is_ascii_alphabetic())
         .collect::<String>();
 
-    let identifier = format!("{} {}", college_id, course_id);
+    let identifier = format!("{college_id} {course_id}");
 
     let joinable_roles = get_class_roles(roles)
         .filter(|Role { name, .. }| name.contains(&identifier))
@@ -144,9 +144,9 @@ pub async fn create_class_category(
         }
     }
 
-    let role_name = format!("CS {}", number_string);
+    let role_name = format!("CS {number_string}");
 
-    let (category_name, channel_description) = get_course(&format!("CS{}", number))
+    let (category_name, channel_description) = get_course(&format!("CS{number}"))
         .map(|course| {
             let mut category_name = format!("{role_name} - {}", course.long_name);
             category_name.truncate(100);
@@ -191,7 +191,7 @@ pub async fn create_class_category(
     guild
         .create_channel(
             ctx,
-            CreateChannel::new(format!("{}-resources", number_string))
+            CreateChannel::new(format!("{number_string}-resources"))
                 .kind(ChannelType::Text)
                 .category(category.id),
         )
@@ -201,7 +201,7 @@ pub async fn create_class_category(
     guild
         .create_channel(
             ctx,
-            CreateChannel::new(format!("{}-general", number_string))
+            CreateChannel::new(format!("{number_string}-general"))
                 .kind(ChannelType::Text)
                 .category(category.id)
                 .topic(channel_description.unwrap_or_default()),
@@ -420,8 +420,7 @@ pub async fn add_class_role(
             ctx.say("Joined class!").await?;
         }
         GetRoleResult::MultipleFound(roles) => {
-            let mut message_text =
-                format!("Multiple classes found with search \"{}\"\n", identifier);
+            let mut message_text = format!("Multiple classes found with search \"{identifier}\"\n");
             for role in roles {
                 message_text.push_str(&format!("`{}` ", role.name));
             }
@@ -429,8 +428,7 @@ pub async fn add_class_role(
         }
         GetRoleResult::NotFound => {
             ctx.say(format!(
-                "Could not find class with identifier \"{}\"",
-                identifier
+                "Could not find class with identifier \"{identifier}\""
             ))
             .await?;
         }
@@ -458,8 +456,7 @@ pub async fn remove_class_role(
             ctx.say("Left class!").await?;
         }
         GetRoleResult::MultipleFound(roles) => {
-            let mut message_text =
-                format!("Multiple classes found with search \"{}\"\n", identifier);
+            let mut message_text = format!("Multiple classes found with search \"{identifier}\"\n");
             for role in roles {
                 message_text.push_str(&format!("`{}` ", role.name));
             }
@@ -467,8 +464,7 @@ pub async fn remove_class_role(
         }
         GetRoleResult::NotFound => {
             ctx.say(format!(
-                "Could not find class with identifier \"{}\"",
-                identifier
+                "Could not find class with identifier \"{identifier}\""
             ))
             .await?;
         }

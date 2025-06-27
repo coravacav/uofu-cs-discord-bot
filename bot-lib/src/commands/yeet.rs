@@ -110,8 +110,7 @@ fn create_yeet_message(
             .mention(victim)
             .push("the impostor?\n")
             .push(format!(
-                "Or, vote {} to yeet the author: ||",
-                YEET_NO_REACTION
+                "Or, vote {YEET_NO_REACTION} to yeet the author: ||"
             ))
             .mention(yeeter)
             .push("||\n")
@@ -123,12 +122,10 @@ fn create_yeet_message(
             .push("Do you want to yeet ")
             .mention(victim)
             .push(format!(
-                "? ({} {}'s needed)\n",
-                YEET_REQUIRED_REACTION_COUNT, YEET_YES_REACTION,
+                "? ({YEET_REQUIRED_REACTION_COUNT} {YEET_YES_REACTION}'s needed)\n",
             ))
             .push(format!(
-                "Or, vote {} to yeet the author: ||",
-                YEET_NO_REACTION
+                "Or, vote {YEET_NO_REACTION} to yeet the author: ||"
             ))
             .mention(yeeter)
             .push("||\n")
@@ -479,8 +476,7 @@ pub async fn handle_yeeting(ctx: &Context, data: State, message: &Message) -> Re
                         .send_message(
                             ctx,
                             CreateMessage::new().content(format!(
-                                "{} has successfully parried the yeet! Take that {}!",
-                                victim, yeeter
+                                "{victim} has successfully parried the yeet! Take that {yeeter}!"
                             )),
                         )
                         .await

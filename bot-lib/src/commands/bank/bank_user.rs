@@ -66,12 +66,12 @@ pub async fn income(ctx: PoiseContext<'_>) -> Result<()> {
 
     let old_time = INSTANT_BY_USER_ID.lock().insert(user_id, Instant::now());
 
-    if let Some(last_time) = old_time {
-        if last_time.elapsed() < Duration::from_secs(PER_USER_INCOME_TIMEOUT_SECONDS) {
-            ctx.say_then_delete("Federal law requires you calm down")
-                .await?;
-            return Ok(());
-        }
+    if let Some(last_time) = old_time
+        && last_time.elapsed() < Duration::from_secs(PER_USER_INCOME_TIMEOUT_SECONDS)
+    {
+        ctx.say_then_delete("Federal law requires you calm down")
+            .await?;
+        return Ok(());
     }
 
     let bonus_amount = get_user_bonus(user_id);
@@ -81,7 +81,7 @@ pub async fn income(ctx: PoiseContext<'_>) -> Result<()> {
     ctx.say_then_delete(format!(
         "Paycheck deposited{}! Your new balance is {}",
         if bonus_amount > 0 {
-            format!(" with a bonus of {}", bonus_amount)
+            format!(" with a bonus of {bonus_amount}")
         } else {
             String::new()
         },
@@ -118,11 +118,8 @@ pub async fn gamble(
 
     let balance = bank.get(user_id)?.balance;
     if balance < amount {
-        ctx.say_then_delete(format!(
-            "You don't have enough money! You have ${}",
-            balance
-        ))
-        .await?;
+        ctx.say_then_delete(format!("You don't have enough money! You have ${balance}"))
+            .await?;
         return Ok(());
     }
 
@@ -134,7 +131,7 @@ pub async fn gamble(
     let Some(account) = bank.change(
         user_id,
         change,
-        format!("Gamble for {} at odds {}", amount, odds_of_success),
+        format!("Gamble for {amount} at odds {odds_of_success}"),
     )?
     else {
         tracing::error!("How did we get no account back?");

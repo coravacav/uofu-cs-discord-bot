@@ -29,7 +29,7 @@ async fn inspect_value(ctx: PoiseContext<'_>, tree: String, key: UserId) -> Resu
     let key: u64 = key.into();
     let value = ctx.data().db.debug_inspect_value(&tree, &key)?;
 
-    ctx.reply(format!("Value is {:?}", value)).await?;
+    ctx.reply(format!("Value is {value:?}")).await?;
 
     Ok(())
 }
