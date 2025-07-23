@@ -19,7 +19,9 @@ pub async fn event_handler(
     match event {
         serenity::FullEvent::Message { new_message } => {
             // Wordle bot detection
-            if new_message.author.id == 1211781489931452447 {
+            if new_message.author.id == 1211781489931452447
+                && new_message.channel_id != 1397342642617978920
+            {
                 let channel_id = new_message.channel_id;
                 let _ = new_message.delete(ctx).await;
 
