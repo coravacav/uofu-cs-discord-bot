@@ -8,7 +8,8 @@ use crate::{
 };
 use bot_traits::ForwardRefToTracing;
 use color_eyre::eyre::Result;
-use poise::serenity_prelude as serenity;
+use futures::StreamExt;
+use poise::serenity_prelude::{self as serenity, CreateMessage};
 
 pub async fn event_handler(
     ctx: &serenity::Context,
@@ -17,6 +18,38 @@ pub async fn event_handler(
 ) -> Result<()> {
     match event {
         serenity::FullEvent::Message { new_message } => {
+            // Wordle bot detection
+            if new_message.author.id == 1211781489931452447 {
+                let channel_id = new_message.channel_id;
+                let _ = new_message.delete(ctx).await;
+
+                // See if the last message was kingfisher saying Please use the wordle bot and skip sending another if so
+                let kingfisher_already_said = channel_id
+                    .messages_iter(ctx)
+                    .take(2)
+                    .any(|message| async move {
+                        message.is_ok_and(|message| {
+                            message.author.id == ctx.cache.current_user().id
+                                && message.content.starts_with("Please use the wordle bot in")
+                        })
+                    })
+                    .await;
+
+                if kingfisher_already_said {
+                    return Ok(());
+                }
+
+                channel_id
+                    .send_message(
+                        ctx,
+                        CreateMessage::new()
+                            .content("Please use the wordle bot in <#1397342642617978920>"),
+                    )
+                    .await?;
+
+                return Ok(());
+            }
+
             text_detection_and_reaction(ctx, data, new_message)
                 .await
                 .trace_err_ok();

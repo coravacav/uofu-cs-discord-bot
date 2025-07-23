@@ -36,7 +36,9 @@ async fn main() -> Result<()> {
         // .with(console_subscriber::spawn())
         .with(tracing_subscriber::fmt::layer().compact().with_filter(
             tracing_subscriber::filter::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-                tracing_subscriber::filter::EnvFilter::new("serenity=warn,bot=info,bot-lib=info")
+                tracing_subscriber::filter::EnvFilter::new(
+                    "serenity::gateway::shard=off,serenity=warn,bot=info,bot-lib=info",
+                )
             }),
         ))
         .init();
