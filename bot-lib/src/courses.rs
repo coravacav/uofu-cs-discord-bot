@@ -8,7 +8,7 @@ use std::{
     sync::{Arc, LazyLock},
 };
 
-pub(crate) static COURSES: LazyLock<RwLock<HashMap<String, Course>>> =
+pub(crate) static COURSES: LazyLock<RwLock<HashMap<Arc<str>, Course>>> =
     LazyLock::new(Default::default);
 
 pub fn get_course(course_id: &str) -> Option<Course> {
@@ -36,8 +36,8 @@ pub enum CourseStatus {
 #[non_exhaustive]
 pub struct Course {
     /// The course code, eg. CS2420
-    #[serde(rename = "code")]
-    pub course_id: Arc<String>,
+    #[serde(rename = "code", deserialize_with = "trim_course_id")]
+    pub course_id: Arc<str>,
     /// The long name of the course, eg. Introduction to Computer Science
     pub long_name: String,
     /// The description of the course
@@ -54,6 +54,20 @@ pub struct Course {
     #[serde(skip)]
     /// A cached message for the course
     pub cached_message: Option<CreateReply>,
+}
+
+fn trim_course_id<'de, D>(deserializer: D) -> Result<Arc<str>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let course_id: String = Deserialize::deserialize(deserializer)?;
+    Ok(Arc::from(
+        course_id
+            .to_uppercase()
+            .chars()
+            .filter(|c| c.is_alphanumeric())
+            .collect::<String>(),
+    ))
 }
 
 pub fn update_course_list() {
@@ -161,10 +175,11 @@ async fn fetch_and_update() -> Result<()> {
     let json_text = resp.text().await.wrap_err("Failed to get text")?;
     let json: File = serde_json::from_str(&json_text)?;
 
-    let mut courses: HashMap<String, Course> = HashMap::new();
+    let mut courses: HashMap<Arc<str>, Course> = HashMap::new();
 
     for mut course in json.data {
-        let current = courses.remove(&*course.course_id);
+        let course_id = Arc::clone(&course.course_id);
+        let current = courses.remove(&course_id);
 
         let saved_course = if let Some(current) = current {
             if course.status == CourseStatus::Active {
@@ -179,7 +194,7 @@ async fn fetch_and_update() -> Result<()> {
             course
         };
 
-        courses.insert((*saved_course.course_id).clone(), saved_course);
+        courses.insert(course_id, saved_course);
     }
 
     let mut saved_courses = COURSES.write();

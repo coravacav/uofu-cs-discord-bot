@@ -35,3 +35,5 @@ llms
 kingfisher.db
 
 all_backups/
+
+debug.json

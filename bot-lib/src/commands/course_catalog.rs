@@ -115,7 +115,7 @@ pub async fn search_catalog(ctx: PoiseContext<'_>, search_string: String) -> Res
             .values()
             .filter(|course| {
                 [
-                    course.course_id.as_str(),
+                    &*course.course_id as &str,
                     course.long_name.as_str(),
                     course.description.as_str(),
                 ]
