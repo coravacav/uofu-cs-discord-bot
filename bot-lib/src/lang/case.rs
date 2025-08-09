@@ -9,7 +9,7 @@ pub struct Case<'a> {
     pub negated: bool,
 }
 
-fn parse_line(input: &str) -> IResult<&str, Case> {
+fn parse_line(input: &'_ str) -> IResult<&'_ str, Case<'_>> {
     let (input, is_negated) = opt(tag("!"))(input)?;
     let is_negated = is_negated.is_some();
     let (input, _) = tag("r ")(input)?;
@@ -23,10 +23,10 @@ fn parse_line(input: &str) -> IResult<&str, Case> {
     ))
 }
 
-fn parse_case(input: &str) -> IResult<&str, Case> {
+fn parse_case(input: &'_ str) -> IResult<&'_ str, Case<'_>> {
     parse_line(input)
 }
 
-pub fn parse_all_cases(input: &str) -> IResult<&str, Vec<Case>> {
+pub fn parse_all_cases(input: &'_ str) -> IResult<&'_ str, Vec<Case<'_>>> {
     separated_list1(newline, parse_case)(input)
 }

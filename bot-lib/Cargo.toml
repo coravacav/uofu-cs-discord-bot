@@ -28,7 +28,7 @@ tokio-stream = "0.1"
 raur = "7"
 humantime = "2"
 human-repr = "1.1"
-reqwest = "0.12.12"
+reqwest = { version = "0.12.12", features = ["json"] }
 
 [lints]
 workspace = true

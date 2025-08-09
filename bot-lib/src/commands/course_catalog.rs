@@ -1,5 +1,7 @@
+use std::sync::Arc;
+
 use crate::{
-    courses::{COURSES, Course, get_course},
+    courses::{COURSES, Course, CourseStatus, get_course},
     data::PoiseContext,
     utils::SendReplyEphemeral,
 };
@@ -34,18 +36,24 @@ pub async fn catalog(ctx: PoiseContext<'_>, course_id: String) -> Result<()> {
         return Ok(());
     };
 
-    ctx.send(get_course_reply(&course)).await?;
+    // Use the shared cached reply helper so we don't rebuild embeds repeatedly.
+    ctx.send(get_or_cache_course_reply(&course)).await?;
 
     Ok(())
 }
 
-fn get_course_reply(course: &Course) -> CreateReply {
+fn make_course_reply(course: &Course) -> CreateReply {
     CreateReply::default()
         .embed(
             serenity::CreateEmbed::new()
                 .title(format!(
-                    "{} - {}{}",
+                    "{}{} - {}{}",
                     course.course_id,
+                    match course.status {
+                        CourseStatus::Active => "",
+                        CourseStatus::Inactive => " (Inactive)",
+                        _ => " (Unknown Status)",
+                    },
                     course.long_name.clone(),
                     if course.are_there_duplicates {
                         " Note: maybe a duplicate, the U has bad APIs"
@@ -66,6 +74,28 @@ fn get_course_reply(course: &Course) -> CreateReply {
         .reply(true)
 }
 
+/// Return a cached reply for the course if present, otherwise build & cache it.
+fn get_or_cache_course_reply(course: &Course) -> CreateReply {
+    if let Some(message) = &course.cached_message {
+        return message.clone();
+    }
+
+    let message = make_course_reply(course);
+    let course_id = Arc::clone(&course.course_id);
+    let message_copy = message.clone();
+    // Spawn to avoid holding the write lock while constructing the embed above.
+    tokio::spawn(async move {
+        let mut handle = COURSES.write();
+        if let Some(course) = handle.get_mut(&*course_id) {
+            // Only set if still empty to avoid clobbering potential newer value.
+            if course.cached_message.is_none() {
+                course.cached_message = Some(message_copy);
+            }
+        }
+    });
+    message
+}
+
 /// Searches the U of U course catalog based on a search string
 ///
 /// Searches the course code, title, and description
@@ -79,9 +109,9 @@ pub async fn search_catalog(ctx: PoiseContext<'_>, search_string: String) -> Res
     let upper_search_string = search_string.to_uppercase();
 
     let reply = {
-        let courses = COURSES.read();
+        let handle = COURSES.read();
 
-        let courses = courses
+        let courses = handle
             .values()
             .filter(|course| {
                 [
@@ -106,7 +136,7 @@ pub async fn search_catalog(ctx: PoiseContext<'_>, search_string: String) -> Res
                 .content(format!("No courses found for \"{search_string}\""))
                 .reply(true)
                 .ephemeral(true),
-            1 => get_course_reply(courses.first().unwrap()),
+            1 => get_or_cache_course_reply(courses.first().unwrap()),
             _ => CreateReply::default()
                 .content(format!(
                     "Found (at least) {} courses for \"{}\"\n{}",

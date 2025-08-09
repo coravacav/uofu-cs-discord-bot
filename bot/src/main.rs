@@ -32,6 +32,8 @@ async fn main() -> Result<()> {
     dotenv().wrap_err("Failed to load .env file. Add a file with the following contents: `DISCORD_TOKEN=\"your token\"` to a .env file in the root directory of the repo.")?;
     color_eyre::install()?;
 
+    bot_lib::update_course_list();
+
     tracing_subscriber::registry()
         // .with(console_subscriber::spawn())
         .with(tracing_subscriber::fmt::layer().compact().with_filter(

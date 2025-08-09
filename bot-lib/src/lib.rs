@@ -22,6 +22,8 @@ mod starboard;
 mod text_detection;
 mod utils;
 
+pub use courses::update_course_list;
+
 trait SayThenDelete {
     async fn say_then_delete(self, message: impl Into<String>) -> Result<()>;
 }

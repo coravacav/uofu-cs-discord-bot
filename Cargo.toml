@@ -36,3 +36,15 @@ serenity = { git = "https://github.com/serenity-rs/serenity.git" }
 [workspace.lints.rust]
 async_fn_in_trait = "allow"
 unsafe_code = "forbid"
+
+[profile.dev.package.poise]
+hint-mostly-unused = true
+
+[profile.release.package.poise]
+hint-mostly-unused = true
+
+[profile.dev.package.serenity]
+hint-mostly-unused = true
+
+[profile.release.package.serenity]
+hint-mostly-unused = true

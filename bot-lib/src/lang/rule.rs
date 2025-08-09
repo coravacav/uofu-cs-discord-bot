@@ -22,7 +22,7 @@ pub fn parse_separator(input: &str) -> IResult<&str, ()> {
     tuple((tag("\nor"), multispace1))(input).map(|(v, _)| (v, ()))
 }
 
-pub fn parse_rules(input: &str) -> Option<Vec<Rule>> {
+pub fn parse_rules(input: &str) -> Option<Vec<Rule<'_>>> {
     separated_list1(parse_separator, parse_all_cases)(input)
         .finish()
         .map(|(_, vec_vec_case)| vec_vec_case.into_iter().map(Rule::new).collect())
