@@ -23,6 +23,7 @@ mod text_detection;
 mod utils;
 
 pub use courses::update_course_list;
+pub use starboard::debug_force_starboard;
 
 trait SayThenDelete {
     async fn say_then_delete(self, message: impl Into<String>) -> Result<()>;

@@ -27,7 +27,7 @@ pub async fn handle_starboards(
         {
             recent_messages.insert(message.id);
 
-            starboard.reply(ctx, message, reaction).await.ok();
+            starboard.reply(ctx, message, &reaction.emoji).await.ok();
         }
     });
 

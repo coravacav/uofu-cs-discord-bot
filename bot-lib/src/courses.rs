@@ -97,6 +97,17 @@ async fn timing_and_error_wrapper() {
 }
 
 async fn fetch_and_update() -> Result<()> {
+    // check if the debug file exists and was made in the last 4 days, if so, just load the debug file and call add_file_to_static_map
+    if let Ok(metadata) = std::fs::metadata("debug.json")
+        && metadata.modified()?.elapsed()?.as_secs() < 345600
+    {
+        let file = std::fs::File::open("debug.json")?;
+        let file = std::io::BufReader::new(file);
+        let json: File = serde_json::from_reader(file)?;
+        add_file_to_static_map(json);
+        return Ok(());
+    }
+
     let client = reqwest::Client::new();
 
     // Base endpoint (kept "$filters" as in your original request;
@@ -175,9 +186,19 @@ async fn fetch_and_update() -> Result<()> {
     let json_text = resp.text().await.wrap_err("Failed to get text")?;
     let json: File = serde_json::from_str(&json_text)?;
 
+    add_file_to_static_map(json);
+
+    let file = std::fs::File::create("debug.json")?;
+    let mut writer = std::io::BufWriter::new(file);
+    writer.write_all(json_text.as_bytes())?;
+
+    Ok(())
+}
+
+fn add_file_to_static_map(file: File) {
     let mut courses: HashMap<Arc<str>, Course> = HashMap::new();
 
-    for mut course in json.data {
+    for mut course in file.data {
         let course_id = Arc::clone(&course.course_id);
         let current = courses.remove(&course_id);
 
@@ -199,12 +220,6 @@ async fn fetch_and_update() -> Result<()> {
 
     let mut saved_courses = COURSES.write();
     *saved_courses = courses;
-
-    let file = std::fs::File::create("debug.json")?;
-    let mut writer = std::io::BufWriter::new(file);
-    writer.write_all(json_text.as_bytes())?;
-
-    Ok(())
 }
 
 // https://app.coursedog.com/api/v1/cm/utah_peoplesoft/courses/search/%24filters?skip=0&limit=20000&columns=customFields.rawCourseId%2CdisplayName%2Cdepartment%2Cdescription%2Cname%2CcourseNumber%2CsubjectCode%2Ccode%2CcourseGroupId%2Ccareer%2Ccollege%2ClongName%2Cstatus14

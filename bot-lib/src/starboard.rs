@@ -1,11 +1,11 @@
 use color_eyre::eyre::Result;
 use poise::serenity_prelude::{
-    ChannelId, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage,
-    GetMessages, Message, MessageId, Reaction, ReactionType,
+    ChannelId, Context, CreateAllowedMentions, CreateAttachment, CreateMessage, GetMessages, Mentionable, Message, MessageId, MessageReference, MessageReferenceKind, Reaction, ReactionType
 };
 use rustc_hash::FxHashSet;
 use serde::Deserialize;
 use tokio::sync::{Mutex, MutexGuard};
+use crate::{commands::is_stefan, data::PoiseContext};
 
 #[derive(Deserialize)]
 pub struct Starboard {
@@ -17,6 +17,8 @@ pub struct Starboard {
     /// This stores a string hash of the message link
     #[serde(skip)]
     pub recently_added_messages: Mutex<FxHashSet<MessageId>>,
+    #[serde(skip)]
+    sequential_message_lock: Mutex<()>,
 }
 
 impl Starboard {
@@ -103,12 +105,24 @@ impl Starboard {
         !has_already_been_added
     }
 
-    pub async fn reply(&self, ctx: &Context, message: &Message, reaction: &Reaction) -> Result<()> {
-        let reply = CreateMessage::new();
+    pub(crate) async fn reply(&self, ctx: &Context, message: &Message, reaction: &ReactionType) -> Result<()> {
+        // Ensure that these two messages are back to back
+        let _ = self.sequential_message_lock.lock().await;
+        
+        let _ = ChannelId::new(self.channel_id)
+            .send_message(ctx, CreateMessage::new().content(format!(
+            "{message_author} in <#{channel_id}> ({channel_name})",
+                message_author = message.author.mention(),
+                channel_id = message.channel_id,
+                channel_name = message.channel_id.name(ctx).await.unwrap_or("unknown".into()),
+            )).allowed_mentions(CreateAllowedMentions::new()))
+            .await;
 
-        let reply = match &reaction.emoji {
-            ReactionType::Unicode(emoji) => reply.content(emoji),
-            ReactionType::Custom { animated, id, .. } => reply.add_file(
+        let emoji_message = CreateMessage::new();
+        let mut send_emoji_message = true;
+        let emoji_message = match &reaction {
+            ReactionType::Unicode(emoji) => emoji_message.content(emoji),
+            ReactionType::Custom { animated, id, .. } => emoji_message.add_file(
                 CreateAttachment::url(
                     ctx,
                     &format!(
@@ -119,53 +133,38 @@ impl Starboard {
                 )
                 .await?,
             ),
-            _ => reply,
+            _ => {
+                send_emoji_message = false;
+                emoji_message
+            },
         };
 
-        let author = CreateEmbedAuthor::new(&message.author.name).icon_url(
-            message
-                .author
-                .avatar_url()
-                .as_deref()
-                .unwrap_or("https://cdn.discordapp.com/embed/avatars/0.png"),
-        );
-
-        let embed = CreateEmbed::new()
-            .description(format!(
-                "{}\n{}{}",
-                message.content,
-                message.link(),
-                message
-                    .channel(ctx)
-                    .await
-                    .map(|channel| {
-                        channel
-                            .guild()
-                            .map(|guild_channel| format!(" ({})", guild_channel.name))
-                            .unwrap_or_default()
-                    })
-                    .unwrap_or("".to_string())
-            ))
-            .author(author)
-            .timestamp(message.timestamp);
-
-        let embed = if let Some(attachment) = message.attachments.iter().find(|attachment| {
-            attachment
-                .content_type
-                .as_ref()
-                .is_some_and(|content_type| content_type.starts_with("image"))
-        }) {
-            embed.image(&attachment.url)
-        } else {
-            embed
-        };
-
-        let reply = reply.embed(embed);
+        if send_emoji_message {
+            ChannelId::new(self.channel_id)
+                .send_message(ctx, emoji_message)
+                .await?;
+        }
 
         ChannelId::new(self.channel_id)
-            .send_message(ctx, reply)
+            .send_message(ctx, CreateMessage::new().reference_message(MessageReference::new(MessageReferenceKind::Forward, message.channel_id)
+                .message_id(message.id)))
             .await?;
+
 
         Ok(())
     }
+}
+
+#[poise::command(
+    prefix_command, 
+    check = is_stefan
+)]
+pub async fn debug_force_starboard(ctx: PoiseContext<'_>, message: Message) -> Result<()> {
+    let emoji = ReactionType::Unicode("🧪".into());
+    let config = ctx.data().config.read().await;
+    for starboard in &config.starboards {
+        starboard.reply(ctx.serenity_context(), &message, &emoji).await?;
+    }
+
+    Ok(())
 }

@@ -255,7 +255,7 @@ pub async fn delete_class_category(
 }
 
 #[poise::command(
-    slash_command,
+    prefix_command,
     ephemeral = true,
     check = is_stefan
 )]

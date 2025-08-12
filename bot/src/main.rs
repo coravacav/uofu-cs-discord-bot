@@ -4,6 +4,7 @@ use bot_lib::{
     commands::*,
     config,
     data::{RawAppState, State},
+    debug_force_starboard,
     event_handler::event_handler,
 };
 use clap::Parser;
@@ -32,6 +33,7 @@ async fn main() -> Result<()> {
     dotenv().wrap_err("Failed to load .env file. Add a file with the following contents: `DISCORD_TOKEN=\"your token\"` to a .env file in the root directory of the repo.")?;
     color_eyre::install()?;
 
+    #[cfg(not(debug_assertions))]
     bot_lib::update_course_list();
 
     tracing_subscriber::registry()
@@ -71,8 +73,9 @@ async fn main() -> Result<()> {
                 coinflip(),
                 course_request(),
                 create_class_category(),
-                debug_print_channel_names(),
                 db_admin(),
+                debug_force_starboard(),
+                debug_print_channel_names(),
                 delete_class_category(),
                 extract_all_class_channels(),
                 extract_current_channel(),
@@ -85,8 +88,8 @@ async fn main() -> Result<()> {
                 remove_class_role(),
                 remove_dog_role(),
                 reroll_reply(),
-                reset_class_category(),
                 reset_all_class_categories(),
+                reset_class_category(),
                 sathya(),
                 search_catalog(),
                 send_feedback(),
@@ -98,17 +101,25 @@ async fn main() -> Result<()> {
                 Box::pin(event_handler(ctx, event, data.clone()))
             },
             on_error: |error| {
-                async fn on_error(
-                    error: poise::FrameworkError<'_, State, color_eyre::eyre::Error>,
-                ) {
+                use poise::FrameworkError;
+                async fn on_error(error: FrameworkError<'_, State, color_eyre::eyre::Error>) {
                     // Don't care.
-                    if let poise::FrameworkError::CommandCheckFailed { .. }
-                    | poise::FrameworkError::MissingUserPermissions { .. } = error
+                    if let FrameworkError::CommandCheckFailed { .. }
+                    | FrameworkError::MissingUserPermissions { .. } = error
                     {
                         return;
                     }
 
-                    tracing::error!("{}", error.to_string());
+                    if let FrameworkError::Command { ctx, error, .. } = &error {
+                        tracing::error!(
+                            "Error in command `{}{}`: {}",
+                            ctx.prefix(),
+                            ctx.command().qualified_name,
+                            error.to_string()
+                        );
+                    } else {
+                        tracing::error!("{}", error.to_string());
+                    }
                 }
 
                 Box::pin(on_error(error))
