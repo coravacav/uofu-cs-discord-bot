@@ -1,7 +1,8 @@
 use crate::{
     commands::{get_member, is_stefan},
-    courses::get_course,
+    courses::{CourseIdent, get_course},
     data::PoiseContext,
+    utils::SendReplyEphemeral,
 };
 use color_eyre::eyre::{OptionExt, Result, WrapErr};
 use itertools::Itertools;
@@ -79,36 +80,12 @@ enum GetRoleResult {
     NotFound,
 }
 
-async fn get_role(ctx: PoiseContext<'_>, identifier: &str) -> Result<GetRoleResult> {
+async fn get_role(ctx: PoiseContext<'_>, course: &CourseIdent) -> Result<GetRoleResult> {
     let guild_id = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
     let roles = guild_id.roles(ctx).await?;
 
-    let identifier = identifier
-        .chars()
-        .filter(|c| c.is_ascii_alphanumeric())
-        .map(|c| c.to_ascii_uppercase())
-        .collect::<String>();
-
-    let college_id = identifier
-        .chars()
-        .take_while(|c| c.is_ascii_alphabetic())
-        .collect::<String>();
-
-    let college_id = if college_id.is_empty() {
-        String::from("CS")
-    } else {
-        college_id
-    };
-
-    let course_id = identifier
-        .chars()
-        .skip_while(|c| c.is_ascii_alphabetic())
-        .collect::<String>();
-
-    let identifier = format!("{college_id} {course_id}");
-
     let joinable_roles = get_class_roles(roles)
-        .filter(|Role { name, .. }| name.contains(&identifier))
+        .filter(|Role { name, .. }| course.spaced_string_starts_with(name.as_str()))
         .collect_vec();
 
     if joinable_roles.is_empty() {
@@ -131,22 +108,36 @@ const MOD_ROLE_ID: RoleId = RoleId::new(1192863993883279532);
 )]
 pub async fn create_class_category(
     ctx: PoiseContext<'_>,
-    #[description = "The class number, eg. for CS2420 put in \"2420\""] number: String,
+    #[description = "The course identifier (auto adds \"CS\" if unspecified)"] course_id: String,
 ) -> Result<()> {
     let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
+
+    let Ok(course) = CourseIdent::try_from(course_id.as_str()) else {
+        ctx.reply_ephemeral(format!("Please provide a valid course, got `{course_id}`"))
+            .await?;
+        return Ok(());
+    };
+
     let channels = guild.channels(ctx).await?;
 
-    let number_string = number.to_string();
-    for (_, channel) in channels {
-        if channel.name.contains(&number_string) {
-            ctx.say("Category/channels already seem to exist!").await?;
+    for channel in channels.values() {
+        if channel.kind != ChannelType::Category {
+            continue;
+        }
+
+        if course.spaced_string_starts_with(&channel.name) {
+            ctx.say(format!(
+                "Category/channels for {} already seem to exist! See <#{}>",
+                course_id, channel.id,
+            ))
+            .await?;
             return Ok(());
         }
     }
 
-    let role_name = format!("CS {number_string}");
+    let role_name = course.get_spaced();
 
-    let (category_name, channel_description) = get_course(&format!("CS{number}"))
+    let (category_name, channel_description) = get_course(&course)
         .map(|course| {
             let mut category_name = format!("{role_name} - {}", course.long_name);
             category_name.truncate(100);
@@ -188,10 +179,12 @@ pub async fn create_class_category(
         .await
         .wrap_err("Couldn't create category")?;
 
+    let number = course.number();
+
     guild
         .create_channel(
             ctx,
-            CreateChannel::new(format!("{number_string}-resources"))
+            CreateChannel::new(format!("{number}-resources"))
                 .kind(ChannelType::Text)
                 .category(category.id),
         )
@@ -201,7 +194,7 @@ pub async fn create_class_category(
     guild
         .create_channel(
             ctx,
-            CreateChannel::new(format!("{number_string}-general"))
+            CreateChannel::new(format!("{number}-general"))
                 .kind(ChannelType::Text)
                 .category(category.id)
                 .topic(channel_description.unwrap_or_default()),
@@ -405,12 +398,17 @@ pub async fn reset_class_category(ctx: PoiseContext<'_>) -> Result<()> {
 #[poise::command(slash_command, rename = "join_class", ephemeral = true)]
 pub async fn add_class_role(
     ctx: PoiseContext<'_>,
-    #[description = "The class identifier, eg. for CS2420 put in \"CS2420\" or \"2420\""]
-    identifier: String,
+    #[description = "The course identifier (auto adds \"CS\" if unspecified)"] course_id: String,
 ) -> Result<()> {
     let author = get_member(ctx).await?;
 
-    match get_role(ctx, &identifier).await? {
+    let Ok(course) = CourseIdent::try_from(course_id.as_str()) else {
+        ctx.reply_ephemeral(format!("Please provide a valid course, got `{course_id}`"))
+            .await?;
+        return Ok(());
+    };
+
+    match get_role(ctx, &course).await? {
         GetRoleResult::Found(role_id) => {
             author
                 .add_role(ctx, role_id)
@@ -420,7 +418,7 @@ pub async fn add_class_role(
             ctx.say("Joined class!").await?;
         }
         GetRoleResult::MultipleFound(roles) => {
-            let mut message_text = format!("Multiple classes found with search \"{identifier}\"\n");
+            let mut message_text = format!("Multiple classes found with search `{course_id}`\n");
             for role in roles {
                 message_text.push_str(&format!("`{}` ", role.name));
             }
@@ -428,7 +426,7 @@ pub async fn add_class_role(
         }
         GetRoleResult::NotFound => {
             ctx.say(format!(
-                "Could not find class with identifier \"{identifier}\""
+                "Could not find class with identifier `{course_id}`"
             ))
             .await?;
         }
@@ -441,12 +439,17 @@ pub async fn add_class_role(
 #[poise::command(slash_command, rename = "leave_class", ephemeral = true)]
 pub async fn remove_class_role(
     ctx: PoiseContext<'_>,
-    #[description = "The class identifier, eg. for CS2420 put in \"CS2420\" or \"2420\""]
-    identifier: String,
+    #[description = "The course identifier (auto adds \"CS\" if unspecified)"] course_id: String,
 ) -> Result<()> {
     let author = get_member(ctx).await?;
 
-    match get_role(ctx, &identifier).await? {
+    let Ok(course) = CourseIdent::try_from(course_id.as_str()) else {
+        ctx.reply_ephemeral(format!("Please provide a valid course, got `{course_id}`"))
+            .await?;
+        return Ok(());
+    };
+
+    match get_role(ctx, &course).await? {
         GetRoleResult::Found(role_id) => {
             author
                 .remove_role(ctx, role_id)
@@ -456,7 +459,7 @@ pub async fn remove_class_role(
             ctx.say("Left class!").await?;
         }
         GetRoleResult::MultipleFound(roles) => {
-            let mut message_text = format!("Multiple classes found with search \"{identifier}\"\n");
+            let mut message_text = format!("Multiple classes found with search `{course_id}`\n");
             for role in roles {
                 message_text.push_str(&format!("`{}` ", role.name));
             }
@@ -464,7 +467,7 @@ pub async fn remove_class_role(
         }
         GetRoleResult::NotFound => {
             ctx.say(format!(
-                "Could not find class with identifier \"{identifier}\""
+                "Could not find class with identifier `{course_id}`"
             ))
             .await?;
         }

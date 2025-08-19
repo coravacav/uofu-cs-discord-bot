@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    courses::{COURSES, Course, CourseStatus, get_course},
+    courses::{COURSES, Course, CourseIdent, CourseStatus, get_course},
     data::PoiseContext,
     utils::SendReplyEphemeral,
 };
@@ -13,25 +13,18 @@ use poise::{CreateReply, serenity_prelude as serenity};
 ///
 /// If prefix is ommitted, it will assume it's CS.
 #[poise::command(slash_command)]
-pub async fn catalog(ctx: PoiseContext<'_>, course_id: String) -> Result<()> {
-    let mut course_id = course_id
-        .to_uppercase()
-        .chars()
-        .filter(|c| c.is_alphanumeric())
-        .collect::<String>();
-
-    if course_id.is_empty() {
-        ctx.reply_ephemeral("Please provide a valid course id")
+pub async fn catalog(
+    ctx: PoiseContext<'_>,
+    #[description = "The course identifier (auto adds \"CS\" if unspecified)"] course_id: String,
+) -> Result<()> {
+    let Ok(course) = CourseIdent::try_from(course_id.as_str()) else {
+        ctx.reply_ephemeral(format!("Please provide a valid course, got `{course_id}`"))
             .await?;
         return Ok(());
-    }
+    };
 
-    if course_id.chars().next().unwrap().is_numeric() {
-        course_id = format!("CS{course_id}");
-    }
-
-    let Some(course) = get_course(&course_id) else {
-        ctx.reply_ephemeral(format!("Could not find a course with id {course_id}"))
+    let Some(course) = get_course(&course) else {
+        ctx.reply_ephemeral(format!("Could not find a course with id `{course_id}`"))
             .await?;
         return Ok(());
     };

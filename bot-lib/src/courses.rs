@@ -8,11 +8,81 @@ use std::{
     sync::{Arc, LazyLock},
 };
 
+pub struct CourseIdent(String);
+
+impl TryFrom<&str> for CourseIdent {
+    type Error = String;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let mut value = value
+            .to_uppercase()
+            .chars()
+            .filter(|c| c.is_alphanumeric())
+            .collect::<String>();
+
+        if value
+            .chars()
+            .next()
+            .map(|c| c.is_numeric())
+            .unwrap_or(false)
+        {
+            value.insert_str(0, "CS");
+        }
+
+        if value.is_empty() {
+            return Err("Invalid course identifier".to_string());
+        }
+
+        if !COURSES.read().contains_key(value.as_str()) {
+            return Err(format!("Course with id `{}` does not exist", value));
+        }
+
+        Ok(CourseIdent(value))
+    }
+}
+
+impl CourseIdent {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    pub fn pieces(&self) -> (&str, &str) {
+        // Split when no more letters, split by index
+        let mut chars = self.0.chars();
+        let split = chars.by_ref().take_while(|c| c.is_alphabetic()).count();
+        self.0.split_at(split)
+    }
+
+    pub fn number(&self) -> &str {
+        let (_, number) = self.pieces();
+        number
+    }
+
+    #[allow(dead_code)]
+    pub fn code(&self) -> &str {
+        let (code, _) = self.pieces();
+        code
+    }
+
+    pub fn spaced_string_starts_with(&self, other: &str) -> bool {
+        let (code, number) = self.pieces();
+        let other_code = &other[..code.len()];
+        let other_number = &other[code.len() + 1..];
+
+        other_code == code && other_number == number
+    }
+
+    pub fn get_spaced(&self) -> String {
+        let (code, number) = self.pieces();
+        format!("{} {}", code, number)
+    }
+}
+
 pub(crate) static COURSES: LazyLock<RwLock<HashMap<Arc<str>, Course>>> =
     LazyLock::new(Default::default);
 
-pub fn get_course(course_id: &str) -> Option<Course> {
-    COURSES.read().get(course_id).cloned()
+pub fn get_course(course_id: &CourseIdent) -> Option<Course> {
+    COURSES.read().get(course_id.as_str()).cloned()
 }
 
 #[derive(Deserialize)]
