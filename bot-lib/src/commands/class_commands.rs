@@ -202,7 +202,9 @@ pub async fn create_class_category(
         .await
         .wrap_err("Couldn't create general channel")?;
 
-    ctx.say("Success!").await?;
+    tracing::info!("Created class category {}", course.as_str());
+
+    ctx.reply_ephemeral("Success!").await?;
     Ok(())
 }
 
