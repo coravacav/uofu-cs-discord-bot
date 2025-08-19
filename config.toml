@@ -20,13 +20,9 @@ help_text = """
 - `/search_catalog <search_string>`: Search the U of U course catalog for a course. Searches course code, title, and description.
 - `/reactme`: Allow KingFisher automatic reactions to reply to your messages (including luck). Enables other features as well.
 - `/ignoreme`: Disallow KingFisher automatic reactions to reply to your messages and disables other features.
-- `/woof`: Add @Bark role
-- `/muzzle`: Remove @Bark role
 - `/yeet <user>`: Yeet a user with the Bot React role for 5 minutes. 6 yays or nays needed, yay for them, nay for you. You have 90 seconds. 
 - `/timeout <duration>`: Timeout yourself for a parsable duration (e.g. 1d, 1h, 1m). Discord sets a limit at 4 weeks.
 - `/aur <query> <amount>`: Queries the AUR. Can only display the top 20 entries at maximum.
-- `/bank income`: Get some income (5 coins once per minute)
-- `/bank balance`: What's my balance?
 - `/reroll_reply`: Reroll the last reply kingfisher made to you.
 
 KingFisher also sometimes really likes to react to messages. That's why he replies sometimes (21% rate, unless you're pinging Stefan or typing "luck").
