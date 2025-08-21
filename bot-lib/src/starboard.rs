@@ -118,6 +118,11 @@ impl Starboard {
             )).allowed_mentions(CreateAllowedMentions::new()))
             .await;
 
+        ChannelId::new(self.channel_id)
+            .send_message(ctx, CreateMessage::new().reference_message(MessageReference::new(MessageReferenceKind::Forward, message.channel_id)
+                .message_id(message.id)))
+            .await?;
+
         let emoji_message = CreateMessage::new();
         let mut send_emoji_message = true;
         let emoji_message = match &reaction {
@@ -144,11 +149,6 @@ impl Starboard {
                 .send_message(ctx, emoji_message)
                 .await?;
         }
-
-        ChannelId::new(self.channel_id)
-            .send_message(ctx, CreateMessage::new().reference_message(MessageReference::new(MessageReferenceKind::Forward, message.channel_id)
-                .message_id(message.id)))
-            .await?;
 
 
         Ok(())
