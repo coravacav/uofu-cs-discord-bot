@@ -3,7 +3,7 @@ use std::sync::Arc;
 use bot_lib::{
     commands::*,
     config,
-    data::{RawAppState, State},
+    data::{RawAppState, State, setup_db},
     debug_force_starboard,
     event_handler::event_handler,
 };
@@ -56,6 +56,8 @@ async fn main() -> Result<()> {
         std::env::var("DISCORD_TOKEN").wrap_err("Expected a discord token environment variable")?;
     let config =
         config::Config::create_from_file(&config_path).wrap_err("Failed to load config")?;
+
+    setup_db();
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
