@@ -1,25 +1,26 @@
 use crate::config::Config;
+use bot_db::KingFisherDb;
 use color_eyre::eyre::{Error, Result};
 use std::sync::LazyLock;
 use std::{path::Path, sync::Arc};
 use surrealdb::Surreal;
-use surrealdb::engine::local::{Db, RocksDb};
-use surrealdb::opt::auth::Root;
+use surrealdb::engine::local::Db;
+#[cfg(test)]
+use surrealdb::engine::local::Mem;
 use tokio::sync::RwLock;
 
 pub(crate) static DB: LazyLock<Surreal<Db>> = LazyLock::new(Surreal::init);
 
 pub async fn setup_db() {
-    DB.connect::<RocksDb>("db/kingfisher")
+    #[cfg(not(test))]
+    DB.connect::<surrealdb::engine::local::RocksDb>("db/kingfisher")
         .await
         .expect("Failed to create SurrealDB instance");
 
-    DB.signin(Root {
-        username: "root",
-        password: "root",
-    })
-    .await
-    .expect("Failed to sign in to SurrealDB");
+    #[cfg(test)]
+    DB.connect::<Mem>(())
+        .await
+        .expect("Failed to create SurrealDB instance");
 
     DB.use_ns("main")
         .use_db("main")
@@ -30,6 +31,7 @@ pub async fn setup_db() {
         .await
         .expect("Failed to execute schema query");
 }
+
 /// The global state of the bot
 /// Arc because I can't be arsed.
 pub type State = Arc<RawAppState>;
@@ -47,7 +49,7 @@ pub struct RawAppState {
 }
 
 impl RawAppState {
-    pub async fn new(config: Config, config_path: String) -> Result<RawAppState> {
+    pub fn new(config: Config, config_path: String) -> Result<RawAppState> {
         let config = Arc::new(RwLock::new(config));
 
         let db = KingFisherDb::new()?;

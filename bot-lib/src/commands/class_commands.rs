@@ -402,7 +402,11 @@ pub async fn add_class_role(
     ctx: PoiseContext<'_>,
     #[description = "The course identifier (auto adds \"CS\" if unspecified)"] course_id: String,
 ) -> Result<()> {
-    let author = get_member(ctx).await?;
+    let Ok(author) = get_member(ctx).await else {
+        ctx.reply_ephemeral("Run this command in the server")
+            .await?;
+        return Ok(());
+    };
 
     let Ok(course) = CourseIdent::try_from(course_id.as_str()) else {
         ctx.reply_ephemeral(format!("Please provide a valid course, got `{course_id}`"))

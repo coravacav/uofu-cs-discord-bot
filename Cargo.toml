@@ -48,3 +48,15 @@ hint-mostly-unused = true
 
 [profile.release.package.serenity]
 hint-mostly-unused = true
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.test]
+opt-level = 1
+
+[profile.test.package."*"]
+opt-level = 3

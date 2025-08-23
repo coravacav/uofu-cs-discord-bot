@@ -33,6 +33,7 @@ llms
 
 # rocksdb db
 kingfisher.db
+db/
 
 all_backups/
 

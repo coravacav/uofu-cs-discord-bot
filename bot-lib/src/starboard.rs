@@ -1,11 +1,15 @@
+use crate::{
+    commands::is_stefan,
+    data::{DB, PoiseContext},
+};
 use color_eyre::eyre::Result;
 use poise::serenity_prelude::{
-    ChannelId, Context, CreateAllowedMentions, CreateAttachment, CreateMessage, GetMessages, Mentionable, Message, MessageId, MessageReference, MessageReferenceKind, Reaction, ReactionType
+    ChannelId, Context, CreateAllowedMentions, CreateAttachment, CreateMessage, Mentionable,
+    Message, MessageId, MessageReference, MessageReferenceKind, Reaction, ReactionType,
 };
-use rustc_hash::FxHashSet;
 use serde::Deserialize;
-use tokio::sync::{Mutex, MutexGuard};
-use crate::{commands::is_stefan, data::PoiseContext};
+use surrealdb::RecordId;
+use tokio::sync::Mutex;
 
 #[derive(Deserialize)]
 pub struct Starboard {
@@ -14,27 +18,17 @@ pub struct Starboard {
     pub banned_reactions: Option<Vec<String>>,
     pub channel_id: u64,
     pub ignored_channel_ids: Option<Vec<u64>>,
-    /// This stores a string hash of the message link
-    #[serde(skip)]
-    pub recently_added_messages: Mutex<FxHashSet<MessageId>>,
     #[serde(skip)]
     sequential_message_lock: Mutex<()>,
 }
 
 impl Starboard {
-    #[tracing::instrument(level = "trace", skip(self, ctx, message), fields(message_link = %message.link()))]
+    #[tracing::instrument(level = "trace", skip(self, message), fields(message_link = %message.link()))]
     /// `recent_messages` is used to prevent all starboarding when a single banned reaction is used
-    pub async fn does_starboard_apply(
-        &self,
-        ctx: &Context,
-        message: &Message,
-        reaction: &Reaction,
-        recent_messages: &mut MutexGuard<'_, FxHashSet<MessageId>>,
-    ) -> bool {
+    pub fn does_starboard_apply(&self, message: &Message, reaction: &Reaction) -> bool {
         self.enough_reactions(message, reaction)
-            && self.is_allowed_reaction(reaction, message, recent_messages)
+            && self.is_allowed_reaction(reaction, message)
             && self.is_channel_allowed(message.channel_id.into())
-            && self.is_channel_missing_reply(ctx, message).await
     }
 
     fn enough_reactions(&self, message: &Message, reaction: &Reaction) -> bool {
@@ -48,12 +42,7 @@ impl Starboard {
         reaction_count >= self.reaction_count
     }
 
-    fn is_allowed_reaction(
-        &self,
-        reaction: &Reaction,
-        message: &Message,
-        recent_messages: &mut MutexGuard<'_, FxHashSet<MessageId>>,
-    ) -> bool {
+    fn is_allowed_reaction(&self, reaction: &Reaction, message: &Message) -> bool {
         if !matches!(reaction.emoji, ReactionType::Unicode(_)) {
             return true;
         }
@@ -69,10 +58,38 @@ impl Starboard {
 
         // Prevent future reactions from starboarding.
         if banned {
-            recent_messages.insert(message.id);
+            tokio::spawn({
+                let message_id = message.id;
+                async move { Self::insert_recent_message(message_id).await }
+            });
         }
 
         banned
+    }
+
+    pub async fn insert_recent_message(message_id: MessageId) -> Result<()> {
+        let message_id = i64::from(message_id);
+        let _ = DB
+            .query("create $message")
+            .bind((
+                "message",
+                RecordId::from(("starboard_recent_message", message_id)),
+            ))
+            .await?;
+        Ok(())
+    }
+
+    pub async fn has_recent_message(message_id: MessageId) -> Result<bool> {
+        let message_id = i64::from(message_id);
+        Ok(DB
+            .query("$message.exists();")
+            .bind((
+                "message",
+                RecordId::from(("starboard_recent_message", message_id)),
+            ))
+            .await?
+            .take::<Option<bool>>(0)?
+            .unwrap_or(false))
     }
 
     fn is_channel_allowed(&self, channel_id: u64) -> bool {
@@ -83,44 +100,41 @@ impl Starboard {
         }
     }
 
-    async fn is_channel_missing_reply(&self, ctx: &Context, message: &Message) -> bool {
-        let message_link = message.link();
-
-        let Ok(messages) = ChannelId::new(self.channel_id)
-            .messages(ctx, GetMessages::new())
-            .await
-        else {
-            return false;
-        };
-
-        let has_already_been_added = messages.iter().any(|message| {
-            message.embeds.iter().any(|embed| {
-                embed
-                    .description
-                    .as_ref()
-                    .is_some_and(|description| description.contains(&message_link))
-            })
-        });
-
-        !has_already_been_added
-    }
-
-    pub(crate) async fn reply(&self, ctx: &Context, message: &Message, reaction: &ReactionType) -> Result<()> {
+    pub(crate) async fn reply(
+        &self,
+        ctx: &Context,
+        message: &Message,
+        reaction: &ReactionType,
+    ) -> Result<()> {
         // Ensure that these two messages are back to back
         let _ = self.sequential_message_lock.lock().await;
-        
+
         let _ = ChannelId::new(self.channel_id)
-            .send_message(ctx, CreateMessage::new().content(format!(
-            "{message_author} in <#{channel_id}> ({channel_name})",
-                message_author = message.author.mention(),
-                channel_id = message.channel_id,
-                channel_name = message.channel_id.name(ctx).await.unwrap_or("unknown".into()),
-            )).allowed_mentions(CreateAllowedMentions::new()))
+            .send_message(
+                ctx,
+                CreateMessage::new()
+                    .content(format!(
+                        "{message_author} in <#{channel_id}> ({channel_name})",
+                        message_author = message.author.mention(),
+                        channel_id = message.channel_id,
+                        channel_name = message
+                            .channel_id
+                            .name(ctx)
+                            .await
+                            .unwrap_or("unknown".into()),
+                    ))
+                    .allowed_mentions(CreateAllowedMentions::new()),
+            )
             .await;
 
         ChannelId::new(self.channel_id)
-            .send_message(ctx, CreateMessage::new().reference_message(MessageReference::new(MessageReferenceKind::Forward, message.channel_id)
-                .message_id(message.id)))
+            .send_message(
+                ctx,
+                CreateMessage::new().reference_message(
+                    MessageReference::new(MessageReferenceKind::Forward, message.channel_id)
+                        .message_id(message.id),
+                ),
+            )
             .await?;
 
         let emoji_message = CreateMessage::new();
@@ -141,7 +155,7 @@ impl Starboard {
             _ => {
                 send_emoji_message = false;
                 emoji_message
-            },
+            }
         };
 
         if send_emoji_message {
@@ -150,21 +164,49 @@ impl Starboard {
                 .await?;
         }
 
-
         Ok(())
     }
 }
 
 #[poise::command(
-    prefix_command, 
+    prefix_command,
     check = is_stefan
 )]
 pub async fn debug_force_starboard(ctx: PoiseContext<'_>, message: Message) -> Result<()> {
     let emoji = ReactionType::Unicode("🧪".into());
     let config = ctx.data().config.read().await;
     for starboard in &config.starboards {
-        starboard.reply(ctx.serenity_context(), &message, &emoji).await?;
+        starboard
+            .reply(ctx.serenity_context(), &message, &emoji)
+            .await?;
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+#[tokio::test]
+async fn test_db_setup() {
+    use poise::serenity_prelude::MessageId;
+
+    use crate::{data::setup_db, starboard::Starboard};
+
+    setup_db().await;
+    assert!(DB.health().await.is_ok());
+
+    Starboard::insert_recent_message(MessageId::from(1))
+        .await
+        .unwrap();
+
+    assert!(
+        Starboard::has_recent_message(MessageId::from(1))
+            .await
+            .unwrap()
+    );
+
+    assert!(
+        !Starboard::has_recent_message(MessageId::from(2))
+            .await
+            .unwrap()
+    );
 }

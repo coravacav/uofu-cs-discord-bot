@@ -57,7 +57,7 @@ async fn main() -> Result<()> {
     let config =
         config::Config::create_from_file(&config_path).wrap_err("Failed to load config")?;
 
-    setup_db();
+    setup_db().await;
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
