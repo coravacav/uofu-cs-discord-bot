@@ -1,6 +1,7 @@
 use crate::{
     commands::is_stefan,
     data::{DB, PoiseContext},
+    utils::SendReplyEphemeral,
 };
 use color_eyre::eyre::Result;
 use poise::serenity_prelude::{
@@ -92,6 +93,18 @@ impl Starboard {
             .unwrap_or(false))
     }
 
+    pub async fn ignore_message_permanently(message_id: MessageId) -> Result<()> {
+        let message_id = i64::from(message_id);
+        let _ = DB
+            .query("create $message")
+            .bind((
+                "message",
+                RecordId::from(("starboard_recent_message", message_id)),
+            ))
+            .await?;
+        Ok(())
+    }
+
     fn is_channel_allowed(&self, channel_id: u64) -> bool {
         if let Some(ignored_channel_ids) = self.ignored_channel_ids.as_ref() {
             !ignored_channel_ids.contains(&channel_id)
@@ -107,7 +120,7 @@ impl Starboard {
         reaction: &ReactionType,
     ) -> Result<()> {
         // Ensure that these two messages are back to back
-        let _ = self.sequential_message_lock.lock().await;
+        let _lock = self.sequential_message_lock.lock().await;
 
         let _ = ChannelId::new(self.channel_id)
             .send_message(
@@ -180,6 +193,17 @@ pub async fn debug_force_starboard(ctx: PoiseContext<'_>, message: Message) -> R
             .reply(ctx.serenity_context(), &message, &emoji)
             .await?;
     }
+
+    Ok(())
+}
+
+#[poise::command(
+    prefix_command,
+    check = is_stefan
+)]
+pub async fn debug_surrealdb(ctx: PoiseContext<'_>, query: Vec<String>) -> Result<()> {
+    let reply = DB.query(query.join(" ")).await?;
+    ctx.reply_ephemeral(format!("{:?}", reply)).await?;
 
     Ok(())
 }

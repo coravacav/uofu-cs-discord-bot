@@ -4,7 +4,7 @@ use bot_lib::{
     commands::*,
     config,
     data::{RawAppState, State, setup_db},
-    debug_force_starboard,
+    debug_force_starboard, debug_surrealdb,
     event_handler::event_handler,
 };
 use clap::Parser;
@@ -77,10 +77,12 @@ async fn main() -> Result<()> {
                 create_class_category(),
                 db_admin(),
                 debug_force_starboard(),
+                debug_surrealdb(),
                 debug_print_channel_names(),
                 delete_class_category(),
                 extract_all_class_channels(),
                 extract_current_channel(),
+                healthcheck_classes(),
                 help(),
                 list_classes(),
                 mod_abuse(),
@@ -114,10 +116,10 @@ async fn main() -> Result<()> {
 
                     if let FrameworkError::Command { ctx, error, .. } = &error {
                         tracing::error!(
-                            "Error in command `{}{}`: {}",
+                            "Error in command `{}{}`: {:?}",
                             ctx.prefix(),
                             ctx.command().qualified_name,
-                            error.to_string()
+                            error
                         );
                     } else {
                         tracing::error!("{}", error.to_string());

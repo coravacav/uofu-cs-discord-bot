@@ -11,6 +11,7 @@ use poise::serenity_prelude::{
     PermissionOverwriteType, Permissions, Role, RoleId,
 };
 use regex::Regex;
+use rustc_hash::FxHashSet;
 use std::{collections::HashMap, fmt::Write, sync::LazyLock, time::Duration};
 
 static CLASS_ROLE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\w+ \d+$").unwrap());
@@ -19,23 +20,114 @@ fn get_class_roles(roles: HashMap<RoleId, Role>) -> impl Iterator<Item = Role> {
     roles
         .into_values()
         .filter(|role| CLASS_ROLE_REGEX.is_match(&role.name))
-        .sorted()
+        .sorted_by(|l, r| l.name.cmp(&r.name))
 }
 
 /// List all classes you can join
 #[poise::command(slash_command, ephemeral = true)]
 pub async fn list_classes(ctx: PoiseContext<'_>) -> Result<()> {
-    let guild_id = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
+    let Some(guild_id) = ctx.guild().map(|g| g.id) else {
+        ctx.say("This command can only be run in the server")
+            .await?;
+        return Ok(());
+    };
     let roles = guild_id.roles(ctx).await?;
 
-    let mut message_text =
-        String::from("### Classes:\nJoin any of them with `/join_class <role name>`\n\n");
+    let user_roles = guild_id
+        .member(ctx, ctx.author().id)
+        .await?
+        .roles(ctx)
+        .unwrap_or_default();
+
+    let mut message_text = String::from(
+        "### Classes:\nJoin any of them with `/join_class <role name>` (may need college prefix)\n",
+    );
+
+    let mut last_prefix = None;
 
     for role in get_class_roles(roles) {
-        message_text.push_str(&format!("`{}` ", role.name));
+        let (prefix, number) = role.name.split_once(" ").unwrap();
+        if last_prefix.as_ref().map(|p| p != prefix).unwrap_or(true) {
+            last_prefix = Some(prefix.to_string());
+            message_text.push_str(&format!("\n**{prefix}**: "));
+        }
+
+        if user_roles.contains(&role) {
+            message_text.push_str(&format!("*`{}`* ", number));
+        } else {
+            message_text.push_str(&format!("`{}` ", number));
+        }
+    }
+
+    message_text.push_str("\n-# (italicized means you're in it)");
+
+    if message_text.len() > 1024 {
+        message_text.truncate(1021);
+        message_text.push_str("...");
     }
 
     ctx.say(message_text).await?;
+
+    Ok(())
+}
+
+#[poise::command(prefix_command, check = is_stefan)]
+pub async fn healthcheck_classes(ctx: PoiseContext<'_>) -> Result<()> {
+    let Some(guild_id) = ctx.guild().map(|g| g.id) else {
+        ctx.say("This command can only be run in the server")
+            .await?;
+        return Ok(());
+    };
+
+    let roles: FxHashSet<_> = get_class_roles(guild_id.roles(ctx).await?)
+        .map(|role| role.name)
+        .collect();
+
+    let channels = guild_id.channels(ctx).await?;
+    let mut roles_from_channels = FxHashSet::default();
+
+    for channel in channels.values() {
+        if channel.kind != ChannelType::Category {
+            continue;
+        }
+
+        let Some(role_from_channel_name) = channel.name.split_once(" - ").map(|(r, _)| r) else {
+            continue;
+        };
+
+        roles_from_channels.insert(role_from_channel_name.to_string());
+    }
+
+    let missing_from_roles: FxHashSet<_> = roles.difference(&roles_from_channels).collect();
+    let missing_from_classes: FxHashSet<_> = roles_from_channels.difference(&roles).collect();
+
+    let mut output = match (missing_from_roles, missing_from_classes) {
+        (a, b) if a.is_empty() && b.is_empty() => "All good! No discrepancies found.".to_string(),
+        (a, b) => {
+            let mut output = String::new();
+            if !a.is_empty() {
+                writeln!(&mut output, "Roles missing categories:").unwrap();
+                for role in a {
+                    writeln!(&mut output, "- {role}").unwrap();
+                }
+            }
+
+            if !b.is_empty() {
+                writeln!(&mut output, "Categories missing roles:").unwrap();
+                for role in b {
+                    writeln!(&mut output, "- {role}").unwrap();
+                }
+            }
+
+            output
+        }
+    };
+
+    tracing::info!("Healthcheck classes output:\n{}", output);
+
+    output.truncate(2000);
+
+    ctx.say(output).await?;
 
     Ok(())
 }
@@ -44,7 +136,11 @@ pub async fn list_classes(ctx: PoiseContext<'_>) -> Result<()> {
 #[poise::command(slash_command, ephemeral = true)]
 pub async fn my_classes(ctx: PoiseContext<'_>) -> Result<()> {
     let user = ctx.author();
-    let guild_id = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
+    let Some(guild_id) = ctx.guild().map(|g| g.id) else {
+        ctx.say("This command can only be run in the server")
+            .await?;
+        return Ok(());
+    };
     let roles = guild_id.roles(ctx).await?;
 
     let Some(user_roles) = guild_id.member(ctx, user.id).await?.roles(ctx) else {
@@ -109,6 +205,8 @@ const MOD_ROLE_ID: RoleId = RoleId::new(1192863993883279532);
 pub async fn create_class_category(
     ctx: PoiseContext<'_>,
     #[description = "The course identifier (auto adds \"CS\" if unspecified)"] course_id: String,
+    #[description = "Whether to skip creating the role, checking it exists instead"]
+    skip_creating_role: Option<bool>,
 ) -> Result<()> {
     let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
 
@@ -148,10 +246,25 @@ pub async fn create_class_category(
         })
         .unwrap_or((None, None));
 
-    let role = guild
-        .create_role(ctx, EditRole::new().name(&role_name))
-        .await
-        .wrap_err("Couldn't create role")?;
+    let role = if skip_creating_role.unwrap_or(false) {
+        let roles = guild.roles(ctx).await?;
+        let existing_role = roles.values().find(|r| r.name == role_name);
+        if let Some(existing_role) = existing_role {
+            existing_role.clone()
+        } else {
+            ctx.say(format!(
+                "Role `{}` does not exist, but you said don't create a role. Exiting.",
+                role_name
+            ))
+            .await?;
+            return Ok(());
+        }
+    } else {
+        guild
+            .create_role(ctx, EditRole::new().name(&role_name))
+            .await
+            .wrap_err("Couldn't create role")?
+    };
 
     let category = guild
         .create_channel(
@@ -402,6 +515,8 @@ pub async fn add_class_role(
     ctx: PoiseContext<'_>,
     #[description = "The course identifier (auto adds \"CS\" if unspecified)"] course_id: String,
 ) -> Result<()> {
+    let user = ctx.author();
+    let guild_id = ctx.guild_id().unwrap();
     let Ok(author) = get_member(ctx).await else {
         ctx.reply_ephemeral("Run this command in the server")
             .await?;
@@ -416,6 +531,11 @@ pub async fn add_class_role(
 
     match get_role(ctx, &course).await? {
         GetRoleResult::Found(role_id) => {
+            if user.has_role(ctx, guild_id, &role_id).await? {
+                ctx.say("You already have that class role! If the class channels are missing, let the mods know.").await?;
+                return Ok(());
+            }
+
             author
                 .add_role(ctx, role_id)
                 .await
@@ -426,13 +546,17 @@ pub async fn add_class_role(
         GetRoleResult::MultipleFound(roles) => {
             let mut message_text = format!("Multiple classes found with search `{course_id}`\n");
             for role in roles {
-                message_text.push_str(&format!("`{}` ", role.name));
+                if user.has_role(ctx, guild_id, &role).await? {
+                    message_text.push_str(&format!("*`{}`* ", role.name));
+                } else {
+                    message_text.push_str(&format!("`{}` ", role.name));
+                }
             }
             ctx.say(message_text).await?;
         }
         GetRoleResult::NotFound => {
             ctx.say(format!(
-                "Could not find class with identifier `{course_id}`"
+                "That class does not exist, maybe try <#1144767401481736374>?`{course_id}`"
             ))
             .await?;
         }
