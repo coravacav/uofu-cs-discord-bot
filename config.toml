@@ -511,6 +511,8 @@ name = "absolutely nothing"
 hit_rate = 0.95
 ruleset = '''
 r (?i)did i miss anything
+or
+r (?i)what did i miss
 '''
 content = [
     "https://tenor.com/view/astrald-sol-rng-gif-4856514201377161336",
