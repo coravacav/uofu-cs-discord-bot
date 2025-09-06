@@ -505,3 +505,13 @@ content = [
 TODAY IS APRIL 2ND, 2025. THIS IS ARARAURA YOUR HOST FOR TODAY BRINGING YOU YOUR DAILY SILKSONG NEWS AND THERE HAS BEEN YES NEWS, YES NEWS, YES YES YES YES YES NEWS TO REPORT FOR SILKSONG TODAY!!!!!! ON TODAY'S NINTENDO DIRECT FOR THE SWITCH 2 THEY SHOWED US FOOTAGE, NEW FOOTAGE OF SILKSONG!!! NEW FOOTAGE OF SILKSONG!!!!! THREE different sections!!! First, we see Hornet jumping around the Moss Grotto. Now this is an area we already know, nothing much new there. BUT THEN... IT TRANSITIONS TO THE SECOND AREA AND WE SEE HORNET SLIDING DOWN SLOPES!!! She's sliding down, I repeat, SLOPES!!!!! THERE ARE SLOPES IN SILKSONG, this is why it took so long!!! And finally, finally after this we see Hornet fight a bunch of bugs... with cloth masks on and one of them is a spider... and then she killed it we see her killing it... and those are the three clips, the new three clips that we saw, with a new area AND with slopes. Apparently there was a FOURTH clip right at the end where it wraps up all the games of Hornet fighting the massive bug, a new clip of her fighting the massive bug, I JUST noticed that. BUT... The most important thing to know... 2025 RELEASE WINDOWWWW!!!!! They showed RIGHT THERE, RIGHT THERE that Silksong is coming out in 2025!!!!! Everybody.... This is THE END, THE END.... THE CAKE WAS REAL... IT WAS REAL IT WAS NOT A LIE!!! It was REALLLLLL!!!!!! And the Steam copyright year change, that was also real!!! We won!!! WE WON!!!!! This has been your daily news for Silksong for today, April 2nd, 2025.
 ''',
 ]
+
+[[responses]]
+name = "absolutely nothing"
+hit_rate = 0.95
+ruleset = '''
+r (?i)did i miss anything
+'''
+content = [
+    "https://tenor.com/view/astrald-sol-rng-gif-4856514201377161336",
+]
