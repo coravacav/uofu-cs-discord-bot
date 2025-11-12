@@ -100,6 +100,7 @@ async fn main() -> Result<()> {
                 timeout(),
                 yeet_leaderboard(),
                 yeet(),
+                track_flight(),
             ],
             event_handler: |ctx, event, _framework, data| {
                 Box::pin(event_handler(ctx, event, data.clone()))
