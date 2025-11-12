@@ -1,6 +1,8 @@
 use poise::{CreateReply, serenity_prelude as serenity};
 use regex::Regex;
 
+const BASE_FLIGHTAWARE_URL: &str = "https://www.flightaware.com/";
+
 #[poise::command(slash_command, rename = "track flight")]
 pub async fn track_flight(
     ctx: PoiseContext<'_>,
