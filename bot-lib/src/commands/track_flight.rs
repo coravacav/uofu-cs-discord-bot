@@ -3,6 +3,7 @@ use regex::Regex;
 
 const BASE_FLIGHTAWARE_URL: &str = "https://www.flightaware.com/";
 
+///get information on a specified flight
 #[poise::command(slash_command, rename = "track flight")]
 pub async fn track_flight(
     ctx: PoiseContext<'_>,
