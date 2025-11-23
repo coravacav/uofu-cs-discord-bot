@@ -38,3 +38,4 @@ db/
 all_backups/
 
 debug.json
+secrets.properties
