@@ -3,7 +3,7 @@ use color_eyre::eyre::{Result, eyre};
 use poise::{CreateReply};
 use regex::Regex;
 use serde::Deserialize;
-use chrono::Local;
+use chrono::{Local, Datelike};
 
 #[derive(Debug, Deserialize)]
 struct FlightResponse {
@@ -32,11 +32,28 @@ struct FlightData {
     airline_icao: Option<String>,
     dep_icao: Option<String>,
     arr_icao: Option<String>,
+    airline_name: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct AirlabsError {
     message: String,
+}
+
+fn format_time(label: &str, scheduled: &Option<String>, estimated: &Option<String>) -> String {
+    match (scheduled, estimated) {
+        (_, Some(est)) => format!("Est {label}: {est}"),
+        (Some(sched), None) => format!("{label}: {sched}"),
+        _ => format!("{label}: N/A"),
+    }
+}
+
+fn minutes_to_hours(duration: Option<i64>) -> String {
+    let time = duration.unwrap_or(0);
+    let hours = time/60;
+    let minutes = time%60;
+
+    format!("Flight Time: {hours}:{minutes}")
 }
 
 ///get information on a specified flight
@@ -96,7 +113,7 @@ pub async fn track_flight(
         return Ok(());
     };
 
-    let (flight_label, airline, dep_airport, arr_airport) = if searched_iata {
+    let (flight_label, airline_standard, dep_airport, arr_airport) = if searched_iata {
         (
             flight.flight_iata.clone().or(flight.flight_icao.clone()).unwrap_or_default(),
             flight.airline_iata.clone().or(flight.airline_iata.clone()).unwrap_or_else(|| "N/A".to_string()),
@@ -121,11 +138,12 @@ pub async fn track_flight(
 
     let dep_time_display = format_time("Departure Time", &flight.dep_time, &flight.dep_estimated);
     let arr_time_display = format_time("Arrival Time", &flight.arr_time, &flight.arr_estimated);
+    let airline = flight.airline_name.clone().unwrap_or_else(|| "Unknown".to_string());
     let status = flight.status.clone().unwrap_or_else(|| "Unknown".to_string());
     let duration = minutes_to_hours(flight.duration.clone());
 
     let reply_msg = format!(
-        "**Flight {}\n**Airline: {}\nStatus: {}\n{}->{}\n{}\n{}\n{}",
+        "**Flight {}\n**Airline: {}\nStatus: {}\n{} -> {}\n{}\n{}\n{}",
         flight_label, airline, status, dep_airport, arr_airport, duration, dep_time_display, arr_time_display
     );
 
@@ -209,11 +227,12 @@ pub async fn plane_details(
     };
 
     let status = flight.status.clone().unwrap_or_else(|| "Unknown".to_string());
-    let aircraft = flight.model.clone().unwrap_or_else(|| "Unknown".to_string());
-    let manufacture = flight.manufacture.clone().unwrap_or_else(|| "boing boing bus".to_string());
-    let engine = flight.engine.clone().unwrap_or_else(|| "Unknown".to_string());
-    let age = flight.age.clone().unwrap_or_else(|| 0);
+    let aircraft = flight.model.clone().unwrap_or_else(|| "BoingBus 67420 Max".to_string());
+    let manufacture = flight.manufacture.clone().unwrap_or_else(|| "BoingBus".to_string());
+    let engine = flight.engine.clone().unwrap_or_else(|| "FartJet".to_string());
     let built = flight.built.clone().unwrap_or_else(|| 0);
+    let current_date = chrono::Utc::now();
+    let age = current_date.year() - built as i32;
 
     let reply_msg = format!(
         "**Flight {}\n**Airline: {}\nStatus: {}\nAircraft Type: {}\nManufacture: {}\nEngine Type: {}\nAge: {}\nDate of Manufacture: {}",
@@ -223,20 +242,4 @@ pub async fn plane_details(
     ctx.send(CreateReply::default().content(reply_msg)).await?;
 
     Ok(())
-}
-
-fn format_time(label: &str, scheduled: &Option<String>, estimated: &Option<String>) -> String {
-    match (scheduled, estimated) {
-        (_, Some(est)) => format!("Est {label}: {est}"),
-        (Some(sched), None) => format!("{label}: {sched}"),
-        _ => format!("{label}: N/A"),
-    }
-}
-
-fn minutes_to_hours(duration: Option<i64>) -> String {
-    let time = duration.unwrap_or(0);
-    let hours = time/60;
-    let minutes = time%60;
-
-    format!("Flight Time: {hours}:{minutes}")
 }
