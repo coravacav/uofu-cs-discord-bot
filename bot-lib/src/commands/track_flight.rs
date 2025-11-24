@@ -1,9 +1,22 @@
+use std::f64::consts::PI;
 use crate::data::PoiseContext;
 use color_eyre::eyre::{Result, eyre};
 use poise::{CreateReply};
 use regex::Regex;
 use serde::Deserialize;
 use chrono::{Local, Datelike};
+
+#[derive(Debug, Deserialize)]
+struct AirportResponse {
+    response: Option<AirportData>,
+    error: Option<AirlabsError>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AirportData {
+    lat: Option<f64>,
+    lng: Option<f64>,
+}
 
 #[derive(Debug, Deserialize)]
 struct FlightResponse {
@@ -33,6 +46,8 @@ struct FlightData {
     dep_icao: Option<String>,
     arr_icao: Option<String>,
     airline_name: Option<String>,
+    lat: Option<f64>,
+    long: Option<f64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -55,6 +70,71 @@ fn minutes_to_hours(duration: Option<i64>) -> String {
 
     format!("Flight Time: {hours}:{minutes}")
 }
+
+fn degree_to_rad(deg :f64) -> f64{
+    deg * PI / 180.0
+}
+
+fn haversine_distance(lat1: f64, long1: f64, lat2: f64, long2: f64) -> f64 {
+    let r = 6371.0;
+    let dlat = degree_to_rad(lat2 - lat1);
+    let dlon = degree_to_rad(long2 - long1);
+    let lat1 = degree_to_rad(lat1);
+    let lat2 = degree_to_rad(lat2);
+
+    let a = (dlat/2.0).sin().powi(2) +
+            lat1.cos() * lat2.cos() * (dlon/2.0).sin().powi(2);
+    let c = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
+    r * c
+}
+
+fn flight_progess(plane_lat: f64, plane_long: f64, source_lat: f64, source_long: f64, dst_lat: f64, dst_long: f64) -> f64{
+    let d_star_dest = haversine_distance(source_lat, source_long, dst_lat, dst_long);
+    let d_start_airp = haversine_distance(source_lat, source_long, plane_lat, plane_long);
+    d_star_dest / d_start_airp
+}
+
+// async fn airport_lookup(ctx: PoiseContext<'_>, code: String) -> Result<()> {
+//     let api_key = std::env::var("API_KEY").map_err(|_| eyre!("API_KEY missing from environment"))?;
+//     let iata_ap = Regex::new(r"^[A-Z]{2}").unwrap();
+//     let icao_ap = Regex::new(r"^[A-Z]{3}").unwrap();
+//     let searched_iata = iata_ap.is_match(&code);
+//     let searched_icao = icao_ap.is_match(&code);
+
+//     let url = if searched_iata {
+//         format!(
+//             "https://airlabs.co/api/v9/airport?iata_code={}&api_key={}",
+//             code, api_key
+//         )
+//     } else if searched_icao {
+//         format!(
+//             "https://airlabs.co/api/v9/airport?icao_code={}&api_key={}",
+//             code, api_key
+//         )
+//     } else {
+//         ctx.reply("Please provide a valid airport ident(IATA or ICAO)").await?;
+//         return Ok(());
+//     };
+
+//     let client = reqwest::Client::new();
+//     let response: FlightResponse = client
+//         .get(url)
+//         .send()
+//         .await?
+//         .json()
+//         .await?;
+
+//     if let Some(err) = response.error {
+//         ctx.reply(format!("API Error: {}", err.message)).await?;
+//         return Ok(());
+//     }
+
+//     let Some(flight) = response.response else {
+//         ctx.reply("No airport data found for that code.").await?;
+//         return Ok(());
+//     };
+
+// }
 
 ///get information on a specified flight
 #[poise::command(slash_command, rename = "trackflight")]
