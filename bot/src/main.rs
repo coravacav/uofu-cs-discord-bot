@@ -52,6 +52,8 @@ async fn main() -> Result<()> {
     let Args { dry_run, config } = Args::parse();
     let config_path = resolve_config_path(config)?;
 
+    let api_key = 
+        std::env::var("API_KEY").wrap_err("API_KEY missing from environment")?;
     let token =
         std::env::var("DISCORD_TOKEN").wrap_err("Expected a discord token environment variable")?;
     let config = config::Config::create_from_file(&config_path).wrap_err(format!(
@@ -60,6 +62,7 @@ async fn main() -> Result<()> {
     ))?;
 
     setup_db().await;
+
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
