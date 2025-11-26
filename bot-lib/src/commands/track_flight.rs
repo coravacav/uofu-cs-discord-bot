@@ -55,6 +55,14 @@ struct AirlabsError {
     message: String,
 }
 
+static IATA_RE: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
+    regex::Regex::new(r"^[A-Z]{2}[0-9]{1,4}").unwrap()
+});
+
+static ICAO_RE: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
+    regex::Regex::new(r"^[A-Z]{3}[0-9]{1,4}").unwrap()
+});
+
 fn format_time(label: &str, scheduled: &Option<String>, estimated: &Option<String>) -> String {
     match (scheduled, estimated) {
         (_, Some(est)) => format!("Est {label}: {est}"),
@@ -94,47 +102,91 @@ fn flight_progess(plane_lat: f64, plane_long: f64, source_lat: f64, source_long:
     d_star_dest / d_start_airp
 }
 
-// async fn airport_lookup(ctx: PoiseContext<'_>, code: String) -> Result<()> {
-//     let api_key = std::env::var("API_KEY").map_err(|_| eyre!("API_KEY missing from environment"))?;
-//     let iata_ap = Regex::new(r"^[A-Z]{2}").unwrap();
-//     let icao_ap = Regex::new(r"^[A-Z]{3}").unwrap();
-//     let searched_iata = iata_ap.is_match(&code);
-//     let searched_icao = icao_ap.is_match(&code);
+async fn airport_lookup(ctx: PoiseContext<'_>, code: String) -> Option<AirportData> {
+    let api_key = std::env::var("API_KEY").map_err(|_| eyre!("API_KEY missing from environment")).ok()?;
+    let searched_iata = IATA_RE.is_match(&code);
+    let searched_icao = ICAO_RE.is_match(&code);
 
-//     let url = if searched_iata {
-//         format!(
-//             "https://airlabs.co/api/v9/airport?iata_code={}&api_key={}",
-//             code, api_key
-//         )
-//     } else if searched_icao {
-//         format!(
-//             "https://airlabs.co/api/v9/airport?icao_code={}&api_key={}",
-//             code, api_key
-//         )
-//     } else {
-//         ctx.reply("Please provide a valid airport ident(IATA or ICAO)").await?;
-//         return Ok(());
-//     };
+    let url = if searched_iata {
+        format!(
+            "https://airlabs.co/api/v9/airport?iata_code={}&api_key={}",
+            code, api_key
+        )
+    } else if searched_icao {
+        format!(
+            "https://airlabs.co/api/v9/airport?icao_code={}&api_key={}",
+            code, api_key
+        )
+    } else {
+        ctx.reply("Please provide a valid airport ident(IATA or ICAO)").await.ok()?;
+        return None;
+    };
 
-//     let client = reqwest::Client::new();
-//     let response: FlightResponse = client
-//         .get(url)
-//         .send()
-//         .await?
-//         .json()
-//         .await?;
+    let client = reqwest::Client::new();
+    let response: AirportResponse = client
+        .get(url)
+        .send()
+        .await
+        .ok()?
+        .json()
+        .await
+        .ok()?;
 
-//     if let Some(err) = response.error {
-//         ctx.reply(format!("API Error: {}", err.message)).await?;
-//         return Ok(());
-//     }
+    if let Some(err) = response.error {
+        ctx.reply(format!("API Error: {}", err.message)).await.ok()?;
+        return None;
+    }
 
-//     let Some(flight) = response.response else {
-//         ctx.reply("No airport data found for that code.").await?;
-//         return Ok(());
-//     };
+    let Some(airport) = response.response else {
+        ctx.reply("No airport data found for that code.").await.ok()?;
+        return None;
+    };
 
-// }
+    Some(airport)
+}
+
+async fn flight_lookup(ctx: PoiseContext<'_>, code: String) -> Option<FlightData> {
+    let api_key = std::env::var("API_KEY").map_err(|_| eyre!("API_KEY missing from environment")).ok()?;
+    let date = Local::now().format("%Y-%m-%d").to_string();
+
+    let searched_iata = IATA_RE.is_match(&code);
+    let searched_icao = ICAO_RE.is_match(&code);
+
+    let url = if searched_iata {
+        format!(
+            "https://airlabs.co/api/v9/flight?flight_iata={}&api_key={}&flight_date={}",
+            code, api_key, date
+        )
+    } else if searched_icao {
+        format!(
+            "https://airlabs.co/api/v9/flight?flight_icao={}&api_key={}&flight_date={}",
+            code, api_key, date
+        )
+    } else {
+        ctx.reply("Please provide a valid flight number (IATA or ICAO)").await.ok()?;
+        return None;
+    };
+
+    let client = reqwest::Client::new();
+    let response: FlightResponse = client
+        .get(url)
+        .send()
+        .await.ok()?
+        .json()
+        .await.ok()?;
+
+    if let Some(err) = response.error {
+        ctx.reply(format!("API Error: {}", err.message)).await.ok()?;
+        return None;
+    }
+
+    let Some(flight) = response.response else {
+        ctx.reply("No flight data found for that number.").await.ok()?;
+        return None;
+    };
+
+    Some(flight)
+}
 
 ///get information on a specified flight
 #[poise::command(slash_command, rename = "trackflight")]
@@ -151,46 +203,12 @@ pub async fn track_flight(
         .collect::<String>()
         .to_uppercase();
 
-    let api_key = std::env::var("API_KEY").map_err(|_| eyre!("API_KEY missing from environment"))?;
+    let searched_iata = IATA_RE.is_match(&search);
+    let searched_icao = ICAO_RE.is_match(&search);
 
-    let iata_re = Regex::new(r"^[A-Z]{2}[0-9]{1,4}").unwrap();
-    let icao_re = Regex::new(r"^[A-Z]{3}[0-9]{1,4}").unwrap();
-    let date = Local::now().format("%Y-%m-%d").to_string();
-
-    let searched_iata = iata_re.is_match(&search);
-    let searched_icao = icao_re.is_match(&search);
-
-    let url = if searched_iata {
-        format!(
-            "https://airlabs.co/api/v9/flight?flight_iata={}&api_key={}&flight_date={}",
-            search, api_key, date
-        )
-    } else if searched_icao {
-        format!(
-            "https://airlabs.co/api/v9/flight?flight_icao={}&api_key={}&flight_date={}",
-            search, api_key, date
-        )
-    } else {
-        ctx.reply("Please provide a valid flight number (IATA or ICAO)").await?;
-        return Ok(());
-    };
-
-    let client = reqwest::Client::new();
-    let response: FlightResponse = client
-        .get(url)
-        .send()
-        .await?
-        .json()
-        .await?;
-
-    if let Some(err) = response.error {
-        ctx.reply(format!("API Error: {}", err.message)).await?;
-        return Ok(());
-    }
-
-    let Some(flight) = response.response else {
-        ctx.reply("No flight data found for that number.").await?;
-        return Ok(());
+    let flight = match flight_lookup(ctx, search).await{
+        Some(flight) => flight,
+        None => return Ok(()),
     };
 
     let (flight_label, airline_standard, dep_airport, arr_airport) = if searched_iata {
@@ -247,46 +265,12 @@ pub async fn plane_details(
         .collect::<String>()
         .to_uppercase();
 
-    let api_key = std::env::var("API_KEY").map_err(|_| eyre!("API_KEY missing from environment"))?;
+    let searched_iata = IATA_RE.is_match(&search);
+    let searched_icao = ICAO_RE.is_match(&search);
 
-    let iata_re = Regex::new(r"^[A-Z]{2}[0-9]{1,4}").unwrap();
-    let icao_re = Regex::new(r"^[A-Z]{3}[0-9]{1,4}").unwrap();
-    let date = Local::now().format("%Y-%m-%d").to_string();
-
-    let searched_iata = iata_re.is_match(&search);
-    let searched_icao = icao_re.is_match(&search);
-
-    let url = if searched_iata {
-        format!(
-            "https://airlabs.co/api/v9/flight?flight_iata={}&api_key={}&flight_date={}",
-            search, api_key, date
-        )
-    } else if searched_icao {
-        format!(
-            "https://airlabs.co/api/v9/flight?flight_icao={}&api_key={}&flight_date={}",
-            search, api_key, date
-        )
-    } else {
-        ctx.reply("Please provide a valid flight number (IATA or ICAO)").await?;
-        return Ok(());
-    };
-
-    let client = reqwest::Client::new();
-    let response: FlightResponse = client
-        .get(url)
-        .send()
-        .await?
-        .json()
-        .await?;
-
-    if let Some(err) = response.error {
-        ctx.reply(format!("API Error: {}", err.message)).await?;
-        return Ok(());
-    }
-
-    let Some(flight) = response.response else {
-        ctx.reply("No flight data found for that number.").await?;
-        return Ok(());
+    let flight = match flight_lookup(ctx, search).await{
+        Some(flight) => flight,
+        None => return Ok(()),
     };
 
     let (flight_label, airline) = if searched_iata {
