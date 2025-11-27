@@ -1,0 +1,27 @@
+thread 'rustc' panicked at /rustc-dev/f04e3dfc87d7e2b6ad53e7a52253812cd62eba50/compiler/rustc_codegen_ssa/src/back/write.rs:2035:29:
+failed to open bitcode file `/Users/willmetz/Documents/KingfisherDiscordBot/uofu-cs-discord-bot/target/debug/incremental/bot_lib-1jp3ofeu98jcr/s-hddreoc2ln-17245bl-working/cc91yji1zlfzjcx6um0u89mv3.pre-lto.bc`: No such file or directory (os error 2)
+stack backtrace:
+   0:        0x1103c8470 - std::backtrace::Backtrace::create::hcdc90ea6ac513737
+   1:        0x10e3e4fe0 - std[dfb9f133ee6e191]::panicking::update_hook::<alloc[591710c1154bb51]::boxed::Box<rustc_driver_impl[59af9e2f916ad0a9]::install_ice_hook::{closure#1}>>::{closure#0}
+   2:        0x1103c939c - std::panicking::panic_with_hook::h690f7dc4c3c0467b
+   3:        0x1103c904c - std::panicking::panic_handler::{{closure}}::haad8031a248fa0b7
+   4:        0x1103c2708 - std::sys::backtrace::__rust_end_short_backtrace::hb3e7df5d261b3d2f
+   5:        0x1103a6be8 - __rustc[aa7cb4f7ebc7d8e9]::rust_begin_unwind
+   6:        0x113131510 - core::panicking::panic_fmt::h6e170a2b7fd3e280
+   7:        0x11317d680 - rustc_codegen_ssa[5f73025d5957b540]::back::write::submit_pre_lto_module_to_llvm::<rustc_codegen_llvm[99bf4beba468145f]::LlvmCodegenBackend>::{closure#0}
+   8:        0x10e034418 - rustc_codegen_ssa[5f73025d5957b540]::base::codegen_crate::<rustc_codegen_llvm[99bf4beba468145f]::LlvmCodegenBackend>
+   9:        0x10e12658c - <rustc_codegen_llvm[99bf4beba468145f]::LlvmCodegenBackend as rustc_codegen_ssa[5f73025d5957b540]::traits::backend::CodegenBackend>::codegen_crate
+  10:        0x10ecb6b40 - <rustc_interface[3d4ce27018f23967]::queries::Linker>::codegen_and_build_linker
+  11:        0x10e39bcc4 - rustc_interface[3d4ce27018f23967]::passes::create_and_enter_global_ctxt::<core[fa1b534b39e65350]::option::Option<rustc_interface[3d4ce27018f23967]::queries::Linker>, rustc_driver_impl[59af9e2f916ad0a9]::run_compiler::{closure#0}::{closure#2}>
+  12:        0x10e3e8fbc - rustc_interface[3d4ce27018f23967]::interface::run_compiler::<(), rustc_driver_impl[59af9e2f916ad0a9]::run_compiler::{closure#0}>::{closure#1}
+  13:        0x10e3d7c18 - std[dfb9f133ee6e191]::sys::backtrace::__rust_begin_short_backtrace::<rustc_interface[3d4ce27018f23967]::util::run_in_thread_with_globals<rustc_interface[3d4ce27018f23967]::util::run_in_thread_pool_with_globals<rustc_interface[3d4ce27018f23967]::interface::run_compiler<(), rustc_driver_impl[59af9e2f916ad0a9]::run_compiler::{closure#0}>::{closure#1}, ()>::{closure#0}, ()>::{closure#0}::{closure#0}, ()>
+  14:        0x10e3ed0d0 - <<std[dfb9f133ee6e191]::thread::Builder>::spawn_unchecked_<rustc_interface[3d4ce27018f23967]::util::run_in_thread_with_globals<rustc_interface[3d4ce27018f23967]::util::run_in_thread_pool_with_globals<rustc_interface[3d4ce27018f23967]::interface::run_compiler<(), rustc_driver_impl[59af9e2f916ad0a9]::run_compiler::{closure#0}>::{closure#1}, ()>::{closure#0}, ()>::{closure#0}::{closure#0}, ()>::{closure#1} as core[fa1b534b39e65350]::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+  15:        0x1103bf1d8 - std::sys::thread::unix::Thread::new::thread_start::h0e4da6e8edf74dde
+  16:        0x1884bdc08 - __pthread_cond_wait
+
+
+rustc version: 1.92.0-nightly (f04e3dfc8 2025-10-19)
+platform: aarch64-apple-darwin
+
+query stack during panic:
+end of query stack

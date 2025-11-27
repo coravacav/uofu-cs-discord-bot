@@ -1,21 +1,21 @@
-//use std::f64::consts::PI;
+use std::f64::consts::PI;
 use crate::data::PoiseContext;
 use color_eyre::{eyre::{Result, eyre}};
 use poise::{CreateReply, serenity_prelude::{CreateEmbed, CreateEmbedFooter, colours::{branding::BLURPLE, roles::BLUE}}};
 use serde::Deserialize;
 use chrono::{Local, Datelike};
 
-// #[derive(Debug, Deserialize)]
-// struct AirportResponse {
-//     response: Option<AirportData>,
-//     error: Option<AirlabsError>,
-// }
+#[derive(Debug, Deserialize)]
+struct AirportResponse {
+    response: Option<Vec<AirportData>>,
+    error: Option<AirlabsError>,
+}
 
-// #[derive(Debug, Deserialize)]
-// struct AirportData {
-//     lat: Option<f64>,ß
-//     lng: Option<f64>,
-// }
+#[derive(Debug, Deserialize)]
+struct AirportData {
+    lat: Option<f64>,
+    lng: Option<f64>,
+}
 
 #[derive(Debug, Deserialize)]
 struct FlightResponse {
@@ -36,8 +36,9 @@ struct FlightData {
     dep_time: Option<String>,
     arr_time: Option<String>,
     engine: Option<String>,
-    // age: Option<i64>,
     built: Option<i64>,
+    speed : Option<i64>,
+    alt : Option<i64>,
     arr_estimated: Option<String>,
     dep_estimated: Option<String>,
     flight_icao: Option<String>,
@@ -45,8 +46,8 @@ struct FlightData {
     dep_icao: Option<String>,
     arr_icao: Option<String>,
     airline_name: Option<String>,
-    // lat: Option<f64>,
-    // long: Option<f64>,
+    lat: Option<f64>,
+    lng: Option<f64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -55,11 +56,19 @@ struct AirlabsError {
 }
 
 static IATA_RE: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
-    regex::Regex::new(r"^[A-Z]{2}[0-9]{1,4}").unwrap()
+    regex::Regex::new(r"^[A-Z]{2}[0-9]{1,4}$").unwrap()
 });
 
 static ICAO_RE: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
-    regex::Regex::new(r"^[A-Z]{3}[0-9]{1,4}").unwrap()
+    regex::Regex::new(r"^[A-Z]{3}[0-9]{1,4}$").unwrap()
+});
+
+static IATA_RE_AIRP: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
+    regex::Regex::new(r"^[A-Z]{3}$").unwrap()
+});
+
+static ICAO_RE_AIRP: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
+    regex::Regex::new(r"^[A-Z]{4}$").unwrap()
 });
 
 fn format_time(label: &str, scheduled: &Option<String>, estimated: &Option<String>) -> String {
@@ -79,72 +88,80 @@ fn minutes_to_hours(duration: Option<i64>) -> String {
 }
 /* work in progress for flight progress tracking
  */
+fn progress_bar(percentage: f64) -> String {
+    let total_blocks = 10;
+    let clamped_percentage = percentage.clamp(0.0, 1.0);
+    let filled_blocks = (clamped_percentage * total_blocks as f64).round() as usize;
+    let empty_blocks = total_blocks - filled_blocks;
 
-// fn degree_to_rad(deg :f64) -> f64{
-//     deg * PI / 180.0
-// }
+    let filled_part = "=".repeat(filled_blocks);
+    let empty_part = "-".repeat(empty_blocks);
+    let leading_char = if filled_blocks < total_blocks { "✈️" } else { "" };
 
-// fn haversine_distance(lat1: f64, long1: f64, lat2: f64, long2: f64) -> f64 {
-//     let r = 6371.0;
-//     let dlat = degree_to_rad(lat2 - lat1);
-//     let dlon = degree_to_rad(long2 - long1);
-//     let lat1 = degree_to_rad(lat1);
-//     let lat2 = degree_to_rad(lat2);
+    format!("{}{}{}", filled_part, leading_char, empty_part)
+}
 
-//     let a = (dlat/2.0).sin().powi(2) +
-//             lat1.cos() * lat2.cos() * (dlon/2.0).sin().powi(2);
-//     let c = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
-//     r * c
-// }
+fn degree_to_rad(deg :f64) -> f64{
+    deg * PI / 180.0
+}
 
-// fn flight_progess(plane_lat: f64, plane_long: f64, source_lat: f64, source_long: f64, dst_lat: f64, dst_long: f64) -> f64{
-//     let d_star_dest = haversine_distance(source_lat, source_long, dst_lat, dst_long);
-//     let d_start_airp = haversine_distance(source_lat, source_long, plane_lat, plane_long);
-//     d_star_dest / d_start_airp
-// }
+fn haversine_distance(lat1: f64, long1: f64, lat2: f64, long2: f64) -> f64 {
+    let r = 6371.0;
+    let dlat = degree_to_rad(lat2 - lat1);
+    let dlon = degree_to_rad(long2 - long1);
+    let lat1 = degree_to_rad(lat1);
+    let lat2 = degree_to_rad(lat2);
 
-// async fn airport_lookup(ctx: PoiseContext<'_>, code: String) -> Option<AirportData> {
-//     let api_key = std::env::var("API_KEY").map_err(|_| eyre!("API_KEY missing from environment")).ok()?;
-//     let searched_iata = IATA_RE.is_match(&code);
-//     let searched_icao = ICAO_RE.is_match(&code);
+    let a = (dlat/2.0).sin().powi(2) +
+            lat1.cos() * lat2.cos() * (dlon/2.0).sin().powi(2);
+    let c = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
+    r * c
+}
 
-//     let url = if searched_iata {
-//         format!(
-//             "https://airlabs.co/api/v9/airport?iata_code={}&api_key={}",
-//             code, api_key
-//         )
-//     } else if searched_icao {
-//         format!(
-//             "https://airlabs.co/api/v9/airport?icao_code={}&api_key={}",
-//             code, api_key
-//         )
-//     } else {
-//         ctx.reply("Please provide a valid airport ident(IATA or ICAO)").await.ok()?;
-//         return None;
-//     };
+fn flight_progess(plane_lat: f64, plane_long: f64, source_lat: f64, source_long: f64, dst_lat: f64, dst_long: f64) -> f64{
+    let total_distance = haversine_distance(source_lat, source_long, dst_lat, dst_long);
+    let traveled_distance = haversine_distance(source_lat, source_long, plane_lat, plane_long);
+    if total_distance == 0.0 {
+        return 0.0;
+    }
+    (traveled_distance / total_distance).clamp(0.0, 1.0)
+}
 
-//     let client = reqwest::Client::new();
-//     let response: AirportResponse = client
-//         .get(url)
-//         .send()
-//         .await
-//         .ok()?
-//         .json()
-//         .await
-//         .ok()?;
+async fn airport_lookup(code: String) -> Result<AirportData> {
+    let api_key = std::env::var("API_KEY").map_err(|_| eyre!("API_KEY missing from environment"))?;
+    let searched_iata = IATA_RE_AIRP.is_match(&code);
+    let searched_icao = ICAO_RE_AIRP.is_match(&code);
 
-//     if let Some(err) = response.error {
-//         ctx.reply(format!("API Error: {}", err.message)).await.ok()?;
-//         return None;
-//     }
+    let url = if searched_iata {
+        format!(
+            "https://airlabs.co/api/v9/airports?iata_code={}&api_key={}",
+            code, api_key
+        )
+    } else if searched_icao {
+        format!(
+            "https://airlabs.co/api/v9/airports?icao_code={}&api_key={}",
+            code, api_key
+        )
+    } else {
+        return Err(eyre!("Invalid airport code: {}", code));
+    };
 
-//     let Some(airport) = response.response else {
-//         ctx.reply("No airport data found for that code.").await.ok()?;
-//         return None;
-//     };
+    let client = reqwest::Client::new();
+    let response: AirportResponse = client
+        .get(url)
+        .send()
+        .await?
+        .json()
+        .await?;
 
-//     Some(airport)
-// }
+    if let Some(err) = response.error {
+        return Err(eyre!("API Error: {}", err.message));
+    }
+
+    let airports = response.response.ok_or_else(|| eyre!("No airport data found for code: {}", code))?;
+
+    airports.into_iter().next().ok_or_else(|| eyre!("Airport list was empty for code: {}", code))
+}
 
 async fn flight_lookup(ctx: PoiseContext<'_>, code: String) -> Option<FlightData> {
     let api_key = std::env::var("API_KEY").map_err(|_| eyre!("API_KEY missing from environment")).ok()?;
@@ -215,43 +232,100 @@ pub async fn track_flight(
     let (flight_label, dep_airport, arr_airport) = if searched_iata {
         (
             flight.flight_iata.clone().or(flight.flight_icao.clone()).unwrap_or_default(),
-            flight.dep_iata.clone().or(flight.dep_icao.clone()).unwrap_or_else(|| "N/A".to_string()),
-            flight.arr_iata.clone().or(flight.arr_icao.clone()).unwrap_or_else(|| "N/A".to_string()),
+            flight.dep_iata.clone().or(flight.dep_icao.clone()),
+            flight.arr_iata.clone().or(flight.arr_icao.clone()),
         )
     } else if searched_icao {
         (
             flight.flight_icao.clone().or(flight.flight_iata.clone()).unwrap_or_default(),
-            flight.dep_icao.clone().or(flight.dep_iata.clone()).unwrap_or_else(|| "N/A".to_string()),
-            flight.arr_icao.clone().or(flight.arr_iata.clone()).unwrap_or_else(|| "N/A".to_string()),
+            flight.dep_icao.clone().or(flight.dep_iata.clone()),
+            flight.arr_icao.clone().or(flight.arr_iata.clone()),
         )
     } else {
         (
             flight.flight_iata.clone().or(flight.flight_icao.clone()).unwrap_or_default(),
-            flight.dep_iata.clone().or(flight.dep_icao.clone()).unwrap_or_else(|| "N/A".to_string()),
-            flight.arr_iata.clone().or(flight.arr_icao.clone()).unwrap_or_else(|| "N/A".to_string()),
+            flight.dep_iata.clone().or(flight.dep_icao.clone()),
+            flight.arr_iata.clone().or(flight.arr_icao.clone()),
         )
     };
 
+    let Some(dep_code) = dep_airport else {
+        ctx.reply("Departure airport code not available for this flight.").await?;
+        return Ok(());
+    };
+    let Some(arr_code) = arr_airport else {
+        ctx.reply("Arrival airport code not available for this flight.").await?;
+        return Ok(());
+    };
+
+    let depart_airport = match airport_lookup(dep_code.clone()).await {
+        Ok(airport) => airport,
+        Err(e) => {
+            ctx.reply(format!("Failed to lookup departure airport {}: {}", dep_code.clone(), e)).await?;
+            return Ok(());
+        }
+    };
+
+    let arrival_airport = match airport_lookup(arr_code.clone()).await {
+        Ok(airport) => airport,
+        Err(e) => {
+            ctx.reply(format!("Failed to lookup arrival airport {}: {}", arr_code.clone(), e)).await?;
+            return Ok(());
+        }
+    };
+
+    let aicraft_lat = flight.lat.unwrap_or(0.0);
+    let aicraft_long = flight.lng.unwrap_or(0.0);
+    let source_airport_lat = depart_airport.lat.unwrap_or(0.0);
+    let source_airport_long = depart_airport.lng.unwrap_or(0.0);
+    let arrival_airport_lat = arrival_airport.lat.unwrap_or(0.0);
+    let arrival_airport_long = arrival_airport.lng.unwrap_or(0.0);
+    let progress = flight_progess(
+        aicraft_lat,
+        aicraft_long,
+        source_airport_lat,
+        source_airport_long,
+        arrival_airport_lat,
+        arrival_airport_long,
+    );
+
+    let speed = (flight.speed.unwrap_or(0) as f64 * 0.5399568) as i64;
+    let altitude = (flight.alt.unwrap_or(0) as f64 * 3.28084) as i64;
     let timestamp = chrono::Utc::now();
     let dep_time_display = format_time("Departure Time", &flight.dep_time, &flight.dep_estimated);
     let arr_time_display = format_time("Arrival Time", &flight.arr_time, &flight.arr_estimated);
     let airline = flight.airline_name.clone().unwrap_or_else(|| "Unknown".to_string());
     let status = flight.status.clone().unwrap_or_else(|| "Unknown".to_string());
     let duration = minutes_to_hours(flight.duration);
+    let progress_bar = progress_bar(progress);
 
-    let embed = CreateEmbed::new()
+    let mut embed = CreateEmbed::new()
         .title(format!("Flight {}", flight_label))
         .url("https://airlabs.co/api/")
         .field("Airline", airline, true)
-        .field("Status", status, true)
         .field("\u{200B}", "\u{200B}", true)
-        .field("Route", format!("{} -> {}", dep_airport, arr_airport), true)
+        .field("Status", &status, true)
+        .field("Route", format!("{} -> {}", dep_code, arr_code), true)
+        .field("\u{200B}", "\u{200B}", true)
         .field("Duration", duration, true)
         .field("🛫 Departure", dep_time_display, false)
-        .field("🛬 Arrival", arr_time_display, false)
+        .field("🛬 Arrival", arr_time_display, false);
+
+    if status == "en-route"{
+        embed = embed
+        .field("Speed", speed.to_string() + "kts", true)
+        .field("\u{200B}", "\u{200B}", true)
+        .field("Altitude", altitude.to_string() + "ft", true)
+        .field("Progress", format!("{} {} {}", &dep_code, progress_bar, &arr_code), false)
         .timestamp(timestamp)
         .footer(CreateEmbedFooter::new("Data provided by AirLabs API"))
         .color(BLUE);
+    }
+    else{
+        embed = embed.timestamp(timestamp)
+        .footer(CreateEmbedFooter::new("Data provided by AirLabs API"))
+        .color(BLUE);
+    }
 
     ctx.send(CreateReply::default().embed(embed)).await?;
 
