@@ -38,3 +38,6 @@ db/
 all_backups/
 
 debug.json
+
+# ignore local config files
+.cargo/config.toml
