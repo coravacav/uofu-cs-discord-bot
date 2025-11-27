@@ -1,7 +1,7 @@
 //use std::f64::consts::PI;
 use crate::data::PoiseContext;
-use color_eyre::eyre::{Result, eyre};
-use poise::{CreateReply};
+use color_eyre::{eyre::{Result, eyre}};
+use poise::{CreateReply, serenity_prelude::{CreateEmbed, CreateEmbedFooter, colours::{branding::BLURPLE, roles::BLUE}}};
 use serde::Deserialize;
 use chrono::{Local, Datelike};
 
@@ -13,7 +13,7 @@ use chrono::{Local, Datelike};
 
 // #[derive(Debug, Deserialize)]
 // struct AirportData {
-//     lat: Option<f64>,
+//     lat: Option<f64>,ß
 //     lng: Option<f64>,
 // }
 
@@ -75,7 +75,7 @@ fn minutes_to_hours(duration: Option<i64>) -> String {
     let hours = time/60;
     let minutes = time%60;
 
-    format!("Flight Time: {hours}:{minutes}")
+    format!("{hours}h {minutes}m")
 }
 /* work in progress for flight progress tracking
  */
@@ -232,18 +232,28 @@ pub async fn track_flight(
         )
     };
 
+    let timestamp = chrono::Utc::now();
     let dep_time_display = format_time("Departure Time", &flight.dep_time, &flight.dep_estimated);
     let arr_time_display = format_time("Arrival Time", &flight.arr_time, &flight.arr_estimated);
     let airline = flight.airline_name.clone().unwrap_or_else(|| "Unknown".to_string());
     let status = flight.status.clone().unwrap_or_else(|| "Unknown".to_string());
-    let duration = minutes_to_hours(flight.duration.clone());
+    let duration = minutes_to_hours(flight.duration);
 
-    let reply_msg = format!(
-        "**Flight {}\n**Airline: {}\nStatus: {}\n{} -> {}\n{}\n{}\n{}",
-        flight_label, airline, status, dep_airport, arr_airport, duration, dep_time_display, arr_time_display
-    );
+    let embed = CreateEmbed::new()
+        .title(format!("Flight {}", flight_label))
+        .url("https://airlabs.co/api/")
+        .field("Airline", airline, true)
+        .field("Status", status, true)
+        .field("\u{200B}", "\u{200B}", true)
+        .field("Route", format!("{} -> {}", dep_airport, arr_airport), true)
+        .field("Duration", duration, true)
+        .field("🛫 Departure", dep_time_display, false)
+        .field("🛬 Arrival", arr_time_display, false)
+        .timestamp(timestamp)
+        .footer(CreateEmbedFooter::new("Data provided by AirLabs API"))
+        .color(BLUE);
 
-    ctx.send(CreateReply::default().content(reply_msg)).await?;
+    ctx.send(CreateReply::default().embed(embed)).await?;
 
     Ok(())
 }
@@ -292,16 +302,26 @@ pub async fn plane_details(
     let aircraft = flight.model.clone().unwrap_or_else(|| "BoingBus 67420 Max".to_string());
     let manufacture = flight.manufacture.clone().unwrap_or_else(|| "BoingBus".to_string());
     let engine = flight.engine.clone().unwrap_or_else(|| "FartJet".to_string());
-    let built = flight.built.clone().unwrap_or_else(|| 0);
+    let built = flight.built.unwrap_or(0);
     let current_date = chrono::Utc::now();
     let age = current_date.year() - built as i32;
 
-    let reply_msg = format!(
-        "**Flight {}\n**Airline: {}\nStatus: {}\nAircraft Type: {}\nManufacture: {}\nEngine Type: {}\nAge: {}\nDate of Manufacture: {}",
-        flight_label, airline, status, aircraft, manufacture, engine, age, built
-    );
+    let embed = CreateEmbed::new()
+        .title(format!("Aircraft Details for Flight {}", flight_label))
+        .url("https://airlabs.co/api/")
+        .field("Airline", airline, true)
+        .field("Status", status, true)
+        .field("\u{200B}", "\u{200B}", true)
+        .field("Aircraft Type", aircraft, true)
+        .field("Manufacture", manufacture, true)
+        .field("Engine Type", engine, true)
+        .field("Age", format!("{} years", age), true)
+        .field("Date of Manufacture", built.to_string(), true)
+        .timestamp(chrono::Utc::now())
+        .footer(CreateEmbedFooter::new("Data provided by AirLabs API"))
+        .color(BLURPLE);
 
-    ctx.send(CreateReply::default().content(reply_msg)).await?;
+    ctx.send(CreateReply::default().embed(embed)).await?;
 
     Ok(())
 }
