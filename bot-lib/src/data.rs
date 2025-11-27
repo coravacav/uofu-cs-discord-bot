@@ -2,7 +2,10 @@ use crate::config::Config;
 use bot_db::KingFisherDb;
 use color_eyre::eyre::{Error, Result};
 use std::sync::LazyLock;
-use std::{path::Path, sync::Arc};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 use surrealdb::Surreal;
 use surrealdb::engine::local::Db;
 #[cfg(test)]
@@ -49,7 +52,7 @@ pub struct RawAppState {
 }
 
 impl RawAppState {
-    pub fn new(config: Config, config_path: String) -> Result<RawAppState> {
+    pub fn new(config: Config, config_path: PathBuf) -> Result<RawAppState> {
         let config = Arc::new(RwLock::new(config));
 
         let db = KingFisherDb::new()?;
@@ -61,7 +64,7 @@ impl RawAppState {
 
         let config_clone = Arc::clone(&config);
         let reload_config_path = config_path.clone();
-        let config_path: Box<Path> = Path::new(&config_path).into();
+        let config_path: Box<Path> = config_path.into_boxed_path();
 
         let mut watcher = notify::recommended_watcher(move |res| match res {
             Ok(Event {

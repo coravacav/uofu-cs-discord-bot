@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use bot_lib::{
     commands::*,
@@ -8,7 +8,7 @@ use bot_lib::{
     event_handler::event_handler,
 };
 use clap::Parser;
-use color_eyre::eyre::{Result, WrapErr};
+use color_eyre::eyre::{Result, WrapErr, eyre};
 use dotenvy::dotenv;
 use poise::serenity_prelude as serenity;
 use tracing_subscriber::prelude::*;
@@ -23,10 +23,12 @@ pub struct Args {
     #[arg(short, long, default_value = "false")]
     pub dry_run: bool,
 
-    /// Path to the config file, if you want to use a different one.
-    #[arg(short, long, default_value_t = String::from("config.toml"))]
-    pub config: String,
+    /// Path to the config file. If omitted, the bot searches parent dirs for config.toml.
+    #[arg(short, long)]
+    pub config: Option<PathBuf>,
 }
+
+const DEFAULT_CONFIG_FILENAME: &str = "config.toml";
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -47,15 +49,15 @@ async fn main() -> Result<()> {
         ))
         .init();
 
-    let Args {
-        dry_run,
-        config: config_path,
-    } = Args::parse();
+    let Args { dry_run, config } = Args::parse();
+    let config_path = resolve_config_path(config)?;
 
     let token =
         std::env::var("DISCORD_TOKEN").wrap_err("Expected a discord token environment variable")?;
-    let config =
-        config::Config::create_from_file(&config_path).wrap_err("Failed to load config")?;
+    let config = config::Config::create_from_file(&config_path).wrap_err(format!(
+        "Failed to load config from {}",
+        config_path.display()
+    ))?;
 
     setup_db().await;
 
@@ -198,4 +200,46 @@ fn notify_on_executable_update() -> Result<()> {
     Box::leak(Box::new(watcher));
 
     Ok(())
+}
+
+fn resolve_config_path(cli_path: Option<PathBuf>) -> Result<PathBuf> {
+    if let Some(path) = cli_path {
+        validate_config_path(path)
+    } else {
+        search_parent_dirs_for_config()
+    }
+}
+
+fn validate_config_path(path: PathBuf) -> Result<PathBuf> {
+    if path.is_file() {
+        return Ok(path);
+    }
+
+    Err(eyre!(
+        "Config file not found at {}. Pass a valid path via --config.",
+        path.display()
+    ))
+}
+
+fn search_parent_dirs_for_config() -> Result<PathBuf> {
+    let mut current_dir = std::env::current_dir()
+        .wrap_err("Failed to determine the current working directory for config lookup")?;
+    let starting_dir = current_dir.clone();
+
+    loop {
+        let candidate = current_dir.join(DEFAULT_CONFIG_FILENAME);
+        if candidate.is_file() {
+            return Ok(candidate);
+        }
+
+        if !current_dir.pop() {
+            break;
+        }
+    }
+
+    Err(eyre!(
+        "Could not find `{}` starting from `{}` and walking up parent directories. Pass --config <FILE> to specify a path.",
+        DEFAULT_CONFIG_FILENAME,
+        starting_dir.display()
+    ))
 }

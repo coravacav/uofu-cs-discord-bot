@@ -1,0 +1,107 @@
+DEFINE TABLE OVERWRITE user SCHEMAFULL CHANGEFEED 3d;
+
+DEFINE FIELD OVERWRITE id ON user TYPE number;
+DEFINE FIELD OVERWRITE name ON user TYPE string;
+DEFINE FIELD OVERWRITE timeout_history ON user TYPE option<array<record<timeout_event>>> DEFAULT NONE;
+
+DEFINE TABLE OVERWRITE timeout_event SCHEMAFULL CHANGEFEED 3d;
+
+DEFINE FIELD OVERWRITE user_id ON timeout_event TYPE record<user>;
+DEFINE FIELD OVERWRITE start_time ON timeout_event TYPE datetime;
+DEFINE FIELD OVERWRITE duration ON timeout_event TYPE duration;
+DEFINE FIELD OVERWRITE caused_by ON timeout_event TYPE record<user>;
+DEFINE FIELD OVERWRITE cause ON timeout_event TYPE "yeet" | "mod abuse" | "self timeout";
+
+DEFINE TABLE OVERWRITE yeet TYPE RELATION IN user OUT user SCHEMAFULL CHANGEFEED 3d;
+
+DEFINE FIELD OVERWRITE in ON yeet TYPE record<user> ASSERT $value.exists();
+DEFINE FIELD OVERWRITE out ON yeet TYPE record<user> ASSERT $value.exists();
+DEFINE FIELD OVERWRITE guild_id ON yeet TYPE number;
+DEFINE FIELD OVERWRITE channel_id ON yeet TYPE number;
+DEFINE FIELD OVERWRITE message_id ON yeet TYPE option<number>;
+DEFINE FIELD OVERWRITE start_time ON yeet TYPE datetime DEFAULT time::now();
+DEFINE FIELD OVERWRITE is_yeet_amongus_easter_egg ON yeet TYPE bool DEFAULT rand::float() < 0.01;
+
+DEFINE TABLE OVERWRITE yeet_settings SCHEMAFULL CHANGEFEED 3d;
+
+DEFINE FIELD OVERWRITE id ON yeet_settings TYPE int DEFAULT 1 ASSERT $value = yeet_settings:1;
+DEFINE FIELD OVERWRITE opportunities ON yeet_settings TYPE int ASSERT $value >= 0;
+DEFINE FIELD OVERWRITE required_count ON yeet_settings TYPE int;
+DEFINE FIELD OVERWRITE duration_seconds ON yeet_settings TYPE duration;
+DEFINE FIELD OVERWRITE refresh_charge_seconds ON yeet_settings TYPE duration;
+DEFINE FIELD OVERWRITE voting_seconds ON yeet_settings TYPE duration;
+
+IF !yeet_settings:1.exists() THEN
+    CREATE yeet_settings:1 SET
+        opportunities = 3,
+        required_count = 6,
+        duration_seconds = 5m,
+        refresh_charge_seconds = 1h,
+        voting_seconds = 90s
+    ;
+END;
+
+DEFINE TABLE OVERWRITE starboard SCHEMAFULL CHANGEFEED 3d;
+
+DEFINE FIELD OVERWRITE sending_channel_id ON starboard TYPE int;
+DEFINE FIELD OVERWRITE reaction_count ON starboard TYPE int;
+DEFINE FIELD OVERWRITE banned_reactions ON starboard TYPE option<array<string>>;
+DEFINE FIELD OVERWRITE ignored_channel_ids ON starboard TYPE option<array<int>>;
+
+DEFINE TABLE OVERWRITE starboarded TYPE RELATION IN starboard OUT message SCHEMAFULL CHANGEFEED 3d;
+
+DEFINE FIELD OVERWRITE kind ON starboarded TYPE 'starboard' | 'yeet' DEFAULT 'starboard';
+DEFINE FIELD OVERWRITE time ON starboarded TYPE datetime DEFAULT ALWAYS time::now();
+
+DEFINE TABLE OVERWRITE message SCHEMAFULL CHANGEFEED 3d;
+
+DEFINE FIELD OVERWRITE id ON message TYPE int;
+
+DEFINE TABLE OVERWRITE react_settings SCHEMAFULL CHANGEFEED 3d;
+
+DEFINE FIELD OVERWRITE id ON react_settings TYPE int DEFAULT 1 ASSERT $value = react_settings:1;
+DEFINE FIELD OVERWRITE hit_rate ON react_settings TYPE float;
+DEFINE FIELD OVERWRITE skip_hit_rate_text ON react_settings TYPE string;
+DEFINE FIELD OVERWRITE skip_duration_text ON react_settings TYPE string;
+DEFINE FIELD OVERWRITE text_detect_cooldown ON react_settings TYPE duration;
+
+IF !react_settings:1.exists() THEN
+    CREATE react_settings:1 SET
+        hit_rate = 0.21,
+        skip_hit_rate_text = "KINGFISHER PLEASE",
+        skip_duration_text = "HIT ME BABY ONE MORE TIME",
+        text_detect_cooldown = 45s
+    ;
+END;
+
+DEFINE TABLE OVERWRITE bot_settings SCHEMAFULL CHANGEFEED 3d;
+
+DEFINE FIELD OVERWRITE id ON bot_settings TYPE int DEFAULT 1 ASSERT $value = bot_settings:1;
+DEFINE FIELD OVERWRITE react_role_id ON bot_settings TYPE int;
+DEFINE FIELD OVERWRITE help_text ON bot_settings TYPE string;
+
+IF !bot_settings:1.exists() THEN
+    CREATE bot_settings:1 SET
+        react_role_id = 1173465249823850496,
+        help_text = "[KingFisher](<https://github.com/coravacav/uofu-cs-discord-bot>) is an opportunistic comedian (RNG) that was written in [Rust](<https://doc.rust-lang.org/book/>) (the greatest language) for this server (of nerds).
+### Commands:
+- `/help`: Display this help message.
+- `/send_feedback`: Easily create a github issue for Kingfisher. Links to the issue creation page.
+- `/list_classes`: List all classes you can join.
+- `/join_class <course_id>`: Join a class. Gives the role / access to the channels.
+- `/leave_class <course_id>`: Leave a class. Removes the role / access to the channels.
+- `/my_classes`: List the classes you're in.
+- `/catalog <course_id>`: Get information about a course. Either add a prefix like MATH2240 or CS will be assumed.
+- `/search_catalog <search_string>`: Search the U of U course catalog for a course. Searches course code, title, and description.
+- `/reactme`: Allow KingFisher automatic reactions to reply to your messages (including luck). Enables other features as well.
+- `/ignoreme`: Disallow KingFisher automatic reactions to reply to your messages and disables other features.
+- `/yeet <user>`: Yeet a user with the Bot React role for 5 minutes. 6 yays or nays needed, yay for them, nay for you. You have 90 seconds. 
+- `/timeout <duration>`: Timeout yourself for a parsable duration (e.g. 1d, 1h, 1m). Discord sets a limit at 4 weeks.
+- `/aur <query> <amount>`: Queries the AUR. Can only display the top 20 entries at maximum.
+- `/reroll_reply`: Reroll the last reply kingfisher made to you.
+
+KingFisher also sometimes really likes to react to messages. That's why he replies sometimes (21% rate, unless you're pinging Stefan or typing \"luck\").
+
+There is a way to force KingFisher to reply to a message. Add \"KINGFISHER PLEASE\" somewhere in the message to bypass the % chance. Add \"HIT ME BABY ONE MORE TIME\" to bypass the cooldown."
+    ;
+END;
