@@ -30,9 +30,9 @@ pub async fn setup_db() {
         .await
         .expect("Failed to select namespace and database");
 
-    //DB.query(include_str!("../../schema.surrealql"))
-        //.await
-        //.expect("Failed to execute schema query");
+    DB.query(include_str!("../../schema.surrealql"))
+        .await
+        .expect("Failed to execute schema query");
 }
 
 /// The global state of the bot

@@ -1,22 +1,21 @@
-use std::f64::consts::PI;
+//use std::f64::consts::PI;
 use crate::data::PoiseContext;
 use color_eyre::eyre::{Result, eyre};
 use poise::{CreateReply};
-use regex::Regex;
 use serde::Deserialize;
 use chrono::{Local, Datelike};
 
-#[derive(Debug, Deserialize)]
-struct AirportResponse {
-    response: Option<AirportData>,
-    error: Option<AirlabsError>,
-}
+// #[derive(Debug, Deserialize)]
+// struct AirportResponse {
+//     response: Option<AirportData>,
+//     error: Option<AirlabsError>,
+// }
 
-#[derive(Debug, Deserialize)]
-struct AirportData {
-    lat: Option<f64>,
-    lng: Option<f64>,
-}
+// #[derive(Debug, Deserialize)]
+// struct AirportData {
+//     lat: Option<f64>,
+//     lng: Option<f64>,
+// }
 
 #[derive(Debug, Deserialize)]
 struct FlightResponse {
@@ -37,7 +36,7 @@ struct FlightData {
     dep_time: Option<String>,
     arr_time: Option<String>,
     engine: Option<String>,
-    age: Option<i64>,
+    // age: Option<i64>,
     built: Option<i64>,
     arr_estimated: Option<String>,
     dep_estimated: Option<String>,
@@ -46,8 +45,8 @@ struct FlightData {
     dep_icao: Option<String>,
     arr_icao: Option<String>,
     airline_name: Option<String>,
-    lat: Option<f64>,
-    long: Option<f64>,
+    // lat: Option<f64>,
+    // long: Option<f64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -78,72 +77,74 @@ fn minutes_to_hours(duration: Option<i64>) -> String {
 
     format!("Flight Time: {hours}:{minutes}")
 }
+/* work in progress for flight progress tracking
+ */
 
-fn degree_to_rad(deg :f64) -> f64{
-    deg * PI / 180.0
-}
+// fn degree_to_rad(deg :f64) -> f64{
+//     deg * PI / 180.0
+// }
 
-fn haversine_distance(lat1: f64, long1: f64, lat2: f64, long2: f64) -> f64 {
-    let r = 6371.0;
-    let dlat = degree_to_rad(lat2 - lat1);
-    let dlon = degree_to_rad(long2 - long1);
-    let lat1 = degree_to_rad(lat1);
-    let lat2 = degree_to_rad(lat2);
+// fn haversine_distance(lat1: f64, long1: f64, lat2: f64, long2: f64) -> f64 {
+//     let r = 6371.0;
+//     let dlat = degree_to_rad(lat2 - lat1);
+//     let dlon = degree_to_rad(long2 - long1);
+//     let lat1 = degree_to_rad(lat1);
+//     let lat2 = degree_to_rad(lat2);
 
-    let a = (dlat/2.0).sin().powi(2) +
-            lat1.cos() * lat2.cos() * (dlon/2.0).sin().powi(2);
-    let c = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
-    r * c
-}
+//     let a = (dlat/2.0).sin().powi(2) +
+//             lat1.cos() * lat2.cos() * (dlon/2.0).sin().powi(2);
+//     let c = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
+//     r * c
+// }
 
-fn flight_progess(plane_lat: f64, plane_long: f64, source_lat: f64, source_long: f64, dst_lat: f64, dst_long: f64) -> f64{
-    let d_star_dest = haversine_distance(source_lat, source_long, dst_lat, dst_long);
-    let d_start_airp = haversine_distance(source_lat, source_long, plane_lat, plane_long);
-    d_star_dest / d_start_airp
-}
+// fn flight_progess(plane_lat: f64, plane_long: f64, source_lat: f64, source_long: f64, dst_lat: f64, dst_long: f64) -> f64{
+//     let d_star_dest = haversine_distance(source_lat, source_long, dst_lat, dst_long);
+//     let d_start_airp = haversine_distance(source_lat, source_long, plane_lat, plane_long);
+//     d_star_dest / d_start_airp
+// }
 
-async fn airport_lookup(ctx: PoiseContext<'_>, code: String) -> Option<AirportData> {
-    let api_key = std::env::var("API_KEY").map_err(|_| eyre!("API_KEY missing from environment")).ok()?;
-    let searched_iata = IATA_RE.is_match(&code);
-    let searched_icao = ICAO_RE.is_match(&code);
+// async fn airport_lookup(ctx: PoiseContext<'_>, code: String) -> Option<AirportData> {
+//     let api_key = std::env::var("API_KEY").map_err(|_| eyre!("API_KEY missing from environment")).ok()?;
+//     let searched_iata = IATA_RE.is_match(&code);
+//     let searched_icao = ICAO_RE.is_match(&code);
 
-    let url = if searched_iata {
-        format!(
-            "https://airlabs.co/api/v9/airport?iata_code={}&api_key={}",
-            code, api_key
-        )
-    } else if searched_icao {
-        format!(
-            "https://airlabs.co/api/v9/airport?icao_code={}&api_key={}",
-            code, api_key
-        )
-    } else {
-        ctx.reply("Please provide a valid airport ident(IATA or ICAO)").await.ok()?;
-        return None;
-    };
+//     let url = if searched_iata {
+//         format!(
+//             "https://airlabs.co/api/v9/airport?iata_code={}&api_key={}",
+//             code, api_key
+//         )
+//     } else if searched_icao {
+//         format!(
+//             "https://airlabs.co/api/v9/airport?icao_code={}&api_key={}",
+//             code, api_key
+//         )
+//     } else {
+//         ctx.reply("Please provide a valid airport ident(IATA or ICAO)").await.ok()?;
+//         return None;
+//     };
 
-    let client = reqwest::Client::new();
-    let response: AirportResponse = client
-        .get(url)
-        .send()
-        .await
-        .ok()?
-        .json()
-        .await
-        .ok()?;
+//     let client = reqwest::Client::new();
+//     let response: AirportResponse = client
+//         .get(url)
+//         .send()
+//         .await
+//         .ok()?
+//         .json()
+//         .await
+//         .ok()?;
 
-    if let Some(err) = response.error {
-        ctx.reply(format!("API Error: {}", err.message)).await.ok()?;
-        return None;
-    }
+//     if let Some(err) = response.error {
+//         ctx.reply(format!("API Error: {}", err.message)).await.ok()?;
+//         return None;
+//     }
 
-    let Some(airport) = response.response else {
-        ctx.reply("No airport data found for that code.").await.ok()?;
-        return None;
-    };
+//     let Some(airport) = response.response else {
+//         ctx.reply("No airport data found for that code.").await.ok()?;
+//         return None;
+//     };
 
-    Some(airport)
-}
+//     Some(airport)
+// }
 
 async fn flight_lookup(ctx: PoiseContext<'_>, code: String) -> Option<FlightData> {
     let api_key = std::env::var("API_KEY").map_err(|_| eyre!("API_KEY missing from environment")).ok()?;
@@ -211,24 +212,21 @@ pub async fn track_flight(
         None => return Ok(()),
     };
 
-    let (flight_label, airline_standard, dep_airport, arr_airport) = if searched_iata {
+    let (flight_label, dep_airport, arr_airport) = if searched_iata {
         (
             flight.flight_iata.clone().or(flight.flight_icao.clone()).unwrap_or_default(),
-            flight.airline_iata.clone().or(flight.airline_iata.clone()).unwrap_or_else(|| "N/A".to_string()),
             flight.dep_iata.clone().or(flight.dep_icao.clone()).unwrap_or_else(|| "N/A".to_string()),
             flight.arr_iata.clone().or(flight.arr_icao.clone()).unwrap_or_else(|| "N/A".to_string()),
         )
     } else if searched_icao {
         (
             flight.flight_icao.clone().or(flight.flight_iata.clone()).unwrap_or_default(),
-            flight.airline_icao.clone().or(flight.airline_icao.clone()).unwrap_or_else(|| "N/A".to_string()),
             flight.dep_icao.clone().or(flight.dep_iata.clone()).unwrap_or_else(|| "N/A".to_string()),
             flight.arr_icao.clone().or(flight.arr_iata.clone()).unwrap_or_else(|| "N/A".to_string()),
         )
     } else {
         (
             flight.flight_iata.clone().or(flight.flight_icao.clone()).unwrap_or_default(),
-            flight.airline_iata.clone().or(flight.airline_iata.clone()).unwrap_or_else(|| "N/A".to_string()),
             flight.dep_iata.clone().or(flight.dep_icao.clone()).unwrap_or_else(|| "N/A".to_string()),
             flight.arr_iata.clone().or(flight.arr_icao.clone()).unwrap_or_else(|| "N/A".to_string()),
         )
