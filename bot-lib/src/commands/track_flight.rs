@@ -250,44 +250,13 @@ pub async fn track_flight(
     };
 
     let Some(dep_code) = dep_airport else {
-        ctx.reply("Departure airport code not available for this flight.").await?;
-        return Ok(());
+            ctx.reply("Departure airport code not available for this flight.").await?;
+            return Ok(());
     };
     let Some(arr_code) = arr_airport else {
-        ctx.reply("Arrival airport code not available for this flight.").await?;
-        return Ok(());
-    };
-
-    let depart_airport = match airport_lookup(dep_code.clone()).await {
-        Ok(airport) => airport,
-        Err(e) => {
-            ctx.reply(format!("Failed to lookup departure airport {}: {}", dep_code.clone(), e)).await?;
+            ctx.reply("Arrival airport code not available for this flight.").await?;
             return Ok(());
-        }
     };
-
-    let arrival_airport = match airport_lookup(arr_code.clone()).await {
-        Ok(airport) => airport,
-        Err(e) => {
-            ctx.reply(format!("Failed to lookup arrival airport {}: {}", arr_code.clone(), e)).await?;
-            return Ok(());
-        }
-    };
-
-    let aicraft_lat = flight.lat.unwrap_or(0.0);
-    let aicraft_long = flight.lng.unwrap_or(0.0);
-    let source_airport_lat = depart_airport.lat.unwrap_or(0.0);
-    let source_airport_long = depart_airport.lng.unwrap_or(0.0);
-    let arrival_airport_lat = arrival_airport.lat.unwrap_or(0.0);
-    let arrival_airport_long = arrival_airport.lng.unwrap_or(0.0);
-    let progress = flight_progess(
-        aicraft_lat,
-        aicraft_long,
-        source_airport_lat,
-        source_airport_long,
-        arrival_airport_lat,
-        arrival_airport_long,
-    );
 
     let speed = (flight.speed.unwrap_or(0) as f64 * 0.5399568) as i64;
     let altitude = (flight.alt.unwrap_or(0) as f64 * 3.28084) as i64;
@@ -297,8 +266,7 @@ pub async fn track_flight(
     let airline = flight.airline_name.clone().unwrap_or_else(|| "Unknown".to_string());
     let status = flight.status.clone().unwrap_or_else(|| "Unknown".to_string());
     let duration = minutes_to_hours(flight.duration);
-    let progress_bar = progress_bar(progress);
-
+    
     let mut embed = CreateEmbed::new()
         .title(format!("Flight {}", flight_label))
         .url("https://airlabs.co/api/")
@@ -312,6 +280,39 @@ pub async fn track_flight(
         .field("🛬 Arrival", arr_time_display, false);
 
     if status == "en-route"{
+        let depart_airport = match airport_lookup(dep_code.clone()).await {
+            Ok(airport) => airport,
+            Err(e) => {
+                ctx.reply(format!("Failed to lookup departure airport {}: {}", dep_code.clone(), e)).await?;
+                return Ok(());
+            }
+        };
+
+        let arrival_airport = match airport_lookup(arr_code.clone()).await {
+            Ok(airport) => airport,
+            Err(e) => {
+                ctx.reply(format!("Failed to lookup arrival airport {}: {}", arr_code.clone(), e)).await?;
+                return Ok(());
+            }
+        };
+
+        let aicraft_lat = flight.lat.unwrap_or(0.0);
+        let aicraft_long = flight.lng.unwrap_or(0.0);
+        let source_airport_lat = depart_airport.lat.unwrap_or(0.0);
+        let source_airport_long = depart_airport.lng.unwrap_or(0.0);
+        let arrival_airport_lat = arrival_airport.lat.unwrap_or(0.0);
+        let arrival_airport_long = arrival_airport.lng.unwrap_or(0.0);
+        let progress = flight_progess(
+            aicraft_lat,
+            aicraft_long,
+            source_airport_lat,
+            source_airport_long,
+            arrival_airport_lat,
+            arrival_airport_long,
+        );
+
+        let progress_bar = progress_bar(progress);
+
         embed = embed
         .field("Speed", speed.to_string() + "kts", true)
         .field("\u{200B}", "\u{200B}", true)
