@@ -38,3 +38,6 @@ db/
 all_backups/
 
 debug.json
+
+# extracts :)
+/extracts
