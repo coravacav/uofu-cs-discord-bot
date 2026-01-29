@@ -516,7 +516,11 @@ pub async fn add_class_role(
     #[description = "The course identifier (auto adds \"CS\" if unspecified)"] course_id: String,
 ) -> Result<()> {
     let user = ctx.author();
-    let guild_id = ctx.guild_id().unwrap();
+    let Some(guild_id) = ctx.guild_id() else {
+        ctx.reply_ephemeral("Run this command in the server")
+            .await?;
+        return Ok(());
+    };
     let Ok(author) = get_member(ctx).await else {
         ctx.reply_ephemeral("Run this command in the server")
             .await?;

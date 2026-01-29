@@ -287,8 +287,21 @@ fn add_file_to_static_map(file: File) {
 
         courses.insert(course_id, saved_course);
     }
+    // Add the "easter egg" one.
+
+    courses.insert("CS7777".into(), Course {
+       course_id: "CS7777".to_string().into(),
+       long_name: "Intro to Showering".to_string(),
+       description: "This semester, we're tackling the age-old problem: the unwashed masses of Comp Sci. From the basics of soap application to advanced techniques for hiding B.O., we'll cover it all. By the end of this course, you'll be able to shower without needing a Hazmat suit. And honestly, that's all we can ask for. Bonus points if you make it through the semester without forgetting your toothbrush.".to_string(),
+       url_override: Some("https://heeeeeeeey.com/".to_string()),
+       course_group_id: None,
+       are_there_duplicates: false,
+       cached_message: None,
+         status: CourseStatus::Active,
+   });
 
     let mut saved_courses = COURSES.write();
+
     *saved_courses = courses;
 }
 
