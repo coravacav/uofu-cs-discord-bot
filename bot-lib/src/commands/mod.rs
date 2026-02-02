@@ -16,8 +16,8 @@ mod sathya;
 mod set_bot_role;
 mod set_dog_role;
 mod timeout;
-mod yeet;
 mod track_flight;
+mod yeet;
 
 pub use admin::*;
 pub use anon_notify::*;
@@ -37,8 +37,8 @@ pub use sathya::*;
 pub use set_bot_role::*;
 pub use set_dog_role::*;
 pub use timeout::*;
-pub use yeet::*;
 pub use track_flight::*;
+pub use yeet::*;
 
 use crate::data::PoiseContext;
 use color_eyre::eyre::{Context, ContextCompat, OptionExt, Result};

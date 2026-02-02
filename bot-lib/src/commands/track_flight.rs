@@ -1,9 +1,15 @@
-use std::f64::consts::PI;
 use crate::data::PoiseContext;
-use color_eyre::{eyre::{Result, eyre}};
-use poise::{CreateReply, serenity_prelude::{CreateEmbed, CreateEmbedFooter, colours::{branding::BLURPLE, roles::BLUE}}};
+use chrono::{Datelike, Local};
+use color_eyre::eyre::{Result, eyre};
+use poise::{
+    CreateReply,
+    serenity_prelude::{
+        CreateEmbed, CreateEmbedFooter,
+        colours::{branding::BLURPLE, roles::BLUE},
+    },
+};
 use serde::Deserialize;
-use chrono::{Local, Datelike};
+use std::f64::consts::PI;
 
 #[derive(Debug, Deserialize)]
 struct AirportResponse {
@@ -37,8 +43,8 @@ struct FlightData {
     arr_time: Option<String>,
     engine: Option<String>,
     built: Option<i64>,
-    speed : Option<i64>,
-    alt : Option<i64>,
+    speed: Option<i64>,
+    alt: Option<i64>,
     arr_estimated: Option<String>,
     dep_estimated: Option<String>,
     flight_icao: Option<String>,
@@ -55,21 +61,17 @@ struct AirlabsError {
     message: String,
 }
 
-static IATA_RE: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
-    regex::Regex::new(r"^[A-Z]{2}[0-9]{1,4}$").unwrap()
-});
+static IATA_RE: std::sync::LazyLock<regex::Regex> =
+    std::sync::LazyLock::new(|| regex::Regex::new(r"^[A-Z]{2}[0-9]{1,4}$").unwrap());
 
-static ICAO_RE: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
-    regex::Regex::new(r"^[A-Z]{3}[0-9]{1,4}$").unwrap()
-});
+static ICAO_RE: std::sync::LazyLock<regex::Regex> =
+    std::sync::LazyLock::new(|| regex::Regex::new(r"^[A-Z]{3}[0-9]{1,4}$").unwrap());
 
-static IATA_RE_AIRP: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
-    regex::Regex::new(r"^[A-Z]{3}$").unwrap()
-});
+static IATA_RE_AIRP: std::sync::LazyLock<regex::Regex> =
+    std::sync::LazyLock::new(|| regex::Regex::new(r"^[A-Z]{3}$").unwrap());
 
-static ICAO_RE_AIRP: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
-    regex::Regex::new(r"^[A-Z]{4}$").unwrap()
-});
+static ICAO_RE_AIRP: std::sync::LazyLock<regex::Regex> =
+    std::sync::LazyLock::new(|| regex::Regex::new(r"^[A-Z]{4}$").unwrap());
 
 fn format_time(label: &str, scheduled: &Option<String>, estimated: &Option<String>) -> String {
     match (scheduled, estimated) {
@@ -81,8 +83,8 @@ fn format_time(label: &str, scheduled: &Option<String>, estimated: &Option<Strin
 
 fn minutes_to_hours(duration: Option<i64>) -> String {
     let time = duration.unwrap_or(0);
-    let hours = time/60;
-    let minutes = time%60;
+    let hours = time / 60;
+    let minutes = time % 60;
 
     format!("{hours}h {minutes}m")
 }
@@ -96,12 +98,16 @@ fn progress_bar(percentage: f64) -> String {
 
     let filled_part = "=".repeat(filled_blocks);
     let empty_part = "-".repeat(empty_blocks);
-    let leading_char = if filled_blocks < total_blocks { "✈️" } else { "" };
+    let leading_char = if filled_blocks < total_blocks {
+        "✈️"
+    } else {
+        ""
+    };
 
     format!("{}{}{}", filled_part, leading_char, empty_part)
 }
 
-fn degree_to_rad(deg :f64) -> f64{
+fn degree_to_rad(deg: f64) -> f64 {
     deg * PI / 180.0
 }
 
@@ -112,13 +118,19 @@ fn haversine_distance(lat1: f64, long1: f64, lat2: f64, long2: f64) -> f64 {
     let lat1 = degree_to_rad(lat1);
     let lat2 = degree_to_rad(lat2);
 
-    let a = (dlat/2.0).sin().powi(2) +
-            lat1.cos() * lat2.cos() * (dlon/2.0).sin().powi(2);
+    let a = (dlat / 2.0).sin().powi(2) + lat1.cos() * lat2.cos() * (dlon / 2.0).sin().powi(2);
     let c = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
     r * c
 }
 
-fn flight_progess(plane_lat: f64, plane_long: f64, source_lat: f64, source_long: f64, dst_lat: f64, dst_long: f64) -> f64{
+fn flight_progess(
+    plane_lat: f64,
+    plane_long: f64,
+    source_lat: f64,
+    source_long: f64,
+    dst_lat: f64,
+    dst_long: f64,
+) -> f64 {
     let total_distance = haversine_distance(source_lat, source_long, dst_lat, dst_long);
     let traveled_distance = haversine_distance(source_lat, source_long, plane_lat, plane_long);
     if total_distance == 0.0 {
@@ -128,7 +140,8 @@ fn flight_progess(plane_lat: f64, plane_long: f64, source_lat: f64, source_long:
 }
 
 async fn airport_lookup(code: String) -> Result<AirportData> {
-    let api_key = std::env::var("API_KEY").map_err(|_| eyre!("API_KEY missing from environment"))?;
+    let api_key =
+        std::env::var("API_KEY").map_err(|_| eyre!("API_KEY missing from environment"))?;
     let searched_iata = IATA_RE_AIRP.is_match(&code);
     let searched_icao = ICAO_RE_AIRP.is_match(&code);
 
@@ -147,24 +160,26 @@ async fn airport_lookup(code: String) -> Result<AirportData> {
     };
 
     let client = reqwest::Client::new();
-    let response: AirportResponse = client
-        .get(url)
-        .send()
-        .await?
-        .json()
-        .await?;
+    let response: AirportResponse = client.get(url).send().await?.json().await?;
 
     if let Some(err) = response.error {
         return Err(eyre!("API Error: {}", err.message));
     }
 
-    let airports = response.response.ok_or_else(|| eyre!("No airport data found for code: {}", code))?;
+    let airports = response
+        .response
+        .ok_or_else(|| eyre!("No airport data found for code: {}", code))?;
 
-    airports.into_iter().next().ok_or_else(|| eyre!("Airport list was empty for code: {}", code))
+    airports
+        .into_iter()
+        .next()
+        .ok_or_else(|| eyre!("Airport list was empty for code: {}", code))
 }
 
 async fn flight_lookup(ctx: PoiseContext<'_>, code: String) -> Option<FlightData> {
-    let api_key = std::env::var("API_KEY").map_err(|_| eyre!("API_KEY missing from environment")).ok()?;
+    let api_key = std::env::var("API_KEY")
+        .map_err(|_| eyre!("API_KEY missing from environment"))
+        .ok()?;
     let date = Local::now().format("%Y-%m-%d").to_string();
 
     let searched_iata = IATA_RE.is_match(&code);
@@ -181,25 +196,26 @@ async fn flight_lookup(ctx: PoiseContext<'_>, code: String) -> Option<FlightData
             code, api_key, date
         )
     } else {
-        ctx.reply("Please provide a valid flight number (IATA or ICAO)").await.ok()?;
+        ctx.reply("Please provide a valid flight number (IATA or ICAO)")
+            .await
+            .ok()?;
         return None;
     };
 
     let client = reqwest::Client::new();
-    let response: FlightResponse = client
-        .get(url)
-        .send()
-        .await.ok()?
-        .json()
-        .await.ok()?;
+    let response: FlightResponse = client.get(url).send().await.ok()?.json().await.ok()?;
 
     if let Some(err) = response.error {
-        ctx.reply(format!("API Error: {}", err.message)).await.ok()?;
+        ctx.reply(format!("API Error: {}", err.message))
+            .await
+            .ok()?;
         return None;
     }
 
     let Some(flight) = response.response else {
-        ctx.reply("No flight data found for that number.").await.ok()?;
+        ctx.reply("No flight data found for that number.")
+            .await
+            .ok()?;
         return None;
     };
 
@@ -208,11 +224,7 @@ async fn flight_lookup(ctx: PoiseContext<'_>, code: String) -> Option<FlightData
 
 ///get information on a specified flight
 #[poise::command(slash_command, rename = "trackflight")]
-pub async fn track_flight(
-    ctx: PoiseContext<'_>,
-
-    search: String,
-) -> Result<()> {
+pub async fn track_flight(ctx: PoiseContext<'_>, search: String) -> Result<()> {
     ctx.defer().await?;
 
     let search: String = search
@@ -224,38 +236,52 @@ pub async fn track_flight(
     let searched_iata = IATA_RE.is_match(&search);
     let searched_icao = ICAO_RE.is_match(&search);
 
-    let flight = match flight_lookup(ctx, search).await{
+    let flight = match flight_lookup(ctx, search).await {
         Some(flight) => flight,
         None => return Ok(()),
     };
 
     let (flight_label, dep_airport, arr_airport) = if searched_iata {
         (
-            flight.flight_iata.clone().or(flight.flight_icao.clone()).unwrap_or_default(),
+            flight
+                .flight_iata
+                .clone()
+                .or(flight.flight_icao.clone())
+                .unwrap_or_default(),
             flight.dep_iata.clone().or(flight.dep_icao.clone()),
             flight.arr_iata.clone().or(flight.arr_icao.clone()),
         )
     } else if searched_icao {
         (
-            flight.flight_icao.clone().or(flight.flight_iata.clone()).unwrap_or_default(),
+            flight
+                .flight_icao
+                .clone()
+                .or(flight.flight_iata.clone())
+                .unwrap_or_default(),
             flight.dep_icao.clone().or(flight.dep_iata.clone()),
             flight.arr_icao.clone().or(flight.arr_iata.clone()),
         )
     } else {
         (
-            flight.flight_iata.clone().or(flight.flight_icao.clone()).unwrap_or_default(),
+            flight
+                .flight_iata
+                .clone()
+                .or(flight.flight_icao.clone())
+                .unwrap_or_default(),
             flight.dep_iata.clone().or(flight.dep_icao.clone()),
             flight.arr_iata.clone().or(flight.arr_icao.clone()),
         )
     };
 
     let Some(dep_code) = dep_airport else {
-            ctx.reply("Departure airport code not available for this flight.").await?;
-            return Ok(());
+        ctx.reply("Departure airport code not available for this flight.")
+            .await?;
+        return Ok(());
     };
     let Some(arr_code) = arr_airport else {
-            ctx.reply("Arrival airport code not available for this flight.").await?;
-            return Ok(());
+        ctx.reply("Arrival airport code not available for this flight.")
+            .await?;
+        return Ok(());
     };
 
     let speed = (flight.speed.unwrap_or(0) as f64 * 0.5399568) as i64;
@@ -263,10 +289,16 @@ pub async fn track_flight(
     let timestamp = chrono::Utc::now();
     let dep_time_display = format_time("Departure Time", &flight.dep_time, &flight.dep_estimated);
     let arr_time_display = format_time("Arrival Time", &flight.arr_time, &flight.arr_estimated);
-    let airline = flight.airline_name.clone().unwrap_or_else(|| "Unknown".to_string());
-    let status = flight.status.clone().unwrap_or_else(|| "Unknown".to_string());
+    let airline = flight
+        .airline_name
+        .clone()
+        .unwrap_or_else(|| "Unknown".to_string());
+    let status = flight
+        .status
+        .clone()
+        .unwrap_or_else(|| "Unknown".to_string());
     let duration = minutes_to_hours(flight.duration);
-    
+
     let mut embed = CreateEmbed::new()
         .title(format!("Flight {}", flight_label))
         .url("https://airlabs.co/api/")
@@ -279,11 +311,16 @@ pub async fn track_flight(
         .field("🛫 Departure", dep_time_display, false)
         .field("🛬 Arrival", arr_time_display, false);
 
-    if status == "en-route"{
+    if status == "en-route" {
         let depart_airport = match airport_lookup(dep_code.clone()).await {
             Ok(airport) => airport,
             Err(e) => {
-                ctx.reply(format!("Failed to lookup departure airport {}: {}", dep_code.clone(), e)).await?;
+                ctx.reply(format!(
+                    "Failed to lookup departure airport {}: {}",
+                    dep_code.clone(),
+                    e
+                ))
+                .await?;
                 return Ok(());
             }
         };
@@ -291,7 +328,12 @@ pub async fn track_flight(
         let arrival_airport = match airport_lookup(arr_code.clone()).await {
             Ok(airport) => airport,
             Err(e) => {
-                ctx.reply(format!("Failed to lookup arrival airport {}: {}", arr_code.clone(), e)).await?;
+                ctx.reply(format!(
+                    "Failed to lookup arrival airport {}: {}",
+                    arr_code.clone(),
+                    e
+                ))
+                .await?;
                 return Ok(());
             }
         };
@@ -314,18 +356,22 @@ pub async fn track_flight(
         let progress_bar = progress_bar(progress);
 
         embed = embed
-        .field("Speed", speed.to_string() + "kts", true)
-        .field("\u{200B}", "\u{200B}", true)
-        .field("Altitude", altitude.to_string() + "ft", true)
-        .field("Progress", format!("{} {} {}", &dep_code, progress_bar, &arr_code), false)
-        .timestamp(timestamp)
-        .footer(CreateEmbedFooter::new("Data provided by AirLabs API"))
-        .color(BLUE);
-    }
-    else{
-        embed = embed.timestamp(timestamp)
-        .footer(CreateEmbedFooter::new("Data provided by AirLabs API"))
-        .color(BLUE);
+            .field("Speed", speed.to_string() + "kts", true)
+            .field("\u{200B}", "\u{200B}", true)
+            .field("Altitude", altitude.to_string() + "ft", true)
+            .field(
+                "Progress",
+                format!("{} {} {}", &dep_code, progress_bar, &arr_code),
+                false,
+            )
+            .timestamp(timestamp)
+            .footer(CreateEmbedFooter::new("Data provided by AirLabs API"))
+            .color(BLUE);
+    } else {
+        embed = embed
+            .timestamp(timestamp)
+            .footer(CreateEmbedFooter::new("Data provided by AirLabs API"))
+            .color(BLUE);
     }
 
     ctx.send(CreateReply::default().embed(embed)).await?;
@@ -335,11 +381,7 @@ pub async fn track_flight(
 
 ///get information on an aircraft
 #[poise::command(slash_command, rename = "planeinfo")]
-pub async fn plane_details(
-    ctx: PoiseContext<'_>,
-
-    search: String,
-) -> Result<()> {
+pub async fn plane_details(ctx: PoiseContext<'_>, search: String) -> Result<()> {
     ctx.defer().await?;
 
     let search: String = search
@@ -351,32 +393,68 @@ pub async fn plane_details(
     let searched_iata = IATA_RE.is_match(&search);
     let searched_icao = ICAO_RE.is_match(&search);
 
-    let flight = match flight_lookup(ctx, search).await{
+    let flight = match flight_lookup(ctx, search).await {
         Some(flight) => flight,
         None => return Ok(()),
     };
 
     let (flight_label, airline) = if searched_iata {
         (
-            flight.flight_iata.clone().or(flight.flight_icao.clone()).unwrap_or_default(),
-            flight.airline_iata.clone().or(flight.airline_iata.clone()).unwrap_or_else(|| "N/A".to_string()),
+            flight
+                .flight_iata
+                .clone()
+                .or(flight.flight_icao.clone())
+                .unwrap_or_default(),
+            flight
+                .airline_iata
+                .clone()
+                .or(flight.airline_iata.clone())
+                .unwrap_or_else(|| "N/A".to_string()),
         )
     } else if searched_icao {
         (
-            flight.flight_icao.clone().or(flight.flight_iata.clone()).unwrap_or_default(),
-            flight.airline_icao.clone().or(flight.airline_icao.clone()).unwrap_or_else(|| "N/A".to_string()),
+            flight
+                .flight_icao
+                .clone()
+                .or(flight.flight_iata.clone())
+                .unwrap_or_default(),
+            flight
+                .airline_icao
+                .clone()
+                .or(flight.airline_icao.clone())
+                .unwrap_or_else(|| "N/A".to_string()),
         )
     } else {
         (
-            flight.flight_iata.clone().or(flight.flight_icao.clone()).unwrap_or_default(),
-            flight.airline_iata.clone().or(flight.airline_iata.clone()).unwrap_or_else(|| "N/A".to_string()),
+            flight
+                .flight_iata
+                .clone()
+                .or(flight.flight_icao.clone())
+                .unwrap_or_default(),
+            flight
+                .airline_iata
+                .clone()
+                .or(flight.airline_iata.clone())
+                .unwrap_or_else(|| "N/A".to_string()),
         )
     };
 
-    let status = flight.status.clone().unwrap_or_else(|| "Unknown".to_string());
-    let aircraft = flight.model.clone().unwrap_or_else(|| "BoingBus 67420 Max".to_string());
-    let manufacture = flight.manufacture.clone().unwrap_or_else(|| "BoingBus".to_string());
-    let engine = flight.engine.clone().unwrap_or_else(|| "FartJet".to_string());
+    let status = flight
+        .status
+        .clone()
+        .unwrap_or_else(|| "Unknown".to_string());
+    let aircraft = flight
+        .model
+        .clone()
+        .unwrap_or_else(|| "BoingBus 67420 Max".to_string());
+    let manufacture = flight
+        .manufacture
+        .clone()
+        .unwrap_or_else(|| "BoingBus".to_string());
+    let engine = flight
+        .engine
+        .clone()
+        .unwrap_or_else(|| "FartJet".to_string());
     let built = flight.built.unwrap_or(0);
     let current_date = chrono::Utc::now();
     let age = current_date.year() - built as i32;

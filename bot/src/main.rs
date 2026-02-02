@@ -61,11 +61,9 @@ async fn main() -> Result<()> {
 
     setup_db().await;
 
-
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![
-                //course_catalog_search(),
                 add_bot_role(),
                 add_class_role(),
                 add_dog_role(),
