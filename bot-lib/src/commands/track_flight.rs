@@ -32,6 +32,7 @@ struct FlightResponse {
 #[derive(Debug, Deserialize)]
 struct FlightData {
     flight_iata: Option<String>,
+    flight_icao: Option<String>,
     airline_iata: Option<String>,
     dep_iata: Option<String>,
     arr_iata: Option<String>,
@@ -47,7 +48,6 @@ struct FlightData {
     alt: Option<i64>,
     arr_estimated: Option<String>,
     dep_estimated: Option<String>,
-    flight_icao: Option<String>,
     airline_icao: Option<String>,
     dep_icao: Option<String>,
     arr_icao: Option<String>,
@@ -88,8 +88,7 @@ fn minutes_to_hours(duration: Option<i64>) -> String {
 
     format!("{hours}h {minutes}m")
 }
-/* work in progress for flight progress tracking
- */
+
 fn progress_bar(percentage: f64) -> String {
     let total_blocks = 10;
     let clamped_percentage = percentage.clamp(0.0, 1.0);
@@ -245,31 +244,28 @@ pub async fn track_flight(ctx: PoiseContext<'_>, search: String) -> Result<()> {
         (
             flight
                 .flight_iata
-                .clone()
-                .or(flight.flight_icao.clone())
+                .or(flight.flight_icao)
                 .unwrap_or_default(),
-            flight.dep_iata.clone().or(flight.dep_icao.clone()),
-            flight.arr_iata.clone().or(flight.arr_icao.clone()),
+            flight.dep_iata.or(flight.dep_icao),
+            flight.arr_iata.or(flight.arr_icao),
         )
     } else if searched_icao {
         (
             flight
                 .flight_icao
-                .clone()
-                .or(flight.flight_iata.clone())
+                .or(flight.flight_iata)
                 .unwrap_or_default(),
-            flight.dep_icao.clone().or(flight.dep_iata.clone()),
-            flight.arr_icao.clone().or(flight.arr_iata.clone()),
+            flight.dep_icao.or(flight.dep_iata),
+            flight.arr_icao.or(flight.arr_iata),
         )
     } else {
         (
             flight
                 .flight_iata
-                .clone()
-                .or(flight.flight_icao.clone())
+                .or(flight.flight_icao)
                 .unwrap_or_default(),
-            flight.dep_iata.clone().or(flight.dep_icao.clone()),
-            flight.arr_iata.clone().or(flight.arr_icao.clone()),
+            flight.dep_iata.or(flight.dep_icao),
+            flight.arr_iata.or(flight.arr_icao),
         )
     };
 
@@ -289,14 +285,8 @@ pub async fn track_flight(ctx: PoiseContext<'_>, search: String) -> Result<()> {
     let timestamp = chrono::Utc::now();
     let dep_time_display = format_time("Departure Time", &flight.dep_time, &flight.dep_estimated);
     let arr_time_display = format_time("Arrival Time", &flight.arr_time, &flight.arr_estimated);
-    let airline = flight
-        .airline_name
-        .clone()
-        .unwrap_or_else(|| "Unknown".to_string());
-    let status = flight
-        .status
-        .clone()
-        .unwrap_or_else(|| "Unknown".to_string());
+    let airline = flight.airline_name.unwrap_or_else(|| "Unknown".to_string());
+    let status = flight.status.unwrap_or_else(|| "Unknown".to_string());
     let duration = minutes_to_hours(flight.duration);
 
     let mut embed = CreateEmbed::new()
@@ -406,59 +396,48 @@ pub async fn plane_details(ctx: PoiseContext<'_>, search: String) -> Result<()> 
         (
             flight
                 .flight_iata
-                .clone()
-                .or(flight.flight_icao.clone())
+                .or(flight.flight_icao)
                 .unwrap_or_default(),
-            flight
-                .airline_iata
-                .clone()
-                .or(flight.airline_iata.clone())
-                .unwrap_or_else(|| "N/A".to_string()),
+            flight.airline_iata.unwrap_or_else(|| "N/A".to_string()),
         )
     } else if searched_icao {
         (
             flight
                 .flight_icao
-                .clone()
-                .or(flight.flight_iata.clone())
+                .or(flight.flight_iata)
                 .unwrap_or_default(),
-            flight
-                .airline_icao
-                .clone()
-                .or(flight.airline_icao.clone())
-                .unwrap_or_else(|| "N/A".to_string()),
+            flight.airline_icao.unwrap_or_else(|| "N/A".to_string()),
         )
     } else {
         (
             flight
                 .flight_iata
-                .clone()
-                .or(flight.flight_icao.clone())
+                .or(flight.flight_icao)
                 .unwrap_or_default(),
-            flight
-                .airline_iata
-                .clone()
-                .or(flight.airline_iata.clone())
-                .unwrap_or_else(|| "N/A".to_string()),
+            flight.airline_iata.unwrap_or_else(|| "N/A".to_string()),
         )
     };
 
     let status = flight
         .status
-        .clone()
-        .unwrap_or_else(|| "Unknown".to_string());
+        .as_ref()
+        .map(String::as_str)
+        .unwrap_or("Unknown");
     let aircraft = flight
         .model
-        .clone()
-        .unwrap_or_else(|| "BoingBus 67420 Max".to_string());
+        .as_ref()
+        .map(String::as_str)
+        .unwrap_or("BoingBus 67420 Max");
     let manufacture = flight
         .manufacture
-        .clone()
-        .unwrap_or_else(|| "BoingBus".to_string());
+        .as_ref()
+        .map(String::as_str)
+        .unwrap_or("BoingBus");
     let engine = flight
         .engine
-        .clone()
-        .unwrap_or_else(|| "FartJet".to_string());
+        .as_ref()
+        .map(String::as_str)
+        .unwrap_or("FartJet");
     let built = flight.built.unwrap_or(0);
     let current_date = chrono::Utc::now();
     let age = current_date.year() - built as i32;
