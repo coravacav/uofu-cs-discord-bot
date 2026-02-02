@@ -139,9 +139,7 @@ fn flight_progess(
     (traveled_distance / total_distance).clamp(0.0, 1.0)
 }
 
-async fn airport_lookup(code: String) -> Result<AirportData> {
-    let api_key =
-        std::env::var("API_KEY").map_err(|_| eyre!("API_KEY missing from environment"))?;
+async fn airport_lookup(api_key: &str, code: &str) -> Result<AirportData> {
     let searched_iata = IATA_RE_AIRP.is_match(&code);
     let searched_icao = ICAO_RE_AIRP.is_match(&code);
 
@@ -176,10 +174,7 @@ async fn airport_lookup(code: String) -> Result<AirportData> {
         .ok_or_else(|| eyre!("Airport list was empty for code: {}", code))
 }
 
-async fn flight_lookup(ctx: PoiseContext<'_>, code: String) -> Option<FlightData> {
-    let api_key = std::env::var("API_KEY")
-        .map_err(|_| eyre!("API_KEY missing from environment"))
-        .ok()?;
+async fn flight_lookup(ctx: PoiseContext<'_>, api_key: &str, code: &str) -> Option<FlightData> {
     let date = Local::now().format("%Y-%m-%d").to_string();
 
     let searched_iata = IATA_RE.is_match(&code);
@@ -225,6 +220,11 @@ async fn flight_lookup(ctx: PoiseContext<'_>, code: String) -> Option<FlightData
 ///get information on a specified flight
 #[poise::command(slash_command, rename = "trackflight")]
 pub async fn track_flight(ctx: PoiseContext<'_>, search: String) -> Result<()> {
+    let Ok(api_key) = std::env::var("AIRLABS_API_KEY") else {
+        ctx.reply("Cannot track flight, missing API key.").await?;
+        return Ok(());
+    };
+
     ctx.defer().await?;
 
     let search: String = search
@@ -236,7 +236,7 @@ pub async fn track_flight(ctx: PoiseContext<'_>, search: String) -> Result<()> {
     let searched_iata = IATA_RE.is_match(&search);
     let searched_icao = ICAO_RE.is_match(&search);
 
-    let flight = match flight_lookup(ctx, search).await {
+    let flight = match flight_lookup(ctx, &api_key, &search).await {
         Some(flight) => flight,
         None => return Ok(()),
     };
@@ -312,26 +312,24 @@ pub async fn track_flight(ctx: PoiseContext<'_>, search: String) -> Result<()> {
         .field("🛬 Arrival", arr_time_display, false);
 
     if status == "en-route" {
-        let depart_airport = match airport_lookup(dep_code.clone()).await {
+        let depart_airport = match airport_lookup(&api_key, &dep_code).await {
             Ok(airport) => airport,
             Err(e) => {
                 ctx.reply(format!(
                     "Failed to lookup departure airport {}: {}",
-                    dep_code.clone(),
-                    e
+                    dep_code, e
                 ))
                 .await?;
                 return Ok(());
             }
         };
 
-        let arrival_airport = match airport_lookup(arr_code.clone()).await {
+        let arrival_airport = match airport_lookup(&api_key, &arr_code).await {
             Ok(airport) => airport,
             Err(e) => {
                 ctx.reply(format!(
                     "Failed to lookup arrival airport {}: {}",
-                    arr_code.clone(),
-                    e
+                    arr_code, e
                 ))
                 .await?;
                 return Ok(());
@@ -382,6 +380,12 @@ pub async fn track_flight(ctx: PoiseContext<'_>, search: String) -> Result<()> {
 ///get information on an aircraft
 #[poise::command(slash_command, rename = "planeinfo")]
 pub async fn plane_details(ctx: PoiseContext<'_>, search: String) -> Result<()> {
+    let Ok(api_key) = std::env::var("AIRLABS_API_KEY") else {
+        ctx.reply("Cannot get plane details, missing API key.")
+            .await?;
+        return Ok(());
+    };
+
     ctx.defer().await?;
 
     let search: String = search
@@ -393,7 +397,7 @@ pub async fn plane_details(ctx: PoiseContext<'_>, search: String) -> Result<()> 
     let searched_iata = IATA_RE.is_match(&search);
     let searched_icao = ICAO_RE.is_match(&search);
 
-    let flight = match flight_lookup(ctx, search).await {
+    let flight = match flight_lookup(ctx, &api_key, &search).await {
         Some(flight) => flight,
         None => return Ok(()),
     };
