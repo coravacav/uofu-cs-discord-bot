@@ -291,7 +291,7 @@ pub async fn track_flight(ctx: PoiseContext<'_>, search: String) -> Result<()> {
 
     let mut embed = CreateEmbed::new()
         .title(format!("Flight {}", flight_label))
-        .url(format!("https://www.flightradar24.com/data/flights/", flight_label))
+        .url(format!("https://www.flightradar24.com/data/flights/{}", flight_label))
         .field("Airline", airline, true)
         .field("\u{200B}", "\u{200B}", true)
         .field("Status", &status, true)
@@ -444,7 +444,7 @@ pub async fn plane_details(ctx: PoiseContext<'_>, search: String) -> Result<()> 
 
     let embed = CreateEmbed::new()
         .title(format!("Aircraft Details for Flight {}", flight_label))
-        .url(format!("https://www.flightradar24.com/data/flights/", flight_label))
+        .url(format!("https://www.flightradar24.com/data/flights/{}", flight_label))
         .field("Airline", airline, true)
         .field("Status", status, true)
         .field("\u{200B}", "\u{200B}", true)
