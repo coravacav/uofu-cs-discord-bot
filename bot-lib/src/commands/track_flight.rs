@@ -103,7 +103,7 @@ fn progress_bar(percentage: f64) -> String {
         ""
     };
 
-    format!("{}{}{}", filled_part, leading_char, empty_part)
+    format!("{filled_part}{leading_char}{empty_part}")
 }
 
 fn degree_to_rad(deg: f64) -> f64 {
@@ -144,16 +144,14 @@ async fn airport_lookup(api_key: &str, code: &str) -> Result<AirportData> {
 
     let url = if searched_iata {
         format!(
-            "https://airlabs.co/api/v9/airports?iata_code={}&api_key={}",
-            code, api_key
+            "https://airlabs.co/api/v9/airports?iata_code={code}&api_key={api_key}"
         )
     } else if searched_icao {
         format!(
-            "https://airlabs.co/api/v9/airports?icao_code={}&api_key={}",
-            code, api_key
+            "https://airlabs.co/api/v9/airports?icao_code={code}&api_key={api_key}"
         )
     } else {
-        return Err(eyre!("Invalid airport code: {}", code));
+        return Err(eyre!("Invalid airport code: {code}"));
     };
 
     let client = reqwest::Client::new();
@@ -165,12 +163,12 @@ async fn airport_lookup(api_key: &str, code: &str) -> Result<AirportData> {
 
     let airports = response
         .response
-        .ok_or_else(|| eyre!("No airport data found for code: {}", code))?;
+        .ok_or_else(|| eyre!("No airport data found for code: {code}"))?;
 
     airports
         .into_iter()
         .next()
-        .ok_or_else(|| eyre!("Airport list was empty for code: {}", code))
+        .ok_or_else(|| eyre!("Airport list was empty for code: {code}"))
 }
 
 async fn flight_lookup(ctx: PoiseContext<'_>, api_key: &str, code: &str) -> Option<FlightData> {
@@ -181,13 +179,11 @@ async fn flight_lookup(ctx: PoiseContext<'_>, api_key: &str, code: &str) -> Opti
 
     let url = if searched_iata {
         format!(
-            "https://airlabs.co/api/v9/flight?flight_iata={}&api_key={}&flight_date={}",
-            code, api_key, date
+            "https://airlabs.co/api/v9/flight?flight_iata={code}&api_key={api_key}&flight_date={date}"
         )
     } else if searched_icao {
         format!(
-            "https://airlabs.co/api/v9/flight?flight_icao={}&api_key={}&flight_date={}",
-            code, api_key, date
+            "https://airlabs.co/api/v9/flight?flight_icao={code}&api_key={api_key}&flight_date={date}"
         )
     } else {
         ctx.reply("Please provide a valid flight number (IATA or ICAO)")
@@ -290,12 +286,12 @@ pub async fn track_flight(ctx: PoiseContext<'_>, search: String) -> Result<()> {
     let duration = minutes_to_hours(flight.duration);
 
     let mut embed = CreateEmbed::new()
-        .title(format!("Flight {}", flight_label))
-        .url(format!("https://www.flightradar24.com/data/flights/{}", flight_label))
+        .title(format!("Flight {flight_label}"))
+        .url(format!("https://www.flightradar24.com/data/flights/{flight_label}"))
         .field("Airline", airline, true)
         .field("\u{200B}", "\u{200B}", true)
         .field("Status", &status, true)
-        .field("Route", format!("{} -> {}", dep_code, arr_code), true)
+        .field("Route", format!("{dep_code} -> {arr_code}"), true)
         .field("\u{200B}", "\u{200B}", true)
         .field("Duration", duration, true)
         .field("🛫 Departure", dep_time_display, false)
@@ -306,8 +302,7 @@ pub async fn track_flight(ctx: PoiseContext<'_>, search: String) -> Result<()> {
             Ok(airport) => airport,
             Err(e) => {
                 ctx.reply(format!(
-                    "Failed to lookup departure airport {}: {}",
-                    dep_code, e
+                    "Failed to lookup departure airport {dep_code}: {e}"
                 ))
                 .await?;
                 return Ok(());
@@ -318,8 +313,7 @@ pub async fn track_flight(ctx: PoiseContext<'_>, search: String) -> Result<()> {
             Ok(airport) => airport,
             Err(e) => {
                 ctx.reply(format!(
-                    "Failed to lookup arrival airport {}: {}",
-                    arr_code, e
+                    "Failed to lookup arrival airport {arr_code}: {e}"
                 ))
                 .await?;
                 return Ok(());
@@ -443,15 +437,15 @@ pub async fn plane_details(ctx: PoiseContext<'_>, search: String) -> Result<()> 
     let age = current_date.year() - built as i32;
 
     let embed = CreateEmbed::new()
-        .title(format!("Aircraft Details for Flight {}", flight_label))
-        .url(format!("https://www.flightradar24.com/data/flights/{}", flight_label))
+        .title(format!("Aircraft Details for Flight {flight_label}"))
+        .url(format!("https://www.flightradar24.com/data/flights/{flight_label}"))
         .field("Airline", airline, true)
         .field("Status", status, true)
         .field("\u{200B}", "\u{200B}", true)
         .field("Aircraft Type", aircraft, true)
         .field("Manufacture", manufacture, true)
         .field("Engine Type", engine, true)
-        .field("Age", format!("{} years", age), true)
+        .field("Age", format!("{age} years"), true)
         .field("Date of Manufacture", built.to_string(), true)
         .timestamp(chrono::Utc::now())
         .footer(CreateEmbedFooter::new("Data provided by AirLabs API"))
