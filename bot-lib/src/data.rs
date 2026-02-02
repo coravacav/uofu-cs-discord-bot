@@ -8,22 +8,20 @@ use std::{
 };
 use surrealdb::Surreal;
 use surrealdb::engine::local::Db;
-#[cfg(test)]
-use surrealdb::engine::local::Mem;
 use tokio::sync::RwLock;
 
 pub(crate) static DB: LazyLock<Surreal<Db>> = LazyLock::new(Surreal::init);
 
 pub async fn setup_db() {
-    #[cfg(not(test))]
+    // #[cfg(not(test))]
     DB.connect::<surrealdb::engine::local::RocksDb>("db/kingfisher")
         .await
         .expect("Failed to create SurrealDB instance");
 
-    #[cfg(test)]
-    DB.connect::<Mem>(())
-        .await
-        .expect("Failed to create SurrealDB instance");
+    // #[cfg(test)]
+    // DB.connect::<Mem>(())
+    //     .await
+    //     .expect("Failed to create SurrealDB instance");
 
     DB.use_ns("main")
         .use_db("main")

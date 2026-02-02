@@ -29,7 +29,7 @@ raur = "7"
 humantime = "2"
 human-repr = "1.1"
 reqwest = { version = "0.12.12", features = ["json"] }
-surrealdb = { version = "2.3.7", features = ["kv-rocksdb", "kv-mem"] }
+surrealdb = { version = "2.6", features = ["kv-rocksdb", "kv-mem"] }
 
 [lints]
 workspace = true
