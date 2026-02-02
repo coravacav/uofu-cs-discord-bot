@@ -7,7 +7,7 @@ use std::{
     sync::Arc,
 };
 use surrealdb::Surreal;
-use surrealdb::engine::local::{Db, Mem};
+use surrealdb::engine::local::Db;
 use tokio::sync::RwLock;
 
 pub(crate) static DB: LazyLock<Surreal<Db>> = LazyLock::new(Surreal::init);
