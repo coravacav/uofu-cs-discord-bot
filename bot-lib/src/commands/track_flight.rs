@@ -143,13 +143,9 @@ async fn airport_lookup(api_key: &str, code: &str) -> Result<AirportData> {
     let searched_icao = ICAO_RE_AIRP.is_match(&code);
 
     let url = if searched_iata {
-        format!(
-            "https://airlabs.co/api/v9/airports?iata_code={code}&api_key={api_key}"
-        )
+        format!("https://airlabs.co/api/v9/airports?iata_code={code}&api_key={api_key}")
     } else if searched_icao {
-        format!(
-            "https://airlabs.co/api/v9/airports?icao_code={code}&api_key={api_key}"
-        )
+        format!("https://airlabs.co/api/v9/airports?icao_code={code}&api_key={api_key}")
     } else {
         return Err(eyre!("Invalid airport code: {code}"));
     };
@@ -287,7 +283,9 @@ pub async fn track_flight(ctx: PoiseContext<'_>, search: String) -> Result<()> {
 
     let mut embed = CreateEmbed::new()
         .title(format!("Flight {flight_label}"))
-        .url(format!("https://www.flightradar24.com/data/flights/{flight_label}"))
+        .url(format!(
+            "https://www.flightradar24.com/data/flights/{flight_label}"
+        ))
         .field("Airline", airline, true)
         .field("\u{200B}", "\u{200B}", true)
         .field("Status", &status, true)
@@ -312,10 +310,8 @@ pub async fn track_flight(ctx: PoiseContext<'_>, search: String) -> Result<()> {
         let arrival_airport = match airport_lookup(&api_key, &arr_code).await {
             Ok(airport) => airport,
             Err(e) => {
-                ctx.reply(format!(
-                    "Failed to lookup arrival airport {arr_code}: {e}"
-                ))
-                .await?;
+                ctx.reply(format!("Failed to lookup arrival airport {arr_code}: {e}"))
+                    .await?;
                 return Ok(());
             }
         };
@@ -438,7 +434,9 @@ pub async fn plane_details(ctx: PoiseContext<'_>, search: String) -> Result<()> 
 
     let embed = CreateEmbed::new()
         .title(format!("Aircraft Details for Flight {flight_label}"))
-        .url(format!("https://www.flightradar24.com/data/flights/{flight_label}"))
+        .url(format!(
+            "https://www.flightradar24.com/data/flights/{flight_label}"
+        ))
         .field("Airline", airline, true)
         .field("Status", status, true)
         .field("\u{200B}", "\u{200B}", true)
