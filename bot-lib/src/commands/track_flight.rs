@@ -139,8 +139,8 @@ fn flight_progess(
 }
 
 async fn airport_lookup(api_key: &str, code: &str) -> Result<AirportData> {
-    let searched_iata = IATA_RE_AIRP.is_match(&code);
-    let searched_icao = ICAO_RE_AIRP.is_match(&code);
+    let searched_iata = IATA_RE_AIRP.is_match(code);
+    let searched_icao = ICAO_RE_AIRP.is_match(code);
 
     let url = if searched_iata {
         format!("https://airlabs.co/api/v9/airports?iata_code={code}&api_key={api_key}")
@@ -170,8 +170,8 @@ async fn airport_lookup(api_key: &str, code: &str) -> Result<AirportData> {
 async fn flight_lookup(ctx: PoiseContext<'_>, api_key: &str, code: &str) -> Option<FlightData> {
     let date = Local::now().format("%Y-%m-%d").to_string();
 
-    let searched_iata = IATA_RE.is_match(&code);
-    let searched_icao = ICAO_RE.is_match(&code);
+    let searched_iata = IATA_RE.is_match(code);
+    let searched_icao = ICAO_RE.is_match(code);
 
     let url = if searched_iata {
         format!(
@@ -408,26 +408,10 @@ pub async fn plane_details(ctx: PoiseContext<'_>, search: String) -> Result<()> 
         )
     };
 
-    let status = flight
-        .status
-        .as_ref()
-        .map(String::as_str)
-        .unwrap_or("Unknown");
-    let aircraft = flight
-        .model
-        .as_ref()
-        .map(String::as_str)
-        .unwrap_or("BoingBus 67420 Max");
-    let manufacture = flight
-        .manufacture
-        .as_ref()
-        .map(String::as_str)
-        .unwrap_or("BoingBus");
-    let engine = flight
-        .engine
-        .as_ref()
-        .map(String::as_str)
-        .unwrap_or("FartJet");
+    let status = flight.status.as_deref().unwrap_or("Unknown");
+    let aircraft = flight.model.as_deref().unwrap_or("BoingBus 67420 Max");
+    let manufacture = flight.manufacture.as_deref().unwrap_or("BoingBus");
+    let engine = flight.engine.as_deref().unwrap_or("FartJet");
     let built = flight.built.unwrap_or(0);
     let current_date = chrono::Utc::now();
     let age = current_date.year() - built as i32;
