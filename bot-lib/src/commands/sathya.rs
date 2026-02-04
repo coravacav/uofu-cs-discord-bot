@@ -6,6 +6,7 @@ const SATHYA_USER_ID: UserId = UserId::new(444895960577998860);
 
 #[poise::command(
     slash_command,
+    guild_only,
     description_localized("en-US", "Nickname someone \"Sathya\" (only if you are Sathya!)")
 )]
 pub async fn sathya(ctx: PoiseContext<'_>, victim: User) -> Result<()> {

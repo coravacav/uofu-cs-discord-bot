@@ -174,7 +174,7 @@ pub async fn can_yeet(ctx: PoiseContext<'_>, victim: &User, guild_id: GuildId) -
 }
 
 /// Yeet a user if you get 6 yay votes, get yeeted yourself if they vote nay
-#[poise::command(slash_command, rename = "yeet", ephemeral = true)]
+#[poise::command(slash_command, rename = "yeet", ephemeral = true, guild_only)]
 pub async fn yeet(ctx: PoiseContext<'_>, victim: User) -> Result<()> {
     let yeeter = ctx.author();
     let guild_id = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;

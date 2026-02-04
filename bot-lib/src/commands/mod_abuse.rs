@@ -12,7 +12,7 @@ use poise::{
 use rand::prelude::*;
 use std::time::Duration;
 
-#[poise::command(slash_command, required_permissions = "MODERATE_MEMBERS")]
+#[poise::command(slash_command, required_permissions = "MODERATE_MEMBERS", guild_only)]
 pub async fn mod_abuse(
     ctx: PoiseContext<'_>,
     #[description = "Target of abuse"] target: User,

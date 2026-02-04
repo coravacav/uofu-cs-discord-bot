@@ -7,6 +7,7 @@ use poise::serenity_prelude::{EditMember, UserId};
     subcommands(
         "remove_timeout",
     ),
+    guild_only,
     check = is_stefan
 )]
 pub async fn admin(_ctx: PoiseContext<'_>) -> Result<()> {

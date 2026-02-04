@@ -24,13 +24,9 @@ fn get_class_roles(roles: HashMap<RoleId, Role>) -> impl Iterator<Item = Role> {
 }
 
 /// List all classes you can join
-#[poise::command(slash_command, ephemeral = true)]
+#[poise::command(slash_command, ephemeral = true, guild_only)]
 pub async fn list_classes(ctx: PoiseContext<'_>) -> Result<()> {
-    let Some(guild_id) = ctx.guild().map(|g| g.id) else {
-        ctx.say("This command can only be run in the server")
-            .await?;
-        return Ok(());
-    };
+    let guild_id = ctx.guild().unwrap().id;
     let roles = guild_id.roles(ctx).await?;
 
     let user_roles = guild_id
@@ -71,13 +67,9 @@ pub async fn list_classes(ctx: PoiseContext<'_>) -> Result<()> {
     Ok(())
 }
 
-#[poise::command(prefix_command, check = is_stefan)]
+#[poise::command(prefix_command, guild_only, check = is_stefan)]
 pub async fn healthcheck_classes(ctx: PoiseContext<'_>) -> Result<()> {
-    let Some(guild_id) = ctx.guild().map(|g| g.id) else {
-        ctx.say("This command can only be run in the server")
-            .await?;
-        return Ok(());
-    };
+    let guild_id = ctx.guild().unwrap().id;
 
     let roles: FxHashSet<_> = get_class_roles(guild_id.roles(ctx).await?)
         .map(|role| role.name)
@@ -133,14 +125,10 @@ pub async fn healthcheck_classes(ctx: PoiseContext<'_>) -> Result<()> {
 }
 
 /// List the classes you're in via roles
-#[poise::command(slash_command, ephemeral = true)]
+#[poise::command(slash_command, ephemeral = true, guild_only)]
 pub async fn my_classes(ctx: PoiseContext<'_>) -> Result<()> {
     let user = ctx.author();
-    let Some(guild_id) = ctx.guild().map(|g| g.id) else {
-        ctx.say("This command can only be run in the server")
-            .await?;
-        return Ok(());
-    };
+    let guild_id = ctx.guild().unwrap().id;
     let roles = guild_id.roles(ctx).await?;
 
     let Some(user_roles) = guild_id.member(ctx, user.id).await?.roles(ctx) else {
@@ -200,6 +188,7 @@ const MOD_ROLE_ID: RoleId = RoleId::new(1192863993883279532);
 #[poise::command(
     slash_command,
     required_permissions = "MANAGE_CHANNELS",
+    guild_only,
     description_localized("en-US", "Creates a class category")
 )]
 pub async fn create_class_category(
@@ -324,6 +313,7 @@ pub async fn create_class_category(
 #[poise::command(
     slash_command,
     required_permissions = "MANAGE_CHANNELS",
+    guild_only,
     description_localized("en-US", "Deletes a class category")
 )]
 pub async fn delete_class_category(
@@ -365,6 +355,7 @@ pub async fn delete_class_category(
 #[poise::command(
     prefix_command,
     ephemeral = true,
+    guild_only,
     check = is_stefan
 )]
 pub async fn debug_print_channel_names(ctx: PoiseContext<'_>) -> Result<()> {
@@ -381,6 +372,7 @@ pub async fn debug_print_channel_names(ctx: PoiseContext<'_>) -> Result<()> {
     slash_command,
     required_permissions = "MANAGE_CHANNELS",
     ephemeral = true,
+    guild_only,
     check = is_stefan
 )]
 pub async fn reset_all_class_categories(ctx: PoiseContext<'_>) -> Result<()> {
@@ -457,6 +449,7 @@ async fn delete_and_replace_channel(ctx: Context, channel: GuildChannel) -> Resu
     slash_command,
     required_permissions = "MANAGE_CHANNELS",
     ephemeral = true,
+    guild_only,
     check = is_stefan
 )]
 pub async fn reset_class_category(ctx: PoiseContext<'_>) -> Result<()> {
@@ -510,22 +503,14 @@ pub async fn reset_class_category(ctx: PoiseContext<'_>) -> Result<()> {
 }
 
 /// Join a class. Enter the CS identifier, eg. for CS2420 put in "CS2420" or "2420"
-#[poise::command(slash_command, rename = "join_class", ephemeral = true)]
+#[poise::command(slash_command, rename = "join_class", ephemeral = true, guild_only)]
 pub async fn add_class_role(
     ctx: PoiseContext<'_>,
     #[description = "The course identifier (auto adds \"CS\" if unspecified)"] course_id: String,
 ) -> Result<()> {
     let user = ctx.author();
-    let Some(guild_id) = ctx.guild_id() else {
-        ctx.reply_ephemeral("Run this command in the server")
-            .await?;
-        return Ok(());
-    };
-    let Ok(author) = get_member(ctx).await else {
-        ctx.reply_ephemeral("Run this command in the server")
-            .await?;
-        return Ok(());
-    };
+    let guild_id = ctx.guild_id().unwrap();
+    let author = get_member(ctx).await?;
 
     let Ok(course) = CourseIdent::try_from(course_id.as_str()) else {
         ctx.reply_ephemeral(format!("Please provide a valid course, got `{course_id}`"))
@@ -570,7 +555,7 @@ pub async fn add_class_role(
 }
 
 /// Leave a class. Enter the CS identifier, eg. for CS2420 put in "CS2420" or "2420"
-#[poise::command(slash_command, rename = "leave_class", ephemeral = true)]
+#[poise::command(slash_command, rename = "leave_class", ephemeral = true, guild_only)]
 pub async fn remove_class_role(
     ctx: PoiseContext<'_>,
     #[description = "The course identifier (auto adds \"CS\" if unspecified)"] course_id: String,

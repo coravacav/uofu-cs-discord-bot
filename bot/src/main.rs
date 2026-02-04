@@ -86,6 +86,7 @@ async fn main() -> Result<()> {
                 healthcheck_classes(),
                 help(),
                 list_classes(),
+                message_limit(),
                 mod_abuse(),
                 my_classes(),
                 parry(),

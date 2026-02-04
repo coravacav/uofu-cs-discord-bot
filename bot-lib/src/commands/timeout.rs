@@ -4,7 +4,7 @@ use humantime::parse_duration;
 use poise::serenity_prelude::{EditMember, Mentionable};
 use std::time::Duration;
 
-#[poise::command(slash_command, ephemeral = true)]
+#[poise::command(slash_command, ephemeral = true, guild_only)]
 pub async fn timeout(
     ctx: PoiseContext<'_>,
     #[description = "The amount of time to time yourself out, like '1h' or '3m'"] time_text: String,

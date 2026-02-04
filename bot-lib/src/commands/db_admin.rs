@@ -8,6 +8,7 @@ use poise::serenity_prelude::UserId;
         "clear_value",
         "inspect_value",
     ),
+    guild_only,
     check = is_stefan
 )]
 pub async fn db_admin(_ctx: PoiseContext<'_>) -> Result<()> {

@@ -16,6 +16,7 @@ itertools = { workspace = true }
 notify = { workspace = true }
 rustc-hash = { workspace = true }
 chrono = "0.4"
+chrono-tz = "0.10"
 toml = { default-features = false, version = "0.9", features = ["parse", "serde", "std"] }
 regex = "1"
 nom = "7"

@@ -16,7 +16,7 @@ use crate::{
     data::PoiseContext,
 };
 
-#[poise::command(slash_command, ephemeral = true, check = is_stefan)]
+#[poise::command(slash_command, ephemeral = true, guild_only, check = is_stefan)]
 pub async fn extract_all_class_channels(ctx: PoiseContext<'_>) -> Result<()> {
     ctx.defer_ephemeral().await?;
     let channels = get_all_class_general_channels(&ctx).unwrap_or_default();
@@ -40,7 +40,7 @@ pub async fn extract_all_class_channels(ctx: PoiseContext<'_>) -> Result<()> {
     Ok(())
 }
 
-#[poise::command(slash_command, ephemeral = true, check = is_stefan)]
+#[poise::command(slash_command, ephemeral = true, guild_only, check = is_stefan)]
 pub async fn extract_current_channel(ctx: PoiseContext<'_>) -> Result<()> {
     let channel_id = ctx.channel_id();
 

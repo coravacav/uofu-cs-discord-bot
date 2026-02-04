@@ -105,3 +105,20 @@ KingFisher also sometimes really likes to react to messages. That's why he repli
 There is a way to force KingFisher to reply to a message. Add \"KINGFISHER PLEASE\" somewhere in the message to bypass the % chance. Add \"HIT ME BABY ONE MORE TIME\" to bypass the cooldown."
     ;
 END;
+
+-- Message limit configuration per user per guild
+DEFINE TABLE OVERWRITE message_limit SCHEMAFULL CHANGEFEED 3d;
+
+DEFINE FIELD OVERWRITE user_id ON message_limit TYPE number;
+DEFINE FIELD OVERWRITE guild_id ON message_limit TYPE number;
+DEFINE FIELD OVERWRITE daily_limit ON message_limit TYPE int ASSERT $value > 0;
+DEFINE FIELD OVERWRITE imposed_by ON message_limit TYPE option<number> DEFAULT NONE;
+DEFINE FIELD OVERWRITE created_at ON message_limit TYPE datetime DEFAULT time::now();
+
+-- Daily message counts per user per guild
+DEFINE TABLE OVERWRITE message_count SCHEMAFULL CHANGEFEED 3d;
+
+DEFINE FIELD OVERWRITE user_id ON message_count TYPE number;
+DEFINE FIELD OVERWRITE guild_id ON message_count TYPE number;
+DEFINE FIELD OVERWRITE count ON message_count TYPE int DEFAULT 0 ASSERT $value >= 0;
+DEFINE FIELD OVERWRITE reset_date ON message_count TYPE string;

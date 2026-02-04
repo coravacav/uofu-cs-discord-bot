@@ -1,0 +1,1 @@
+* Pass around UserIds rather than i64 or u64. Convert them at the end right before you need to.
