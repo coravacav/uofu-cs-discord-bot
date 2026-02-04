@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    commands::{handle_message_limit_interaction, handle_yeeting},
+    commands::handle_yeeting,
     data::State,
     handle_starboards::handle_starboards,
     text_detection::{kingfisher_reply_reactions, text_detection_and_reaction},
@@ -101,13 +101,7 @@ pub async fn event_handler(
                 .await
                 .trace_err_ok();
         }
-        serenity::FullEvent::InteractionCreate { interaction } => {
-            if let serenity::Interaction::Component(component) = interaction {
-                handle_message_limit_interaction(ctx, component)
-                    .await
-                    .trace_err_ok();
-            }
-        }
+        serenity::FullEvent::InteractionCreate { .. } => {}
         serenity::FullEvent::Ratelimit { data } => {
             tracing::warn!("Ratelimited: {:?}", data);
         }

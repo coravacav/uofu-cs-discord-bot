@@ -2,7 +2,7 @@ use std::sync::{Arc, LazyLock};
 
 use crate::{config::ResponseKind, data::State};
 use bot_traits::ForwardRefToTracing;
-use color_eyre::eyre::{OptionExt, Result, bail};
+use color_eyre::eyre::{Result, bail};
 use parking_lot::Mutex;
 use poise::serenity_prelude::{ChannelId, Context, Message, MessageId, ReactionType, UserId};
 use rustc_hash::FxHashMap;
@@ -28,7 +28,9 @@ pub async fn text_detection_and_reaction(
     }
 
     let author = &message.author;
-    let guild_id = message.guild_id.ok_or_eyre("should have guild id")?;
+    let Some(guild_id) = message.guild_id else {
+        return Ok(());
+    };
     let channel_id = message.channel_id;
 
     let author_has_role = author

@@ -3,10 +3,11 @@ use chrono::{DateTime, TimeZone, Utc};
 use chrono_tz::America::Denver;
 use color_eyre::eyre::{OptionExt, Result};
 use poise::serenity_prelude::{
-    self as serenity, ButtonStyle, ComponentInteraction, CreateActionRow, CreateButton,
+    self as serenity, ButtonStyle, CreateActionRow, CreateButton,
     CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, EditMember,
     GuildId, User, UserId,
 };
+use std::time::Duration;
 
 #[derive(Debug, serde::Deserialize)]
 struct MessageLimit {
@@ -18,6 +19,18 @@ struct MessageLimit {
 struct MessageCount {
     count: u64,
     reset_date: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct GuildLimitEntry {
+    guild_id: u64,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct GuildMessageLimit {
+    guild_id: u64,
+    daily_limit: u64,
+    imposed_by: Option<UserId>,
 }
 
 /// Returns the current date in Mountain Time as "YYYY-MM-DD"
@@ -245,8 +258,7 @@ fn generate_progress_bar(current: u64, max: u64) -> String {
 #[poise::command(
     slash_command,
     subcommands("impose", "set", "view", "clear", "remove"),
-    rename = "message_limit",
-    guild_only
+    rename = "message_limit"
 )]
 pub async fn message_limit(_ctx: PoiseContext<'_>) -> Result<()> {
     Ok(())
@@ -256,7 +268,8 @@ pub async fn message_limit(_ctx: PoiseContext<'_>) -> Result<()> {
 #[poise::command(
     slash_command,
     required_permissions = "MODERATE_MEMBERS",
-    ephemeral = true
+    ephemeral = true,
+    guild_only
 )]
 pub async fn impose(
     ctx: PoiseContext<'_>,
@@ -295,22 +308,26 @@ pub async fn impose(
             .style(ButtonStyle::Primary),
     ])];
 
-    ctx.send(
-        poise::CreateReply::default()
-            .content(format!(
-                "✅ Set message limit of **{}** messages/day for {}.",
-                limit, user.name
-            ))
-            .components(components)
-            .ephemeral(true),
-    )
-    .await?;
+    let reply = ctx
+        .send(
+            poise::CreateReply::default()
+                .content(format!(
+                    "✅ Set message limit of **{}** messages/day for {}.",
+                    limit, user.name
+                ))
+                .components(components)
+                .ephemeral(true),
+        )
+        .await?;
+
+    let msg = reply.into_message().await?;
+    handle_guild_buttons_with_timeout(ctx, &msg, user_id).await?;
 
     Ok(())
 }
 
 /// Set your own message limit
-#[poise::command(slash_command, ephemeral = true)]
+#[poise::command(slash_command, ephemeral = true, guild_only)]
 pub async fn set(
     ctx: PoiseContext<'_>,
     #[description = "Daily message limit"] limit: u64,
@@ -359,46 +376,294 @@ pub async fn set(
             .style(ButtonStyle::Danger),
     ])];
 
-    ctx.send(
-        poise::CreateReply::default()
-            .content(format!(
-                "✅ Set your daily message limit to **{}** messages.",
-                limit
-            ))
-            .components(components)
-            .ephemeral(true),
-    )
-    .await?;
+    let reply = ctx
+        .send(
+            poise::CreateReply::default()
+                .content(format!(
+                    "✅ Set your daily message limit to **{}** messages.",
+                    limit
+                ))
+                .components(components)
+                .ephemeral(true),
+        )
+        .await?;
+
+    let msg = reply.into_message().await?;
+    handle_guild_buttons_with_timeout(ctx, &msg, user_id).await?;
 
     Ok(())
 }
 
-/// View your current message limit and progress
+/// View message limit and progress (yours or another user's)
 #[poise::command(slash_command, ephemeral = true)]
-pub async fn view(ctx: PoiseContext<'_>) -> Result<()> {
-    let user_id = ctx.author().id;
+pub async fn view(
+    ctx: PoiseContext<'_>,
+    #[description = "The user to view (defaults to yourself)"] user: Option<User>,
+) -> Result<()> {
+    if let Some(guild_id) = ctx.guild_id() {
+        // Guild context: show this guild's limit only
+        let target = user.as_ref().unwrap_or_else(|| ctx.author());
+        let target_id = target.id;
+
+        let Some(limit_record) = query_user_limit(target_id, guild_id).await? else {
+            let msg = if target_id == ctx.author().id {
+                "ℹ️ No message limit set. Use `/message_limit set` to set one.".to_string()
+            } else {
+                format!("ℹ️ {} has no message limit set.", target.name)
+            };
+            ctx.say(msg).await?;
+            return Ok(());
+        };
+
+        let mt_date = get_current_mt_date();
+        let current_count = query_user_count(target_id, guild_id, &mt_date).await?;
+
+        let is_self = target_id == ctx.author().id;
+        let (content, components) =
+            build_view_response(target_id, &limit_record, current_count, is_self);
+
+        let reply = ctx
+            .send(
+                poise::CreateReply::default()
+                    .content(content)
+                    .components(components)
+                    .ephemeral(true),
+            )
+            .await?;
+
+        let msg = reply.into_message().await?;
+        handle_guild_buttons_with_timeout(ctx, &msg, target_id).await?;
+    } else {
+        // DM context: show all limits across all servers
+        if user.as_ref().is_some_and(|u| u.id != ctx.author().id) {
+            ctx.say("ℹ️ Viewing another user's limits is only available in a server.")
+                .await?;
+            return Ok(());
+        }
+
+        let user_id = ctx.author().id;
+        let limits: Vec<GuildMessageLimit> = DB
+            .query("SELECT guild_id, daily_limit, imposed_by FROM message_limit WHERE user_id = $uid")
+            .bind(("uid", u64::from(user_id)))
+            .await?
+            .take(0)?;
+
+        if limits.is_empty() {
+            ctx.say("ℹ️ No message limits set. Use `/message_limit set` in a server to set one.")
+                .await?;
+            return Ok(());
+        }
+
+        let mt_date = get_current_mt_date();
+        let next_midnight = get_next_midnight_mt();
+        let now = Utc::now();
+        let duration = next_midnight - now;
+        let hours = duration.num_hours();
+        let minutes = duration.num_minutes() % 60;
+
+        let mut content = String::from("📊 **Message Limit Status**\n");
+
+        for limit in &limits {
+            let gid = GuildId::new(limit.guild_id);
+            let guild_name = gid
+                .to_partial_guild(ctx.serenity_context())
+                .await
+                .map(|g| g.name)
+                .unwrap_or_else(|_| format!("Server {}", limit.guild_id));
+
+            let count = query_user_count(user_id, gid, &mt_date).await?;
+            let progress = generate_progress_bar(count, limit.daily_limit);
+            let imposed = if let Some(mod_id) = limit.imposed_by {
+                format!("<@{}>", mod_id)
+            } else {
+                "Self".to_string()
+            };
+
+            content.push_str(&format!(
+                "\n**{}**\n{} / {} messages | {}\nImposed by: {}\n",
+                guild_name, count, limit.daily_limit, progress, imposed
+            ));
+        }
+
+        content.push_str(&format!(
+            "\n**Time until reset:** {}h {}m (midnight MT)",
+            hours, minutes
+        ));
+
+        ctx.send(
+            poise::CreateReply::default()
+                .content(content)
+                .ephemeral(true),
+        )
+        .await?;
+    }
+
+    Ok(())
+}
+
+/// Query all guilds where a user has a self-imposed limit
+async fn query_self_imposed_guilds(user_id: UserId) -> Result<Vec<GuildLimitEntry>> {
+    let entries: Vec<GuildLimitEntry> = DB
+        .query("SELECT guild_id FROM message_limit WHERE user_id = $uid AND imposed_by = NONE")
+        .bind(("uid", u64::from(user_id)))
+        .await?
+        .take(0)?;
+    Ok(entries)
+}
+
+/// Build buttons for selecting which guild to clear a limit from (used in DMs)
+async fn build_dm_clear_buttons(
+    ctx: &serenity::Context,
+    guild_entries: &[GuildLimitEntry],
+) -> Vec<CreateActionRow> {
+    let mut rows = Vec::new();
+    let mut current_row = Vec::new();
+
+    for entry in guild_entries {
+        let gid = GuildId::new(entry.guild_id);
+        let guild_name = gid
+            .to_partial_guild(ctx)
+            .await
+            .map(|g| g.name)
+            .unwrap_or_else(|_| format!("Server {}", entry.guild_id));
+
+        current_row.push(
+            CreateButton::new(format!("dm_clear_limit_{}", entry.guild_id))
+                .label(guild_name)
+                .style(ButtonStyle::Danger),
+        );
+
+        if current_row.len() == 5 {
+            rows.push(CreateActionRow::Buttons(std::mem::take(&mut current_row)));
+        }
+    }
+
+    if !current_row.is_empty() {
+        rows.push(CreateActionRow::Buttons(current_row));
+    }
+
+    rows
+}
+
+/// Handle component interactions on a guild message with a 60-second inactivity timeout.
+/// Processes view/refresh/clear button clicks inline. Stops listening after timeout.
+async fn handle_guild_buttons_with_timeout(
+    ctx: PoiseContext<'_>,
+    msg: &serenity::Message,
+    target_user_id: UserId,
+) -> Result<()> {
+    let serenity_ctx = ctx.serenity_context();
     let guild_id = ctx.guild_id().ok_or_eyre("Must be used in a guild")?;
 
-    // Query limit
-    let Some(limit_record) = query_user_limit(user_id, guild_id).await? else {
-        ctx.say("ℹ️ No message limit set. Use `/message_limit set` to set one.")
-            .await?;
-        return Ok(());
-    };
+    loop {
+        let interaction = msg
+            .await_component_interaction(serenity_ctx)
+            .timeout(Duration::from_secs(60))
+            .await;
 
-    // Query count
-    let mt_date = get_current_mt_date();
-    let current_count = query_user_count(user_id, guild_id, &mt_date).await?;
+        let Some(interaction) = interaction else {
+            break;
+        };
 
-    let (content, components) = build_view_response(user_id, &limit_record, current_count);
+        let custom_id = &interaction.data.custom_id;
 
-    ctx.send(
-        poise::CreateReply::default()
-            .content(content)
-            .components(components)
-            .ephemeral(true),
-    )
-    .await?;
+        if custom_id.starts_with("view_limit_") || custom_id.starts_with("refresh_limit_") {
+            let Some(limit_record) = query_user_limit(target_user_id, guild_id).await? else {
+                interaction
+                    .create_response(
+                        serenity_ctx,
+                        CreateInteractionResponse::UpdateMessage(
+                            CreateInteractionResponseMessage::new()
+                                .content("ℹ️ No message limit set.")
+                                .components(vec![]),
+                        ),
+                    )
+                    .await?;
+                break;
+            };
+
+            let mt_date = get_current_mt_date();
+            let current_count =
+                query_user_count(target_user_id, guild_id, &mt_date).await?;
+
+            let is_self = interaction.user.id == target_user_id;
+            let (content, components) =
+                build_view_response(target_user_id, &limit_record, current_count, is_self);
+
+            interaction
+                .create_response(
+                    serenity_ctx,
+                    CreateInteractionResponse::UpdateMessage(
+                        CreateInteractionResponseMessage::new()
+                            .content(content)
+                            .components(components),
+                    ),
+                )
+                .await?;
+        } else if custom_id.starts_with("clear_limit_") {
+            let clicker = interaction.user.id;
+            if clicker != target_user_id {
+                interaction
+                    .create_response(
+                        serenity_ctx,
+                        CreateInteractionResponse::Message(
+                            CreateInteractionResponseMessage::new()
+                                .content("❌ You can only clear your own limit.")
+                                .ephemeral(true),
+                        ),
+                    )
+                    .await?;
+                continue;
+            }
+
+            let Some(limit_record) = query_user_limit(target_user_id, guild_id).await? else {
+                interaction
+                    .create_response(
+                        serenity_ctx,
+                        CreateInteractionResponse::UpdateMessage(
+                            CreateInteractionResponseMessage::new()
+                                .content("ℹ️ No message limit is currently set.")
+                                .components(vec![]),
+                        ),
+                    )
+                    .await?;
+                break;
+            };
+
+            if limit_record.imposed_by.is_some() {
+                interaction
+                    .create_response(
+                        serenity_ctx,
+                        CreateInteractionResponse::Message(
+                            CreateInteractionResponseMessage::new()
+                                .content(
+                                    "❌ Only moderators can remove this limit. Contact a moderator.",
+                                )
+                                .ephemeral(true),
+                        ),
+                    )
+                    .await?;
+                continue;
+            }
+
+            DB.query("DELETE FROM message_limit WHERE user_id = $uid AND guild_id = $gid")
+                .bind(("uid", u64::from(target_user_id)))
+                .bind(("gid", u64::from(guild_id)))
+                .await?;
+
+            interaction
+                .create_response(
+                    serenity_ctx,
+                    CreateInteractionResponse::UpdateMessage(
+                        CreateInteractionResponseMessage::new()
+                            .content("✅ Your message limit has been cleared.")
+                            .components(vec![]),
+                    ),
+                )
+                .await?;
+            break;
+        }
+    }
 
     Ok(())
 }
@@ -407,28 +672,127 @@ pub async fn view(ctx: PoiseContext<'_>) -> Result<()> {
 #[poise::command(slash_command, ephemeral = true)]
 pub async fn clear(ctx: PoiseContext<'_>) -> Result<()> {
     let user_id = ctx.author().id;
-    let guild_id = ctx.guild_id().ok_or_eyre("Must be used in a guild")?;
 
-    // Check if limit exists
-    let Some(limit_record) = query_user_limit(user_id, guild_id).await? else {
-        ctx.say("ℹ️ No message limit is currently set.").await?;
-        return Ok(());
-    };
+    if let Some(guild_id) = ctx.guild_id() {
+        // Guild context: clear the single guild-specific limit
+        let Some(limit_record) = query_user_limit(user_id, guild_id).await? else {
+            ctx.say("ℹ️ No message limit is currently set.").await?;
+            return Ok(());
+        };
 
-    // Check if it's mod-imposed
-    if limit_record.imposed_by.is_some() {
-        ctx.say("❌ Only moderators can remove this limit. Contact a moderator.")
+        if limit_record.imposed_by.is_some() {
+            ctx.say("❌ Only moderators can remove this limit. Contact a moderator.")
+                .await?;
+            return Ok(());
+        }
+
+        DB.query("DELETE FROM message_limit WHERE user_id = $uid AND guild_id = $gid")
+            .bind(("uid", u64::from(user_id)))
+            .bind(("gid", u64::from(guild_id)))
             .await?;
-        return Ok(());
+
+        ctx.say("✅ Your message limit has been cleared.").await?;
+    } else {
+        // DM context: show buttons to pick which server to clear from
+        let guild_entries = query_self_imposed_guilds(user_id).await?;
+
+        if guild_entries.is_empty() {
+            ctx.say("ℹ️ You have no self-imposed message limits set in any server.")
+                .await?;
+            return Ok(());
+        }
+
+        let components = build_dm_clear_buttons(ctx.serenity_context(), &guild_entries).await;
+
+        let reply = ctx
+            .send(
+                poise::CreateReply::default()
+                    .content("Select a server to clear your message limit from:")
+                    .components(components),
+            )
+            .await?;
+
+        let msg = reply.into_message().await?;
+
+        loop {
+            let interaction = msg
+                .await_component_interaction(ctx.serenity_context())
+                .timeout(Duration::from_secs(60))
+                .await;
+
+            let Some(interaction) = interaction else {
+                // Timeout — delete the message
+                msg.delete(ctx.serenity_context()).await.ok();
+                break;
+            };
+
+            // Parse guild ID from the button custom_id
+            let Some(guild_id_str) = interaction
+                .data
+                .custom_id
+                .strip_prefix("dm_clear_limit_")
+            else {
+                continue;
+            };
+
+            let Ok(gid) = guild_id_str.parse::<u64>() else {
+                continue;
+            };
+            let guild_id = GuildId::new(gid);
+
+            // Delete the specific limit (only self-imposed)
+            DB.query("DELETE FROM message_limit WHERE user_id = $uid AND guild_id = $gid AND imposed_by = NONE")
+                .bind(("uid", u64::from(user_id)))
+                .bind(("gid", u64::from(guild_id)))
+                .await?;
+
+            let guild_name = guild_id
+                .to_partial_guild(ctx.serenity_context())
+                .await
+                .map(|g| g.name)
+                .unwrap_or_else(|_| format!("Server {}", gid));
+
+            // Re-query remaining limits to rebuild buttons
+            let remaining = query_self_imposed_guilds(user_id).await?;
+
+            if remaining.is_empty() {
+                interaction
+                    .create_response(
+                        ctx.serenity_context(),
+                        CreateInteractionResponse::UpdateMessage(
+                            CreateInteractionResponseMessage::new()
+                                .content(format!(
+                                    "✅ Cleared your message limit for **{}**. You have no more self-imposed limits.",
+                                    guild_name
+                                ))
+                                .components(vec![]),
+                        ),
+                    )
+                    .await?;
+
+                // Brief pause then delete
+                tokio::time::sleep(Duration::from_secs(5)).await;
+                msg.delete(ctx.serenity_context()).await.ok();
+                break;
+            }
+
+            let components = build_dm_clear_buttons(ctx.serenity_context(), &remaining).await;
+
+            interaction
+                .create_response(
+                    ctx.serenity_context(),
+                    CreateInteractionResponse::UpdateMessage(
+                        CreateInteractionResponseMessage::new()
+                            .content(format!(
+                                "✅ Cleared your message limit for **{}**.\n\nSelect another server to clear:",
+                                guild_name
+                            ))
+                            .components(components),
+                    ),
+                )
+                .await?;
+        }
     }
-
-    // Delete the limit
-    DB.query("DELETE FROM message_limit WHERE user_id = $uid AND guild_id = $gid")
-        .bind(("uid", u64::from(user_id)))
-        .bind(("gid", u64::from(guild_id)))
-        .await?;
-
-    ctx.say("✅ Your message limit has been cleared.").await?;
 
     Ok(())
 }
@@ -437,7 +801,8 @@ pub async fn clear(ctx: PoiseContext<'_>) -> Result<()> {
 #[poise::command(
     slash_command,
     required_permissions = "MODERATE_MEMBERS",
-    ephemeral = true
+    ephemeral = true,
+    guild_only
 )]
 pub async fn remove(
     ctx: PoiseContext<'_>,
@@ -475,6 +840,7 @@ fn build_view_response(
     target_user_id: UserId,
     limit_record: &MessageLimit,
     current_count: u64,
+    is_self: bool,
 ) -> (String, Vec<CreateActionRow>) {
     let next_midnight = get_next_midnight_mt();
     let now = Utc::now();
@@ -487,14 +853,21 @@ fn build_view_response(
     let imposed_text = if let Some(mod_id) = limit_record.imposed_by {
         format!("\n**Imposed by:** <@{}>", mod_id)
     } else {
-        "".to_string()
+        "\n**Imposed by:** Self".to_string()
+    };
+
+    let user_label = if is_self {
+        String::new()
+    } else {
+        format!(" for <@{}>", target_user_id)
     };
 
     let content = format!(
-        "📊 **Message Limit Status**\n\n\
+        "📊 **Message Limit Status**{}\n\n\
          **Progress:** {} / {} messages\n\
          {}\n\
          **Time until reset:** {}h {}m (midnight MT){}\n",
+        user_label,
         current_count,
         limit_record.daily_limit,
         progress_bar,
@@ -507,7 +880,7 @@ fn build_view_response(
         .label("Refresh")
         .style(ButtonStyle::Secondary)];
 
-    if limit_record.imposed_by.is_none() {
+    if limit_record.imposed_by.is_none() && is_self {
         buttons.push(
             CreateButton::new(format!("clear_limit_{}", target_user_id))
                 .label("Clear Limit")
@@ -520,128 +893,3 @@ fn build_view_response(
     (content, components)
 }
 
-/// Handle button interactions for message limit buttons
-pub async fn handle_message_limit_interaction(
-    ctx: &serenity::Context,
-    interaction: &ComponentInteraction,
-) -> Result<bool> {
-    let custom_id = &interaction.data.custom_id;
-
-    let (action, target_user_id) =
-        if let Some(id_str) = custom_id.strip_prefix("view_limit_")
-            .or_else(|| custom_id.strip_prefix("refresh_limit_"))
-        {
-            let uid: u64 = id_str.parse().map_err(|_| color_eyre::eyre::eyre!("Invalid user ID in button"))?;
-            ("view", UserId::new(uid))
-        } else if let Some(id_str) = custom_id.strip_prefix("clear_limit_") {
-            let uid: u64 = id_str.parse().map_err(|_| color_eyre::eyre::eyre!("Invalid user ID in button"))?;
-            ("clear", UserId::new(uid))
-        } else {
-            return Ok(false);
-        };
-
-    let guild_id = interaction
-        .guild_id
-        .ok_or_eyre("Button must be used in a guild")?;
-
-    match action {
-        "view" => {
-            let Some(limit_record) = query_user_limit(target_user_id, guild_id).await? else {
-                interaction
-                    .create_response(
-                        ctx,
-                        CreateInteractionResponse::Message(
-                            CreateInteractionResponseMessage::new()
-                                .content("ℹ️ No message limit set.")
-                                .ephemeral(true),
-                        ),
-                    )
-                    .await?;
-                return Ok(true);
-            };
-
-            let mt_date = get_current_mt_date();
-            let current_count =
-                query_user_count(target_user_id, guild_id, &mt_date).await?;
-
-            let (content, components) =
-                build_view_response(target_user_id, &limit_record, current_count);
-
-            interaction
-                .create_response(
-                    ctx,
-                    CreateInteractionResponse::UpdateMessage(
-                        CreateInteractionResponseMessage::new()
-                            .content(content)
-                            .components(components),
-                    ),
-                )
-                .await?;
-        }
-        "clear" => {
-            let clicker = interaction.user.id;
-            if clicker != target_user_id {
-                interaction
-                    .create_response(
-                        ctx,
-                        CreateInteractionResponse::Message(
-                            CreateInteractionResponseMessage::new()
-                                .content("❌ You can only clear your own limit.")
-                                .ephemeral(true),
-                        ),
-                    )
-                    .await?;
-                return Ok(true);
-            }
-
-            let Some(limit_record) = query_user_limit(target_user_id, guild_id).await? else {
-                interaction
-                    .create_response(
-                        ctx,
-                        CreateInteractionResponse::UpdateMessage(
-                            CreateInteractionResponseMessage::new()
-                                .content("ℹ️ No message limit is currently set.")
-                                .components(vec![]),
-                        ),
-                    )
-                    .await?;
-                return Ok(true);
-            };
-
-            if limit_record.imposed_by.is_some() {
-                interaction
-                    .create_response(
-                        ctx,
-                        CreateInteractionResponse::Message(
-                            CreateInteractionResponseMessage::new()
-                                .content(
-                                    "❌ Only moderators can remove this limit. Contact a moderator.",
-                                )
-                                .ephemeral(true),
-                        ),
-                    )
-                    .await?;
-                return Ok(true);
-            }
-
-            DB.query("DELETE FROM message_limit WHERE user_id = $uid AND guild_id = $gid")
-                .bind(("uid", u64::from(target_user_id)))
-                .bind(("gid", u64::from(guild_id)))
-                .await?;
-
-            interaction
-                .create_response(
-                    ctx,
-                    CreateInteractionResponse::UpdateMessage(
-                        CreateInteractionResponseMessage::new()
-                            .content("✅ Your message limit has been cleared.")
-                            .components(vec![]),
-                    ),
-                )
-                .await?;
-        }
-        _ => unreachable!(),
-    }
-
-    Ok(true)
-}
