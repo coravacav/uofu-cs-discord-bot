@@ -34,7 +34,7 @@ const DEFAULT_CONFIG_FILENAME: &str = "config.toml";
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    dotenv().wrap_err("Failed to load .env file. Add a file with the following contents: `DISCORD_TOKEN=\"your token\"` to a .env file in the root directory of the repo.")?;
+    let _ = dotenv();
     color_eyre::install()?;
 
     #[cfg(not(debug_assertions))]

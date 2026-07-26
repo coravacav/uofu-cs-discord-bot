@@ -3,9 +3,8 @@ use chrono::{DateTime, TimeZone, Utc};
 use chrono_tz::America::Denver;
 use color_eyre::eyre::{OptionExt, Result};
 use poise::serenity_prelude::{
-    self as serenity, ButtonStyle, CreateActionRow, CreateButton,
-    CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, EditMember,
-    GuildId, User, UserId,
+    self as serenity, ButtonStyle, CreateActionRow, CreateButton, CreateInteractionResponse,
+    CreateInteractionResponseMessage, CreateMessage, EditMember, GuildId, User, UserId,
 };
 use std::time::Duration;
 
@@ -98,11 +97,13 @@ async fn increment_message_count(user_id: UserId, guild_id: GuildId, date: Strin
         } else {
             // Same day - increment
             let new_count = record.count + 1;
-            DB.query("UPDATE message_count SET count = $count WHERE user_id = $uid AND guild_id = $gid")
-                .bind(("uid", u64::from(user_id)))
-                .bind(("gid", u64::from(guild_id)))
-                .bind(("count", new_count))
-                .await?;
+            DB.query(
+                "UPDATE message_count SET count = $count WHERE user_id = $uid AND guild_id = $gid",
+            )
+            .bind(("uid", u64::from(user_id)))
+            .bind(("gid", u64::from(guild_id)))
+            .bind(("count", new_count))
+            .await?;
             new_count
         }
     } else {
@@ -443,7 +444,9 @@ pub async fn view(
 
         let user_id = ctx.author().id;
         let limits: Vec<GuildMessageLimit> = DB
-            .query("SELECT guild_id, daily_limit, imposed_by FROM message_limit WHERE user_id = $uid")
+            .query(
+                "SELECT guild_id, daily_limit, imposed_by FROM message_limit WHERE user_id = $uid",
+            )
             .bind(("uid", u64::from(user_id)))
             .await?
             .take(0)?;
@@ -583,8 +586,7 @@ async fn handle_guild_buttons_with_timeout(
             };
 
             let mt_date = get_current_mt_date();
-            let current_count =
-                query_user_count(target_user_id, guild_id, &mt_date).await?;
+            let current_count = query_user_count(target_user_id, guild_id, &mt_date).await?;
 
             let is_self = interaction.user.id == target_user_id;
             let (content, components) =
@@ -727,10 +729,7 @@ pub async fn clear(ctx: PoiseContext<'_>) -> Result<()> {
             };
 
             // Parse guild ID from the button custom_id
-            let Some(guild_id_str) = interaction
-                .data
-                .custom_id
-                .strip_prefix("dm_clear_limit_")
+            let Some(guild_id_str) = interaction.data.custom_id.strip_prefix("dm_clear_limit_")
             else {
                 continue;
             };
@@ -876,9 +875,11 @@ fn build_view_response(
         imposed_text
     );
 
-    let mut buttons = vec![CreateButton::new(format!("refresh_limit_{}", target_user_id))
-        .label("Refresh")
-        .style(ButtonStyle::Secondary)];
+    let mut buttons = vec![
+        CreateButton::new(format!("refresh_limit_{}", target_user_id))
+            .label("Refresh")
+            .style(ButtonStyle::Secondary),
+    ];
 
     if limit_record.imposed_by.is_none() && is_self {
         buttons.push(
@@ -892,4 +893,3 @@ fn build_view_response(
 
     (content, components)
 }
-

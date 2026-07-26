@@ -89,7 +89,7 @@ impl Config {
                 .responses
                 .iter()
                 .map(|response| response.name.clone())
-                .zip(unparsed_rulesets.into_iter())
+                .zip(unparsed_rulesets)
                 .map(|a| a.into()),
         )?;
 

@@ -26,10 +26,10 @@ futures = "0.3"
 parking_lot = "0.12"
 serde_json = "1"
 tokio-stream = "0.1"
-raur = "7"
+raur = { version = "7", default-features = false, features = ["rustls-tls", "async"] }
 humantime = "2"
 human-repr = "1.1"
-reqwest = { version = "0.12.12", features = ["json"] }
+reqwest = { version = "0.12.12", default-features = false, features = ["json", "rustls-tls"] }
 surrealdb = { version = "2.6", features = ["kv-rocksdb", "kv-mem"] }
 
 [lints]

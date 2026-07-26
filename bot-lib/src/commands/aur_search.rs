@@ -59,7 +59,7 @@ pub async fn aur_search(
 
         let formatted_info =
             format!("- [{name}]({BASE_AUR_URL}{name}) `{version}` ({votes} votes) \n",);
-        pretty_results = format!("{}{}", pretty_results, &formatted_info);
+        pretty_results = format!("{}{}", pretty_results, formatted_info);
     }
 
     ctx.send(

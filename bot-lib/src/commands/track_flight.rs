@@ -339,7 +339,7 @@ pub async fn track_flight(ctx: PoiseContext<'_>, search: String) -> Result<()> {
             .field("Altitude", altitude.to_string() + "ft", true)
             .field(
                 "Progress",
-                format!("{} {} {}", &dep_code, progress_bar, &arr_code),
+                format!("{} {} {}", dep_code, progress_bar, arr_code),
                 false,
             )
             .timestamp(timestamp)
