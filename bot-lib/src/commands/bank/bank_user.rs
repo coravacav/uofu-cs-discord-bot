@@ -10,7 +10,7 @@ use poise::{
         UserId,
     },
 };
-use rand::Rng;
+use rand::RngExt;
 use std::{
     collections::HashMap,
     sync::LazyLock,

@@ -1,7 +1,7 @@
 use crate::{SayThenDelete, data::PoiseContext};
 use color_eyre::eyre::Result;
 use poise::serenity_prelude::Mentionable;
-use rand::Rng;
+use rand::RngExt;
 
 #[poise::command(slash_command, rename = "coinflip")]
 pub async fn coinflip(ctx: PoiseContext<'_>, optional_explanation: Option<String>) -> Result<()> {

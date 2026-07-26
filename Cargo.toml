@@ -21,7 +21,7 @@ tracing = "0.1"
 bot-lib = { path = 'bot-lib' }
 bot-traits = { path = 'bot-traits' }
 bot-db = { path = 'bot-db' }
-rand = "0.9"
+rand = "0.10"
 serde = { version = "1", default-features = false, features = ["derive", "rc"] }
 itertools = "0.14"
 notify = "8"

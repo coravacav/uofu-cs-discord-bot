@@ -634,7 +634,7 @@ dependencies = [
  "notify",
  "parking_lot 0.12.5",
  "poise",
- "rand 0.9.5",
+ "rand 0.10.2",
  "raur",
  "regex",
  "reqwest 0.12.28",

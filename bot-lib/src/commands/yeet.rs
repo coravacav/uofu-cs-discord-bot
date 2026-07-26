@@ -13,7 +13,7 @@ use poise::serenity_prelude::{
     ChannelId, Context, CreateMessage, EditMessage, GuildId, Mentionable, Message, MessageBuilder,
     MessageId, ReactionType, User, UserId,
 };
-use rand::Rng;
+use rand::RngExt;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::{
     cmp::Reverse,
