@@ -19,7 +19,7 @@ chrono = "0.4"
 chrono-tz = "0.10"
 toml = { default-features = false, version = "0.9", features = ["parse", "serde", "std"] }
 regex = "1"
-nom = "7"
+nom = "8"
 serde = { workspace = true }
 serde_with = { version = "3.7", features = ["chrono"] }
 futures = "0.3"
