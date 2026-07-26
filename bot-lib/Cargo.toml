@@ -17,7 +17,7 @@ notify = { workspace = true }
 rustc-hash = { workspace = true }
 chrono = "0.4"
 chrono-tz = "0.10"
-toml = { default-features = false, version = "0.9", features = ["parse", "serde", "std"] }
+toml = { default-features = false, version = "1.1", features = ["parse", "serde", "std"] }
 regex = "1"
 nom = "8"
 serde = { workspace = true }
@@ -26,10 +26,10 @@ futures = "0.3"
 parking_lot = "0.12"
 serde_json = "1"
 tokio-stream = "0.1"
-raur = { version = "7", default-features = false, features = ["rustls-tls", "async"] }
+raur = { version = "8", default-features = false, features = ["rusttls-ring", "async"] }
 humantime = "2"
 human-repr = "1.1"
-reqwest = { version = "0.12.12", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "rustls-no-provider"] }
 surrealdb = { version = "2.6", default-features = false, features = ["kv-rocksdb", "kv-mem"] }
 
 [lints]
