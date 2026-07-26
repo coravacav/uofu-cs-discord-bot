@@ -4,7 +4,6 @@ members = ["bot", "bot-db", "bot-lib", "bot-traits"]
 
 [profile.release]
 debug = 0
-incremental = true
 
 [workspace.dependencies]
 tokio = { version = "1", default-features = false, features = [
