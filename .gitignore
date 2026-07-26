@@ -37,6 +37,7 @@ kingfisher.db
 db/
 
 all_backups/
+/backups/
 
 debug.json
 
