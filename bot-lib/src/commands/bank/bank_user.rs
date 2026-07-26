@@ -1,6 +1,5 @@
 use super::build_history_message;
-use crate::{SayThenDelete, data::PoiseContext};
-use bot_db::bank::BankDb;
+use crate::{SayThenDelete, data::PoiseContext, economy::Bank};
 use color_eyre::eyre::Result;
 use parking_lot::Mutex;
 use poise::{
@@ -28,11 +27,9 @@ pub async fn bank(_ctx: PoiseContext<'_>) -> Result<()> {
 /// What's my balance?
 #[poise::command(slash_command, ephemeral = true)]
 pub async fn balance(ctx: PoiseContext<'_>) -> Result<()> {
-    let bank = BankDb::new(&ctx.data().db)?;
-
     ctx.say_then_delete(format!(
         "Your balance is {}",
-        bank.get(ctx.author().id)?.balance
+        Bank::get(ctx.author().id).await?.balance
     ))
     .await?;
 
@@ -61,7 +58,6 @@ pub fn get_user_bonus(user_id: UserId) -> i64 {
 /// Get some income (5 coins, once per minute, bonus if you repeat without gambling)
 #[poise::command(slash_command, ephemeral = true)]
 pub async fn income(ctx: PoiseContext<'_>) -> Result<()> {
-    let bank = BankDb::new(&ctx.data().db)?;
     let user_id = ctx.author().id;
 
     let old_time = INSTANT_BY_USER_ID.lock().insert(user_id, Instant::now());
@@ -76,7 +72,7 @@ pub async fn income(ctx: PoiseContext<'_>) -> Result<()> {
 
     let bonus_amount = get_user_bonus(user_id);
 
-    bank.change(user_id, 5 + bonus_amount, String::from("Income"))?;
+    Bank::change(user_id, 5 + bonus_amount, String::from("Income")).await?;
 
     ctx.say_then_delete(format!(
         "Paycheck deposited{}! Your new balance is {}",
@@ -85,7 +81,7 @@ pub async fn income(ctx: PoiseContext<'_>) -> Result<()> {
         } else {
             String::new()
         },
-        bank.get(user_id)?.balance
+        Bank::get(user_id).await?.balance
     ))
     .await?;
 
@@ -99,7 +95,6 @@ pub async fn gamble(
     #[description = "Amount to gamble"] amount: i64,
     #[description = "Odds of success, between 0 and 1"] odds_of_success: f64,
 ) -> Result<()> {
-    let bank = BankDb::new(&ctx.data().db)?;
     let user_id = ctx.author().id;
 
     reset_user_bonus(user_id);
@@ -116,7 +111,7 @@ pub async fn gamble(
         return Ok(());
     }
 
-    let balance = bank.get(user_id)?.balance;
+    let balance = Bank::get(user_id).await?.balance;
     if balance < amount {
         ctx.say_then_delete(format!("You don't have enough money! You have ${balance}"))
             .await?;
@@ -128,17 +123,12 @@ pub async fn gamble(
 
     let change = if success { winnings } else { -amount };
 
-    let Some(account) = bank.change(
+    let account = Bank::change(
         user_id,
         change,
         format!("Gamble for {amount} at odds {odds_of_success}"),
-    )?
-    else {
-        tracing::error!("How did we get no account back?");
-        ctx.say_then_delete("Something went wrong, contact Stefan")
-            .await?;
-        return Ok(());
-    };
+    )
+    .await?;
 
     ctx.say_then_delete(format!(
         "You {}! Your new balance is {}",
@@ -153,16 +143,15 @@ pub async fn gamble(
 /// Inspect your own history
 #[poise::command(slash_command, ephemeral = true)]
 pub async fn history(ctx: PoiseContext<'_>) -> Result<()> {
-    let bank = BankDb::new(&ctx.data().db)?;
     let author = ctx.author().id;
 
-    let Some(history) = bank.get_history(author)? else {
+    let Some(history) = Bank::get_history(author).await? else {
         ctx.say_then_delete("No history found for that user")
             .await?;
         return Ok(());
     };
 
-    ctx.say_then_delete(build_history_message(history, author))
+    ctx.say_then_delete(build_history_message(history.into_iter(), author))
         .await?;
 
     Ok(())

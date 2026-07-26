@@ -7,6 +7,10 @@ open that storage format directly. The bot therefore defaults to the separate
 Perform this migration with the bot stopped. Keep the original directory until
 the new version has been deployed and verified.
 
+The bot also has a legacy sled database at `kingfisher.db` containing bank
+accounts and yeet leaderboard scores. The application no longer links sled or
+bincode; the format reader is isolated in `tools/export-legacy-db`.
+
 ## Prerequisites
 
 - SurrealDB 2.6.5 CLI/server, named `surreal-v2` below
@@ -16,13 +20,23 @@ the new version has been deployed and verified.
 ## Export
 
 1. Stop the bot and confirm no process has `db/kingfisher` open.
-2. Create a timestamped backup outside `db/`:
+2. Confirm no process has `kingfisher.db` open, then export its economy data:
+
+   ```sh
+   cargo run --manifest-path tools/export-legacy-db/Cargo.toml -- \
+     kingfisher.db > backups/legacy-economy.surql
+   ```
+
+   The exporter intentionally fails while the old bot has the database locked.
+   It only reads the database and writes SurrealQL to standard output.
+
+3. Create a timestamped backup outside `db/`:
 
    ```sh
    cp -a db/kingfisher backups/surreal-v2-before-v3
    ```
 
-3. Start SurrealDB 2.6.5 against the backup, not the original directory:
+4. Start SurrealDB 2.6.5 against the backup, not the original directory:
 
    ```sh
    surreal-v2 start \
@@ -32,7 +46,7 @@ the new version has been deployed and verified.
      rocksdb:backups/surreal-v2-before-v3
    ```
 
-4. In another terminal, use the SurrealDB 3 CLI's compatibility exporter:
+5. In another terminal, use the SurrealDB 3 CLI's compatibility exporter:
 
    ```sh
    surreal-v3 v2 export \
@@ -45,7 +59,7 @@ the new version has been deployed and verified.
      backups/kingfisher-v3.surql
    ```
 
-5. Stop the temporary SurrealDB 2 server.
+6. Stop the temporary SurrealDB 2 server.
 
 ## Import
 
@@ -71,10 +85,26 @@ the new version has been deployed and verified.
      backups/kingfisher-v3.surql
    ```
 
-3. Compare table counts and representative records between the v2 backup and
-   the v3 database. At minimum, verify `starboard`, `starboarded`,
-   `starboard_recent_message`, `message_limit`, and `message_count`.
-4. Stop the temporary SurrealDB 3 server before starting the embedded bot.
+3. Import the legacy economy export:
+
+   ```sh
+   surreal-v3 import \
+     --endpoint http://127.0.0.1:8000 \
+     --user root \
+     --pass change-this-migration-password \
+     --namespace main \
+     --database main \
+     backups/legacy-economy.surql
+   ```
+
+   The economy export uses `UPSERT ... CONTENT`, so importing the same complete
+   export again is idempotent.
+
+4. Compare table counts and representative records between the old databases
+   and the v3 database. At minimum, verify `starboard`, `starboarded`,
+   `starboard_recent_message`, `message_limit`, `message_count`,
+   `bank_account`, and `yeet_score`.
+5. Stop the temporary SurrealDB 3 server before starting the embedded bot.
 
 ## Deploy and rollback
 

@@ -122,3 +122,15 @@ DEFINE FIELD OVERWRITE user_id ON message_count TYPE number;
 DEFINE FIELD OVERWRITE guild_id ON message_count TYPE number;
 DEFINE FIELD OVERWRITE count ON message_count TYPE int DEFAULT 0 ASSERT $value >= 0;
 DEFINE FIELD OVERWRITE reset_date ON message_count TYPE string;
+
+-- Economy data, formerly stored in the local sled database.
+DEFINE TABLE OVERWRITE bank_account SCHEMAFULL;
+
+DEFINE FIELD OVERWRITE balance ON bank_account TYPE int DEFAULT 0;
+DEFINE FIELD OVERWRITE changes ON bank_account TYPE array<object> DEFAULT [];
+DEFINE FIELD OVERWRITE changes.*.amount ON bank_account TYPE int;
+DEFINE FIELD OVERWRITE changes.*.reason ON bank_account TYPE string;
+
+DEFINE TABLE OVERWRITE yeet_score SCHEMAFULL;
+
+DEFINE FIELD OVERWRITE count ON yeet_score TYPE int DEFAULT 0 ASSERT $value >= 0;

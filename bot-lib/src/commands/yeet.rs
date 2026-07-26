@@ -1,9 +1,5 @@
-use crate::{
-    MentionableExt, TimeoutExt,
-    data::{PoiseContext, State},
-    utils::GetRelativeTimestamp,
-};
-use bot_db::yeet::YeetLeaderboard;
+use crate::economy::YeetLeaderboard;
+use crate::{MentionableExt, TimeoutExt, data::PoiseContext, utils::GetRelativeTimestamp};
 use bot_traits::ForwardRefToTracing;
 use chrono::{DateTime, Utc};
 use color_eyre::eyre::{OptionExt, Result, bail};
@@ -16,7 +12,6 @@ use poise::serenity_prelude::{
 use rand::RngExt;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::{
-    cmp::Reverse,
     num::Saturating,
     sync::{Arc, LazyLock},
     time::{Duration, Instant},
@@ -389,7 +384,7 @@ fn should_yeet_someone(message: &Message) -> Option<(Arc<YeetContext>, bool, boo
 }
 
 // Handle a reaction
-pub async fn handle_yeeting(ctx: &Context, data: State, message: &Message) -> Result<()> {
+pub async fn handle_yeeting(ctx: &Context, message: &Message) -> Result<()> {
     let Some((yeet_context, did_yay, did_nay)) = should_yeet_someone(message) else {
         return Ok(());
     };
@@ -499,7 +494,7 @@ pub async fn handle_yeeting(ctx: &Context, data: State, message: &Message) -> Re
         }
     };
 
-    save_to_yeet_leaderboard(data, targets).trace_err_ok();
+    save_to_yeet_leaderboard(targets).await.trace_err_ok();
 
     for &target in targets {
         let shooters = shooters.clone();
@@ -534,9 +529,9 @@ pub async fn handle_yeeting(ctx: &Context, data: State, message: &Message) -> Re
     Ok(())
 }
 
-fn save_to_yeet_leaderboard(data: State, targets: &[UserId]) -> Result<()> {
+async fn save_to_yeet_leaderboard(targets: &[UserId]) -> Result<()> {
     for &target in targets {
-        YeetLeaderboard::connect(&data.db)?.increment(target)?;
+        YeetLeaderboard::increment(target).await?;
     }
 
     Ok(())
@@ -547,12 +542,7 @@ fn save_to_yeet_leaderboard(data: State, targets: &[UserId]) -> Result<()> {
 pub async fn yeet_leaderboard(ctx: PoiseContext<'_>) -> Result<()> {
     let mut message_text = String::from("### Yeet leaderboard:\n");
 
-    let yeet_leaderboard = YeetLeaderboard::connect(&ctx.data().db)?;
-
-    for (user_id, count) in yeet_leaderboard
-        .iter()
-        .sorted_by_key(|(_, count)| Reverse(*count))
-    {
+    for (user_id, count) in YeetLeaderboard::rankings().await? {
         message_text.push_str(&format!("{}: {}\t", user_id.mention(), count));
     }
 

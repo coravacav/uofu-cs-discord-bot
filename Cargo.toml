@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
-members = ["bot", "bot-db", "bot-lib", "bot-traits"]
+members = ["bot", "bot-lib", "bot-traits"]
+exclude = ["tools/export-legacy-db"]
 
 [profile.release]
 debug = 0
@@ -20,7 +21,6 @@ poise = "0.6.2"
 tracing = "0.1"
 bot-lib = { path = 'bot-lib' }
 bot-traits = { path = 'bot-traits' }
-bot-db = { path = 'bot-db' }
 rand = "0.10"
 serde = { version = "1", default-features = false, features = ["derive", "rc"] }
 itertools = "0.14"

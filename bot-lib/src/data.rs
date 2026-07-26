@@ -1,5 +1,4 @@
 use crate::config::Config;
-use bot_db::KingFisherDb;
 use color_eyre::eyre::{Error, Result};
 use std::sync::LazyLock;
 use std::{
@@ -8,9 +7,10 @@ use std::{
 };
 use surrealdb::Surreal;
 use surrealdb::engine::local::Db;
-use tokio::sync::RwLock;
+use tokio::sync::{OnceCell, RwLock};
 
 pub(crate) static DB: LazyLock<Surreal<Db>> = LazyLock::new(Surreal::init);
+static DB_SETUP: OnceCell<()> = OnceCell::const_new();
 
 #[cfg(not(test))]
 const LEGACY_SURREALDB_PATH: &str = "db/kingfisher";
@@ -18,37 +18,41 @@ const LEGACY_SURREALDB_PATH: &str = "db/kingfisher";
 const DEFAULT_SURREALDB_PATH: &str = "db/kingfisher-v3";
 
 pub async fn setup_db() {
-    #[cfg(not(test))]
-    {
-        let path = std::env::var_os("KINGFISHER_SURREALDB_PATH")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| PathBuf::from(DEFAULT_SURREALDB_PATH));
+    DB_SETUP
+        .get_or_init(|| async {
+            #[cfg(not(test))]
+            {
+                let path = std::env::var_os("KINGFISHER_SURREALDB_PATH")
+                    .map(PathBuf::from)
+                    .unwrap_or_else(|| PathBuf::from(DEFAULT_SURREALDB_PATH));
 
-        assert_ne!(
-            path,
-            Path::new(LEGACY_SURREALDB_PATH),
-            "refusing to open the legacy SurrealDB 2 directory with SurrealDB 3; migrate it to a new directory first"
-        );
+                assert_ne!(
+                    path,
+                    Path::new(LEGACY_SURREALDB_PATH),
+                    "refusing to open the legacy SurrealDB 2 directory with SurrealDB 3; migrate it to a new directory first"
+                );
 
-        tracing::info!(path = %path.display(), "connecting to SurrealDB");
-        DB.connect::<surrealdb::engine::local::RocksDb>(path)
-            .await
-            .expect("Failed to create SurrealDB instance");
-    }
+                tracing::info!(path = %path.display(), "connecting to SurrealDB");
+                DB.connect::<surrealdb::engine::local::RocksDb>(path)
+                    .await
+                    .expect("Failed to create SurrealDB instance");
+            }
 
-    #[cfg(test)]
-    DB.connect::<surrealdb::engine::local::Mem>(())
-        .await
-        .expect("Failed to create SurrealDB instance");
+            #[cfg(test)]
+            DB.connect::<surrealdb::engine::local::Mem>(())
+                .await
+                .expect("Failed to create SurrealDB instance");
 
-    DB.use_ns("main")
-        .use_db("main")
-        .await
-        .expect("Failed to select namespace and database");
+            DB.use_ns("main")
+                .use_db("main")
+                .await
+                .expect("Failed to select namespace and database");
 
-    DB.query(include_str!("../../schema.surrealql"))
-        .await
-        .expect("Failed to execute schema query");
+            DB.query(include_str!("../../schema.surrealql"))
+                .await
+                .expect("Failed to execute schema query");
+        })
+        .await;
 }
 
 /// The global state of the bot
@@ -64,14 +68,11 @@ pub struct RawAppState {
     /// The path to the config file.
     /// This is to allow for saving / reloading the config.
     pub config_path: Box<Path>,
-    pub db: KingFisherDb,
 }
 
 impl RawAppState {
     pub fn new(config: Config, config_path: PathBuf) -> Result<RawAppState> {
         let config = Arc::new(RwLock::new(config));
-
-        let db = KingFisherDb::new()?;
 
         use notify::{
             Event, EventKind, RecursiveMode, Watcher,
@@ -104,7 +105,6 @@ impl RawAppState {
             config,
             _watcher: watcher,
             config_path,
-            db,
         })
     }
 }

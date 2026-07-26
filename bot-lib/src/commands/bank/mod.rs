@@ -1,9 +1,9 @@
 mod bank_admin;
 mod bank_user;
 
+use crate::economy::Change;
 pub use bank_admin::*;
 pub use bank_user::*;
-use bot_db::bank::Change;
 use poise::serenity_prelude::{Mentionable, UserId};
 
 fn build_history_message(history: impl DoubleEndedIterator<Item = Change>, user: UserId) -> String {

@@ -15,6 +15,7 @@ pub mod commands;
 pub mod config;
 pub(crate) mod courses;
 pub mod data;
+pub(crate) mod economy;
 pub mod event_handler;
 mod handle_starboards;
 mod lang;

@@ -1,7 +1,6 @@
 use super::build_history_message;
 use crate::data::PoiseContext;
-use crate::{SayThenDelete, commands::is_stefan};
-use bot_db::bank::BankDb;
+use crate::{SayThenDelete, commands::is_stefan, economy::Bank};
 use color_eyre::eyre::Result;
 use poise::serenity_prelude::{Mentionable, User};
 
@@ -29,18 +28,17 @@ pub async fn give_charity(
     charity_recipient: User,
     amount: i64,
 ) -> Result<()> {
-    let bank = BankDb::new(&ctx.data().db)?;
-
-    bank.change(
+    Bank::change(
         charity_recipient.id,
         amount,
         String::from("Stefan is very generous"),
-    )?;
+    )
+    .await?;
 
     ctx.say(format!(
         "{} has their balance updated to {}",
         charity_recipient.mention(),
-        bank.get(charity_recipient.id)?.balance
+        Bank::get(charity_recipient.id).await?.balance
     ))
     .await?;
 
@@ -50,15 +48,14 @@ pub async fn give_charity(
 /// See the last 20 transactions for a user
 #[poise::command(slash_command, ephemeral = true)]
 pub async fn inspect_history(ctx: PoiseContext<'_>, user: User) -> Result<()> {
-    let bank = BankDb::new(&ctx.data().db)?;
     let user_id = user.id;
 
-    let Some(history) = bank.get_history(user_id)? else {
+    let Some(history) = Bank::get_history(user_id).await? else {
         ctx.say("No history found for that user").await?;
         return Ok(());
     };
 
-    ctx.say_then_delete(build_history_message(history, user_id))
+    ctx.say_then_delete(build_history_message(history.into_iter(), user_id))
         .await?;
 
     Ok(())
@@ -67,9 +64,8 @@ pub async fn inspect_history(ctx: PoiseContext<'_>, user: User) -> Result<()> {
 /// See a user's balance
 #[poise::command(slash_command, ephemeral = true)]
 pub async fn inspect_balance(ctx: PoiseContext<'_>, user: User) -> Result<()> {
-    let bank = BankDb::new(&ctx.data().db)?;
     let user_id = user.id;
-    let account = bank.get(user_id)?;
+    let account = Bank::get(user_id).await?;
 
     ctx.say_then_delete(format!(
         "{}'s balance is {}",
@@ -84,9 +80,7 @@ pub async fn inspect_balance(ctx: PoiseContext<'_>, user: User) -> Result<()> {
 /// For stefan only, see the global rankings
 #[poise::command(slash_command, ephemeral = true, check = is_stefan)]
 pub async fn global_rankings(ctx: PoiseContext<'_>) -> Result<()> {
-    let bank = BankDb::new(&ctx.data().db)?;
-
-    let rankings = bank.get_global_rankings()?;
+    let rankings = Bank::global_rankings().await?;
     let mut message_text = String::from("### Global Rankings:\n");
 
     for (user_id, account) in rankings {

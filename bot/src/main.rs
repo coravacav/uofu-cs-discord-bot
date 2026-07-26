@@ -79,7 +79,6 @@ async fn main() -> Result<()> {
                 coinflip(),
                 course_request(),
                 create_class_category(),
-                db_admin(),
                 debug_force_starboard(),
                 debug_surrealdb(),
                 debug_print_channel_names(),

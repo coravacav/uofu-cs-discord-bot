@@ -80,11 +80,8 @@ pub async fn event_handler(
 
             {
                 let ctx = ctx.clone();
-                let data = data.clone();
                 let message = message.clone();
-                tokio::spawn(
-                    async move { handle_yeeting(&ctx, data, &message).await.trace_err_ok() },
-                );
+                tokio::spawn(async move { handle_yeeting(&ctx, &message).await.trace_err_ok() });
             }
 
             {
