@@ -13,15 +13,15 @@ use tokio::sync::RwLock;
 pub(crate) static DB: LazyLock<Surreal<Db>> = LazyLock::new(Surreal::init);
 
 pub async fn setup_db() {
-    // #[cfg(not(test))]
+    #[cfg(not(test))]
     DB.connect::<surrealdb::engine::local::RocksDb>("db/kingfisher")
         .await
         .expect("Failed to create SurrealDB instance");
 
-    // #[cfg(test)]
-    // DB.connect::<Mem>(())
-    //     .await
-    //     .expect("Failed to create SurrealDB instance");
+    #[cfg(test)]
+    DB.connect::<surrealdb::engine::local::Mem>(())
+        .await
+        .expect("Failed to create SurrealDB instance");
 
     DB.use_ns("main")
         .use_db("main")

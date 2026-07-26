@@ -1,6 +1,7 @@
 default_text_detect_cooldown = 45
 bot_react_role_id = 1173465249823850496
 dog_react_role_id = 1271311987057623122
+error_notification_user_id = 216767618923757568
 default_hit_rate = 0.21
 skip_hit_rate_text = "KINGFISHER PLEASE"
 skip_duration_text = "HIT ME BABY ONE MORE TIME"

@@ -13,6 +13,8 @@ use dotenvy::dotenv;
 use poise::serenity_prelude as serenity;
 use tracing_subscriber::prelude::*;
 
+mod error_notifications;
+
 /// The CLI arguments for the bot
 ///
 /// In general, not used very often, but, can be nice for testing.
@@ -38,6 +40,7 @@ async fn main() -> Result<()> {
     #[cfg(not(debug_assertions))]
     bot_lib::update_course_list();
 
+    let (error_notification_layer, error_notification_worker) = error_notifications::new();
     tracing_subscriber::registry()
         // .with(console_subscriber::spawn())
         .with(tracing_subscriber::fmt::layer().compact().with_filter(
@@ -47,6 +50,7 @@ async fn main() -> Result<()> {
                 )
             }),
         ))
+        .with(error_notification_layer)
         .init();
 
     let Args { dry_run, config } = Args::parse();
@@ -134,15 +138,19 @@ async fn main() -> Result<()> {
             },
             ..Default::default()
         })
-        .setup(|ctx, _ready, framework| {
+        .setup(move |ctx, _ready, framework| {
             tokio::spawn(async { update_interval().await });
+            let http = Arc::clone(&ctx.http);
 
             Box::pin(async move {
                 // Register in guild is faster - but, makes testing and other things harder.
                 // Restarting discord for new commands is plenty fine (or just waiting for the cache bust).
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
 
-                Ok(Arc::new(RawAppState::new(config, config_path).unwrap()))
+                let state = Arc::new(RawAppState::new(config, config_path).unwrap());
+                tokio::spawn(error_notification_worker.run(http, Arc::clone(&state.config)));
+
+                Ok(state)
             })
         });
 

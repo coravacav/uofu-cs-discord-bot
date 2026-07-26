@@ -15,22 +15,40 @@ pub async fn handle_starboards(
     let config = data.config.read().await;
 
     let futures = config.starboards.iter().map(|starboard| async {
-        if Starboard::has_recent_message(message.id)
-            .await
-            .unwrap_or(false)
-        {
-            return;
+        match Starboard::has_recent_message(message.id).await {
+            Ok(true) => return,
+            Ok(false) => {}
+            Err(error) => {
+                tracing::error!(
+                    ?error,
+                    message_link = %message.link(),
+                    "Failed to check whether a message was already starboarded"
+                );
+                return;
+            }
         }
 
         if !starboard.does_starboard_apply(message, reaction) {
             return;
         }
 
-        Starboard::insert_recent_message(message.id)
-            .await
-            .unwrap_or_else(|_| tracing::error!("Failed to insert recent message {}", message.id));
+        if let Err(error) = Starboard::insert_recent_message(message.id).await {
+            tracing::error!(
+                ?error,
+                message_link = %message.link(),
+                "Failed to claim a message for the starboard"
+            );
+            return;
+        }
 
-        starboard.reply(ctx, message, &reaction.emoji).await.ok();
+        if let Err(error) = starboard.reply(ctx, message, &reaction.emoji).await {
+            tracing::error!(
+                ?error,
+                message_link = %message.link(),
+                starboard_channel_id = starboard.channel_id,
+                "Failed to send a claimed message to the starboard"
+            );
+        }
     });
 
     futures::future::join_all(futures).await;

@@ -25,10 +25,10 @@ pub struct Starboard {
 
 impl Starboard {
     #[tracing::instrument(level = "trace", skip(self, message), fields(message_link = %message.link()))]
-    /// `recent_messages` is used to prevent all starboarding when a single banned reaction is used
+    /// Checks the reaction threshold and configured channel/reaction exclusions.
     pub fn does_starboard_apply(&self, message: &Message, reaction: &Reaction) -> bool {
         self.enough_reactions(message, reaction)
-            && self.is_allowed_reaction(reaction, message)
+            && self.is_allowed_reaction(reaction)
             && self.is_channel_allowed(message.channel_id.into())
     }
 
@@ -43,40 +43,30 @@ impl Starboard {
         reaction_count >= self.reaction_count
     }
 
-    fn is_allowed_reaction(&self, reaction: &Reaction, message: &Message) -> bool {
+    fn is_allowed_reaction(&self, reaction: &Reaction) -> bool {
         if !matches!(reaction.emoji, ReactionType::Unicode(_)) {
             return true;
         }
 
-        let banned = !self
+        !self
             .banned_reactions
             .as_ref()
             .is_some_and(|banned_reactions| {
                 banned_reactions
                     .iter()
                     .any(|banned_reaction| reaction.emoji.unicode_eq(banned_reaction))
-            });
-
-        // Prevent future reactions from starboarding.
-        if banned {
-            tokio::spawn({
-                let message_id = message.id;
-                async move { Self::insert_recent_message(message_id).await }
-            });
-        }
-
-        banned
+            })
     }
 
     pub async fn insert_recent_message(message_id: MessageId) -> Result<()> {
         let message_id = i64::from(message_id);
-        let _ = DB
-            .query("create $message")
+        DB.query("create $message")
             .bind((
                 "message",
                 RecordId::from(("starboard_recent_message", message_id)),
             ))
-            .await?;
+            .await?
+            .check()?;
         Ok(())
     }
 
@@ -89,19 +79,20 @@ impl Starboard {
                 RecordId::from(("starboard_recent_message", message_id)),
             ))
             .await?
+            .check()?
             .take::<Option<bool>>(0)?
             .unwrap_or(false))
     }
 
     pub async fn ignore_message_permanently(message_id: MessageId) -> Result<()> {
         let message_id = i64::from(message_id);
-        let _ = DB
-            .query("create $message")
+        DB.query("create $message")
             .bind((
                 "message",
                 RecordId::from(("starboard_recent_message", message_id)),
             ))
-            .await?;
+            .await?
+            .check()?;
         Ok(())
     }
 
@@ -221,6 +212,13 @@ async fn test_db_setup() {
     Starboard::insert_recent_message(MessageId::from(1))
         .await
         .unwrap();
+
+    assert!(
+        Starboard::insert_recent_message(MessageId::from(1))
+            .await
+            .is_err(),
+        "a duplicate marker must surface its statement error"
+    );
 
     assert!(
         Starboard::has_recent_message(MessageId::from(1))

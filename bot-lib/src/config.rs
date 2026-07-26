@@ -4,7 +4,7 @@ use chrono::Duration;
 use chrono::{DateTime, TimeDelta, Utc};
 use color_eyre::eyre::{Result, WrapErr};
 use parking_lot::Mutex;
-use poise::serenity_prelude::ChannelId;
+use poise::serenity_prelude::{ChannelId, UserId};
 use rand::prelude::*;
 use rustc_hash::FxHashMap;
 use serde::Deserialize;
@@ -18,6 +18,11 @@ pub struct Ids {
     pub bot_react_role_id: u64,
     /// The role id of the woof react role.
     pub dog_react_role_id: u64,
+    /// The user that receives application error notifications over Discord DMs.
+    ///
+    /// Error notifications are disabled when this is not configured.
+    #[serde(default)]
+    pub error_notification_user_id: Option<UserId>,
 }
 
 /// This is the raw config file that's read from the config file (config.toml)
@@ -237,5 +242,32 @@ impl AutomatedKingfisherReplyConfig {
         *last_triggered = Utc::now();
 
         Some(Arc::clone(&self.message_response))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Ids;
+    use poise::serenity_prelude::UserId;
+
+    #[test]
+    fn error_notification_recipient_is_optional() {
+        let ids: Ids = toml::from_str(
+            "bot_react_role_id = 1\n\
+             dog_react_role_id = 2\n",
+        )
+        .unwrap();
+        assert_eq!(ids.error_notification_user_id, None);
+
+        let ids: Ids = toml::from_str(
+            "bot_react_role_id = 1\n\
+             dog_react_role_id = 2\n\
+             error_notification_user_id = 216767618923757568\n",
+        )
+        .unwrap();
+        assert_eq!(
+            ids.error_notification_user_id,
+            Some(UserId::new(216767618923757568))
+        );
     }
 }
