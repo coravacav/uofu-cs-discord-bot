@@ -30,7 +30,7 @@ raur = { version = "8", default-features = false, features = ["rusttls-ring", "a
 humantime = "2"
 human-repr = "1.1"
 reqwest = { version = "0.13", default-features = false, features = ["json", "rustls-no-provider"] }
-surrealdb = { version = "2.6", default-features = false, features = ["kv-rocksdb", "kv-mem"] }
+surrealdb = { version = "3.2", default-features = false, features = ["kv-rocksdb", "kv-mem"] }
 
 [lints]
 workspace = true

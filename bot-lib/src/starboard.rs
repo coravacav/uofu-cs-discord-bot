@@ -9,7 +9,7 @@ use poise::serenity_prelude::{
     Message, MessageId, MessageReference, MessageReferenceKind, Reaction, ReactionType,
 };
 use serde::Deserialize;
-use surrealdb::RecordId;
+use surrealdb::types::RecordId;
 use tokio::sync::Mutex;
 
 #[derive(Deserialize)]
@@ -63,7 +63,7 @@ impl Starboard {
         DB.query("create $message")
             .bind((
                 "message",
-                RecordId::from(("starboard_recent_message", message_id)),
+                RecordId::new("starboard_recent_message", message_id),
             ))
             .await?
             .check()?;
@@ -76,7 +76,7 @@ impl Starboard {
             .query("$message.exists();")
             .bind((
                 "message",
-                RecordId::from(("starboard_recent_message", message_id)),
+                RecordId::new("starboard_recent_message", message_id),
             ))
             .await?
             .check()?
@@ -89,7 +89,7 @@ impl Starboard {
         DB.query("create $message")
             .bind((
                 "message",
-                RecordId::from(("starboard_recent_message", message_id)),
+                RecordId::new("starboard_recent_message", message_id),
             ))
             .await?
             .check()?;

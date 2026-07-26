@@ -12,11 +12,29 @@ use tokio::sync::RwLock;
 
 pub(crate) static DB: LazyLock<Surreal<Db>> = LazyLock::new(Surreal::init);
 
+#[cfg(not(test))]
+const LEGACY_SURREALDB_PATH: &str = "db/kingfisher";
+#[cfg(not(test))]
+const DEFAULT_SURREALDB_PATH: &str = "db/kingfisher-v3";
+
 pub async fn setup_db() {
     #[cfg(not(test))]
-    DB.connect::<surrealdb::engine::local::RocksDb>("db/kingfisher")
-        .await
-        .expect("Failed to create SurrealDB instance");
+    {
+        let path = std::env::var_os("KINGFISHER_SURREALDB_PATH")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from(DEFAULT_SURREALDB_PATH));
+
+        assert_ne!(
+            path,
+            Path::new(LEGACY_SURREALDB_PATH),
+            "refusing to open the legacy SurrealDB 2 directory with SurrealDB 3; migrate it to a new directory first"
+        );
+
+        tracing::info!(path = %path.display(), "connecting to SurrealDB");
+        DB.connect::<surrealdb::engine::local::RocksDb>(path)
+            .await
+            .expect("Failed to create SurrealDB instance");
+    }
 
     #[cfg(test)]
     DB.connect::<surrealdb::engine::local::Mem>(())

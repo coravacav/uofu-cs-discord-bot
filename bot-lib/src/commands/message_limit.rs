@@ -7,29 +7,30 @@ use poise::serenity_prelude::{
     CreateInteractionResponseMessage, CreateMessage, EditMember, GuildId, User, UserId,
 };
 use std::time::Duration;
+use surrealdb::types::SurrealValue;
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, SurrealValue)]
 struct MessageLimit {
     daily_limit: u64,
-    imposed_by: Option<UserId>,
+    imposed_by: Option<u64>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, SurrealValue)]
 struct MessageCount {
     count: u64,
     reset_date: String,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, SurrealValue)]
 struct GuildLimitEntry {
     guild_id: u64,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, SurrealValue)]
 struct GuildMessageLimit {
     guild_id: u64,
     daily_limit: u64,
-    imposed_by: Option<UserId>,
+    imposed_by: Option<u64>,
 }
 
 /// Returns the current date in Mountain Time as "YYYY-MM-DD"
@@ -227,7 +228,7 @@ pub async fn track_message_for_limit(
             ctx,
             message,
             user_id,
-            limit_record.imposed_by,
+            limit_record.imposed_by.map(UserId::new),
             limit_record.daily_limit,
         )
         .await?;
