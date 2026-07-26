@@ -16,7 +16,7 @@ tracing-subscriber = { version = "0.3", features = [
     "parking_lot",
 ] }
 color-eyre = "0.6"
-poise = { git = "https://github.com/serenity-rs/poise/", rev = "db10b12" }
+poise = "0.6.2"
 tracing = "0.1"
 bot-lib = { path = 'bot-lib' }
 bot-traits = { path = 'bot-traits' }
@@ -26,9 +26,6 @@ serde = { version = "1", default-features = false, features = ["derive", "rc"] }
 itertools = "0.14"
 notify = "8"
 rustc-hash = "2"
-
-[patch.crates-io]
-serenity = { git = "https://github.com/serenity-rs/serenity.git" }
 
 [workspace.lints.rust]
 async_fn_in_trait = "allow"
