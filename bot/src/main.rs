@@ -42,7 +42,6 @@ async fn main() -> Result<()> {
 
     let (error_notification_layer, error_notification_worker) = error_notifications::new();
     tracing_subscriber::registry()
-        // .with(console_subscriber::spawn())
         .with(tracing_subscriber::fmt::layer().compact().with_filter(
             tracing_subscriber::filter::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
                 tracing_subscriber::filter::EnvFilter::new(
