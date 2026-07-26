@@ -231,4 +231,6 @@ async fn test_db_setup() {
             .await
             .unwrap()
     );
+
+    crate::economy::tests::assert_economy_is_persisted_and_ranked().await;
 }

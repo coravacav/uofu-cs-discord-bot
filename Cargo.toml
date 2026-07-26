@@ -17,7 +17,14 @@ tracing-subscriber = { version = "0.3", features = [
     "parking_lot",
 ] }
 color-eyre = "0.6"
-poise = "0.6.2"
+poise = { version = "0.6.2", default-features = false, features = [
+    "cache",
+    "chrono",
+    "handle_panics",
+] }
+serenity = { version = "0.12.5", default-features = false, features = [
+    "native_tls_backend",
+] }
 tracing = "0.1"
 bot-lib = { path = 'bot-lib' }
 bot-traits = { path = 'bot-traits' }

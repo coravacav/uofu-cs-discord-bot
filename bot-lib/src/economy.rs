@@ -143,15 +143,11 @@ struct YeetScoreRecord {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::{Bank, YeetLeaderboard};
-    use crate::data::setup_db;
     use poise::serenity_prelude::UserId;
 
-    #[tokio::test]
-    async fn economy_is_persisted_and_ranked() {
-        setup_db().await;
-
+    pub(crate) async fn assert_economy_is_persisted_and_ranked() {
         let first = UserId::new(91_001);
         let second = UserId::new(91_002);
 

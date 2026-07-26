@@ -8,6 +8,7 @@ publish = false
 tokio = { workspace = true }
 color-eyre = { workspace = true }
 poise = { workspace = true }
+serenity = { workspace = true }
 tracing = { workspace = true }
 bot-traits = { workspace = true }
 rand = { workspace = true }
