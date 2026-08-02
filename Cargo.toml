@@ -30,7 +30,7 @@ bot-lib = { path = 'bot-lib' }
 bot-traits = { path = 'bot-traits' }
 rand = "0.10"
 serde = { version = "1", default-features = false, features = ["derive", "rc"] }
-itertools = "0.14"
+itertools = "0.15"
 notify = "8"
 rustc-hash = "2"
 
