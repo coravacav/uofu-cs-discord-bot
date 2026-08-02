@@ -34,6 +34,10 @@ const DEFAULT_CONFIG_FILENAME: &str = "config.toml";
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .map_err(|_| eyre!("A rustls crypto provider was already installed"))?;
+
     let _ = dotenv();
     color_eyre::install()?;
 

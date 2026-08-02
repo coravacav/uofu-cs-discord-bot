@@ -540,6 +540,7 @@ dependencies = [
  "dotenvy",
  "notify",
  "poise",
+ "rustls",
  "tokio",
  "tracing",
  "tracing-subscriber",
