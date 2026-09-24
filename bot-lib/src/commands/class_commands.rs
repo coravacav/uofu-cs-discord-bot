@@ -15,6 +15,22 @@ use rustc_hash::FxHashSet;
 use std::{collections::HashMap, fmt::Write, sync::LazyLock, time::Duration};
 
 static CLASS_ROLE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\w+ \d+$").unwrap());
+static CLASS_IDENTIFIER_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^([A-Za-z]+)?\s*(\d+)$").unwrap());
+
+fn class_role_name(identifier: &str) -> Option<String> {
+    let identifier = identifier.trim().to_ascii_uppercase();
+    let captures = CLASS_IDENTIFIER_REGEX.captures(&identifier)?;
+    let code = captures.get(1).map_or("CS", |code| code.as_str());
+    Some(format!("{code} {}", &captures[2]))
+}
+
+fn category_matches_role_name(category_name: &str, role_name: &str) -> bool {
+    category_name == role_name
+        || category_name
+            .strip_prefix(role_name)
+            .is_some_and(|suffix| suffix.starts_with(" - "))
+}
 
 fn get_class_roles(roles: HashMap<RoleId, Role>) -> impl Iterator<Item = Role> {
     roles
@@ -317,39 +333,115 @@ pub async fn create_class_category(
     description_localized("en-US", "Deletes a class category")
 )]
 pub async fn delete_class_category(
-    _ctx: PoiseContext<'_>,
+    ctx: PoiseContext<'_>,
     #[description = "The class identifier, eg. for CS2420 put in \"CS2420\" or \"2420\""]
-    _identifier: String,
+    identifier: String,
 ) -> Result<()> {
-    // let guild = ctx.guild().ok_or_eyre("Couldn't get guild")?.id;
-    // let channels = guild.channels(ctx).await?;
+    let Some(role_name) = class_role_name(&identifier) else {
+        ctx.reply_ephemeral(format!(
+            "Please provide a valid class identifier, got `{identifier}`"
+        ))
+        .await?;
+        return Ok(());
+    };
 
-    // let category_regex = format!("^CS {}", number);
-    // let pattern = Regex::new(&category_regex)?;
+    ctx.defer_ephemeral().await?;
 
-    // let gotten_channels = channels
-    //     .values()
-    //     .find(|channel| pattern.is_match(&channel.name));
+    let result: Result<String> = async {
+        let guild = ctx.guild_id().ok_or_eyre("Couldn't get guild")?;
+        let channels = guild.channels(ctx).await?;
+        let mut categories = channels.values().filter(|channel| {
+            channel.kind == ChannelType::Category
+                && category_matches_role_name(&channel.name, &role_name)
+        });
 
-    // let Some(category_channel) = gotten_channels else {
-    //     ctx.say("Could not find category channel!").await?;
-    //     return Ok(());
-    // };
+        let Some(category) = categories.next() else {
+            return Ok(format!("Could not find a category for `{role_name}`."));
+        };
+        if categories.next().is_some() {
+            return Ok(format!(
+                "Found multiple categories for `{role_name}`. Please resolve them manually."
+            ));
+        }
 
-    // let children_guild_channels = channels
-    //     .values()
-    //     .filter(|guild_channel| matches!(guild_channel.parent_id, Some(parent) if parent.eq(&category_channel.id)));
+        let roles = guild.roles(ctx).await?;
+        let mut matching_roles = roles.values().filter(|role| role.name == role_name);
+        let role = matching_roles.next();
+        if matching_roles.next().is_some() {
+            return Ok(format!(
+                "Found multiple roles named `{role_name}`. Please resolve them manually."
+            ));
+        }
 
-    // let role_id = get_role(ctx, &number).await?;
+        let children = channels
+            .values()
+            .filter(|channel| channel.parent_id == Some(category.id))
+            .collect_vec();
 
-    // category_channel.delete(ctx).await?;
-    // for guild_channel in children_guild_channels {
-    //     guild_channel.delete(ctx).await?;
-    // }
-    // guild.delete_role(ctx, role_id).await?;
+        for child in children {
+            child
+                .delete(ctx)
+                .await
+                .wrap_err_with(|| format!("Couldn't delete channel #{}", child.name))?;
+        }
 
-    // ctx.say("Success!").await?;
+        category
+            .delete(ctx)
+            .await
+            .wrap_err("Couldn't delete class category")?;
+
+        if let Some(role) = role {
+            guild
+                .delete_role(ctx, role.id)
+                .await
+                .wrap_err("Couldn't delete class role")?;
+        }
+
+        tracing::info!("Deleted class category {role_name}");
+        Ok(format!(
+            "Deleted `{role_name}` category and its channels{}.",
+            if role.is_some() { " and role" } else { "" }
+        ))
+    }
+    .await;
+
+    match result {
+        Ok(message) => {
+            ctx.say(message).await?;
+        }
+        Err(error) => {
+            ctx.say(format!("Could not finish deleting `{role_name}`: {error}"))
+                .await?;
+            return Err(error);
+        }
+    }
+
     Ok(())
+}
+
+#[cfg(test)]
+mod delete_class_category_tests {
+    use super::{category_matches_role_name, class_role_name};
+
+    #[test]
+    fn normalizes_class_identifiers() {
+        assert_eq!(class_role_name("6966").as_deref(), Some("CS 6966"));
+        assert_eq!(class_role_name("cs6966").as_deref(), Some("CS 6966"));
+        assert_eq!(class_role_name("CS 6966").as_deref(), Some("CS 6966"));
+        assert_eq!(class_role_name("MATH6966").as_deref(), Some("MATH 6966"));
+        assert_eq!(class_role_name("CS").as_deref(), None);
+    }
+
+    #[test]
+    fn matches_only_the_requested_category() {
+        assert!(category_matches_role_name("CS 6966", "CS 6966"));
+        assert!(category_matches_role_name(
+            "CS 6966 - Special Topics",
+            "CS 6966"
+        ));
+        assert!(!category_matches_role_name("CS 69660 - Other", "CS 6966"));
+        assert!(!category_matches_role_name("CS 6966 Archive", "CS 6966"));
+    }
 }
 
 #[poise::command(

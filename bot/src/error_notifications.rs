@@ -214,7 +214,7 @@ async fn send_alert(
     http: &Http,
     callsite: &ErrorCallsite,
     incident: &Incident,
-) -> poise::serenity_prelude::Result<DiscordMessage> {
+) -> Result<DiscordMessage, Box<poise::serenity_prelude::Error>> {
     let user = incident.recipient.to_user(http).await?;
     let dm_channel = user.create_dm_channel(http).await?;
     let message = dm_channel
@@ -235,7 +235,7 @@ async fn edit_alert(
     discord_message: DiscordMessage,
     callsite: &ErrorCallsite,
     incident: &Incident,
-) -> poise::serenity_prelude::Result<()> {
+) -> Result<(), Box<poise::serenity_prelude::Error>> {
     discord_message
         .channel_id
         .edit_message(

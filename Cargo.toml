@@ -17,7 +17,7 @@ tracing-subscriber = { version = "0.3", features = [
     "parking_lot",
 ] }
 color-eyre = "0.6"
-poise = { version = "0.6.2", default-features = false, features = [
+poise = { version = "0.7", default-features = false, features = [
     "cache",
     "chrono",
     "handle_panics",
@@ -30,7 +30,7 @@ bot-lib = { path = 'bot-lib' }
 bot-traits = { path = 'bot-traits' }
 rand = "0.10"
 serde = { version = "1", default-features = false, features = ["derive", "rc"] }
-itertools = "0.14"
+itertools = "0.15"
 notify = "8"
 rustc-hash = "2"
 

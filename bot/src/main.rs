@@ -111,8 +111,12 @@ async fn main() -> Result<()> {
                 track_flight(),
                 plane_details(),
             ],
-            event_handler: |ctx, event, _framework, data| {
-                Box::pin(event_handler(ctx, event, data.clone()))
+            event_handler: |framework, event| {
+                Box::pin(event_handler(
+                    framework.serenity_context,
+                    event,
+                    framework.user_data.clone(),
+                ))
             },
             on_error: |error| {
                 use poise::FrameworkError;
