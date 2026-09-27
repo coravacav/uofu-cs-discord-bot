@@ -47,17 +47,17 @@ bind-mounted at `/app` as the bot's working directory, so `.env`, `config.toml` 
 The container restarts automatically (`restart: unless-stopped`), including after Docker Desktop starts at login.
 
 ```sh
-make deploy     # rebuild the image and restart the bot (the update path after `git pull`)
-make build      # build only (cargo deps cached, rebuilds are incremental)
-make up         # start without rebuilding
-make down       # stop and remove the container
-make restart    # restart the container
-make logs       # follow logs
-make status     # container state + restart count
-make shell      # shell inside the container
-make backup-db  # stop briefly, copy db/kingfisher-v3 to backups/kingfisher-v3-<timestamp>, start again
+just deploy     # rebuild the image and restart the bot (the update path after `git pull`)
+just build      # build only (cargo deps cached, rebuilds are incremental)
+just up         # start without rebuilding
+just down       # stop and remove the container
+just restart    # restart the container
+just logs       # follow logs
+just status     # container state + restart count
+just shell      # shell inside the container
+just backup-db  # stop briefly, copy db/kingfisher-v3 to backups/kingfisher-v3-<timestamp>, start again
 ```
 
 Never run `cargo run`/`target/release/bot` against `db/kingfisher-v3` while the container is up: the RocksDB
 lock does not protect across the Docker VM boundary. The stack shows up in Portainer as an external stack
-(`kingfisher`); since the image is built locally, update it with `make deploy`, not Portainer's redeploy.
+(`kingfisher`); since the image is built locally, update it with `just deploy`, not Portainer's redeploy.

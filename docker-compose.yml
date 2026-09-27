@@ -1,4 +1,4 @@
-# Kingfisher Discord bot. Run from the repo root (see Makefile: `make deploy`).
+# Kingfisher Discord bot. Run from the repo root (see justfile: `just deploy`).
 # The compose project name is pinned so the Makefile, `docker compose` and
 # Portainer all refer to the same stack.
 name: kingfisher
