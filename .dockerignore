@@ -1,0 +1,26 @@
+# Only source + manifests go into the build context; runtime state is bind-mounted.
+.git
+.github
+.claude
+.vscode
+.idea
+.DS_Store
+**/.DS_Store
+target
+**/target
+db
+kingfisher.db
+bot-db
+backups
+all_backups
+extracts
+llms
+assets
+tools
+.env
+*.env
+debug.json
+config.toml
+Dockerfile
+docker-compose.yml
+Makefile

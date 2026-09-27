@@ -76,16 +76,22 @@ impl RawAppState {
 
         use notify::{
             Event, EventKind, RecursiveMode, Watcher,
-            event::{AccessKind, AccessMode},
+            event::{AccessKind, AccessMode, ModifyKind},
         };
 
         let config_clone = Arc::clone(&config);
         let reload_config_path = config_path.clone();
         let config_path: Box<Path> = config_path.into_boxed_path();
 
+        // Close(Write) is what Linux inotify reports for a local write, but
+        // Docker Desktop bind mounts (and macOS FSEvents) only surface data
+        // modifications, so reload on those too. A partial write that fails to
+        // parse is ignored by `reload`, and the next event picks up the rest.
         let mut watcher = notify::recommended_watcher(move |res| match res {
             Ok(Event {
-                kind: EventKind::Access(AccessKind::Close(AccessMode::Write)),
+                kind:
+                    EventKind::Access(AccessKind::Close(AccessMode::Write))
+                    | EventKind::Modify(ModifyKind::Data(_)),
                 ..
             }) => {
                 tracing::info!("config changed, reloading...");

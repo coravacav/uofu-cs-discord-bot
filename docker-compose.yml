@@ -1,0 +1,30 @@
+# Kingfisher Discord bot. Run from the repo root (see Makefile: `make deploy`).
+# The compose project name is pinned so the Makefile, `docker compose` and
+# Portainer all refer to the same stack.
+name: kingfisher
+
+services:
+  bot:
+    build:
+      context: .
+    image: uofu-cs-discord-bot:latest
+    container_name: kingfisher-bot
+    restart: unless-stopped
+    # tini as PID 1: forwards SIGTERM to the bot (which has no signal handler of
+    # its own, so it exits like Ctrl-C did in tmux) and reaps zombies.
+    init: true
+    stop_grace_period: 30s
+    # The repo checkout is the bot's working directory, exactly like running
+    # `target/release/bot` from the repo: .env, config.toml (hot-reloaded),
+    # db/kingfisher-v3 (RocksDB), debug.json (course cache) and extracts/ all
+    # live here. A directory mount (not single-file mounts) keeps config edits
+    # visible even when an editor replaces the file atomically.
+    volumes:
+      - ./:/app
+    working_dir: /app
+    # No published ports: the bot only makes outbound connections.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
