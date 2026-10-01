@@ -4,7 +4,7 @@ use bot_lib::{
     commands::*,
     config,
     data::{RawAppState, State, setup_db},
-    debug_force_starboard, debug_surrealdb,
+    debug_force_starboard, debug_sql,
     event_handler::event_handler,
 };
 use clap::Parser;
@@ -66,7 +66,7 @@ async fn main() -> Result<()> {
         config_path.display()
     ))?;
 
-    setup_db().await;
+    setup_db();
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
@@ -84,7 +84,7 @@ async fn main() -> Result<()> {
                 course_request(),
                 create_class_category(),
                 debug_force_starboard(),
-                debug_surrealdb(),
+                debug_sql(),
                 debug_print_channel_names(),
                 delete_class_category(),
                 extract_all_class_channels(),

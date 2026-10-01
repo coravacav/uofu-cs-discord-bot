@@ -43,7 +43,7 @@ You'll see an error about missing the LLM, but, that's okay. The command just wo
 
 The bot runs as the `kingfisher` compose project (container `kingfisher-bot`). The repo checkout is
 bind-mounted at `/app` as the bot's working directory, so `.env`, `config.toml` (hot-reloaded),
-`db/kingfisher-v3`, `debug.json` and `extracts/` stay in the repo dir and are never baked into the image.
+`db/kingfisher.sqlite`, `debug.json` and `extracts/` stay in the repo dir and are never baked into the image.
 The container restarts automatically (`restart: unless-stopped`), including after Docker Desktop starts at login.
 
 ```sh
@@ -55,9 +55,10 @@ just restart    # restart the container
 just logs       # follow logs
 just status     # container state + restart count
 just shell      # shell inside the container
-just backup-db  # stop briefly, copy db/kingfisher-v3 to backups/kingfisher-v3-<timestamp>, start again
+just backup-db  # online SQLite backup to backups/kingfisher-<timestamp>.sqlite (no downtime)
 ```
 
-Never run `cargo run`/`target/release/bot` against `db/kingfisher-v3` while the container is up: the RocksDB
-lock does not protect across the Docker VM boundary. The stack shows up in Portainer as an external stack
+Never run `cargo run`/`target/release/bot` against `db/kingfisher.sqlite` while the container is up:
+SQLite's file locks do not protect across the Docker VM boundary. To query the live database, use
+`just shell` and then `sqlite3 db/kingfisher.sqlite`. The stack shows up in Portainer as an external stack
 (`kingfisher`); since the image is built locally, update it with `just deploy`, not Portainer's redeploy.

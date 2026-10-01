@@ -26,7 +26,7 @@ mod utils;
 pub use commands::track_message_for_limit;
 pub use courses::update_course_list;
 pub use starboard::debug_force_starboard;
-pub use starboard::debug_surrealdb;
+pub use starboard::debug_sql;
 
 trait SayThenDelete {
     async fn say_then_delete(self, message: impl Into<String>) -> Result<()>;

@@ -1,5 +1,5 @@
 # Kingfisher Discord bot. Run from the repo root (see justfile: `just deploy`).
-# The compose project name is pinned so the Makefile, `docker compose` and
+# The compose project name is pinned so the justfile, `docker compose` and
 # Portainer all refer to the same stack.
 name: kingfisher
 
@@ -16,7 +16,7 @@ services:
     stop_grace_period: 30s
     # The repo checkout is the bot's working directory, exactly like running
     # `target/release/bot` from the repo: .env, config.toml (hot-reloaded),
-    # db/kingfisher-v3 (RocksDB), debug.json (course cache) and extracts/ all
+    # db/kingfisher.sqlite, debug.json (course cache) and extracts/ all
     # live here. A directory mount (not single-file mounts) keeps config edits
     # visible even when an editor replaces the file atomically.
     volumes:

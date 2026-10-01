@@ -1,0 +1,12 @@
+[package]
+name = "migrate-surrealdb-to-sqlite"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+rusqlite = { version = "0.40", features = ["bundled", "fallible_uint"] }
+surrealdb = { version = "=3.2.4", default-features = false, features = ["kv-rocksdb"] }
+tokio = { version = "1", default-features = false, features = ["rt", "macros"] }

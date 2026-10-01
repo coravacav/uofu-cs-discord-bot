@@ -32,7 +32,7 @@ assets/
 # don't track the ai models
 llms
 
-# rocksdb db
+# databases
 kingfisher.db
 db/
 

@@ -1,4 +1,4 @@
-use crate::data::{DB, PoiseContext};
+use crate::data::{PoiseContext, with_db};
 use chrono::{DateTime, TimeZone, Utc};
 use chrono_tz::America::Denver;
 use color_eyre::eyre::{OptionExt, Result};
@@ -6,27 +6,21 @@ use poise::serenity_prelude::{
     self as serenity, ButtonStyle, CreateActionRow, CreateButton, CreateInteractionResponse,
     CreateInteractionResponseMessage, CreateMessage, EditMember, GuildId, User, UserId,
 };
+use rusqlite::{OptionalExtension, params};
 use std::time::Duration;
-use surrealdb::types::SurrealValue;
 
-#[derive(Debug, serde::Deserialize, SurrealValue)]
+#[derive(Debug)]
 struct MessageLimit {
     daily_limit: u64,
     imposed_by: Option<u64>,
 }
 
-#[derive(Debug, serde::Deserialize, SurrealValue)]
-struct MessageCount {
-    count: u64,
-    reset_date: String,
-}
-
-#[derive(Debug, serde::Deserialize, SurrealValue)]
+#[derive(Debug)]
 struct GuildLimitEntry {
     guild_id: u64,
 }
 
-#[derive(Debug, serde::Deserialize, SurrealValue)]
+#[derive(Debug)]
 struct GuildMessageLimit {
     guild_id: u64,
     daily_limit: u64,
@@ -52,72 +46,98 @@ fn get_next_midnight_mt() -> DateTime<Utc> {
 
 /// Query user's message limit from database
 async fn query_user_limit(user_id: UserId, guild_id: GuildId) -> Result<Option<MessageLimit>> {
-    let result: Option<MessageLimit> = DB
-        .query("SELECT daily_limit, imposed_by FROM message_limit WHERE user_id = $uid AND guild_id = $gid LIMIT 1")
-        .bind(("uid", u64::from(user_id)))
-        .bind(("gid", u64::from(guild_id)))
-        .await?
-        .take(0)?;
-
-    Ok(result)
+    let (user_id, guild_id) = (u64::from(user_id), u64::from(guild_id));
+    with_db(move |conn| {
+        Ok(conn
+            .query_row(
+                "SELECT daily_limit, imposed_by FROM message_limit WHERE user_id = ?1 AND guild_id = ?2",
+                [user_id, guild_id],
+                |row| {
+                    Ok(MessageLimit {
+                        daily_limit: row.get(0)?,
+                        imposed_by: row.get(1)?,
+                    })
+                },
+            )
+            .optional()?)
+    })
+    .await
 }
 
 /// Query user's message count from database
 async fn query_user_count(user_id: UserId, guild_id: GuildId, date: &str) -> Result<u64> {
-    let result: Option<MessageCount> = DB
-        .query("SELECT count, reset_date FROM message_count WHERE user_id = $uid AND guild_id = $gid LIMIT 1")
-        .bind(("uid", u64::from(user_id)))
-        .bind(("gid", u64::from(guild_id)))
-        .await?
-        .take(0)?;
-
-    Ok(result
-        .filter(|r| r.reset_date == date)
-        .map(|r| r.count)
-        .unwrap_or(0))
+    let (user_id, guild_id, date) = (u64::from(user_id), u64::from(guild_id), date.to_owned());
+    with_db(move |conn| {
+        Ok(conn
+            .query_row(
+                "SELECT count FROM message_count WHERE user_id = ?1 AND guild_id = ?2 AND reset_date = ?3",
+                params![user_id, guild_id, date],
+                |row| row.get(0),
+            )
+            .optional()?
+            .unwrap_or(0))
+    })
+    .await
 }
 
 /// Increment message count for user on given date, returns new count
 async fn increment_message_count(user_id: UserId, guild_id: GuildId, date: String) -> Result<u64> {
-    let result: Option<MessageCount> = DB
-        .query("SELECT count, reset_date FROM message_count WHERE user_id = $uid AND guild_id = $gid LIMIT 1")
-        .bind(("uid", u64::from(user_id)))
-        .bind(("gid", u64::from(guild_id)))
-        .await?
-        .take(0)?;
+    let (user_id, guild_id) = (u64::from(user_id), u64::from(guild_id));
+    with_db(move |conn| {
+        // A row from an earlier day restarts at 1.
+        Ok(conn.query_row(
+            "INSERT INTO message_count (user_id, guild_id, count, reset_date) VALUES (?1, ?2, 1, ?3) \
+             ON CONFLICT (user_id, guild_id) DO UPDATE SET \
+                 count = CASE WHEN reset_date = excluded.reset_date THEN count + 1 ELSE 1 END, \
+                 reset_date = excluded.reset_date \
+             RETURNING count",
+            params![user_id, guild_id, date],
+            |row| row.get(0),
+        )?)
+    })
+    .await
+}
 
-    let new_count = if let Some(record) = result {
-        if record.reset_date != date {
-            // New day - reset count
-            DB.query("UPDATE message_count SET count = 1, reset_date = $date WHERE user_id = $uid AND guild_id = $gid")
-                .bind(("uid", u64::from(user_id)))
-                .bind(("gid", u64::from(guild_id)))
-                .bind(("date", date))
-                .await?;
-            1
-        } else {
-            // Same day - increment
-            let new_count = record.count + 1;
-            DB.query(
-                "UPDATE message_count SET count = $count WHERE user_id = $uid AND guild_id = $gid",
-            )
-            .bind(("uid", u64::from(user_id)))
-            .bind(("gid", u64::from(guild_id)))
-            .bind(("count", new_count))
-            .await?;
-            new_count
-        }
-    } else {
-        // First message - create record
-        DB.query("CREATE message_count SET user_id = $uid, guild_id = $gid, count = 1, reset_date = $date")
-            .bind(("uid", u64::from(user_id)))
-            .bind(("gid", u64::from(guild_id)))
-            .bind(("date", date))
-            .await?;
-        1
-    };
+/// Create or replace a user's limit and restart today's count at zero
+async fn replace_limit(
+    user_id: UserId,
+    guild_id: GuildId,
+    daily_limit: u64,
+    imposed_by: Option<UserId>,
+) -> Result<()> {
+    let (user_id, guild_id) = (u64::from(user_id), u64::from(guild_id));
+    let imposed_by = imposed_by.map(u64::from);
+    let date = get_current_mt_date();
+    with_db(move |conn| {
+        let tx = conn.transaction()?;
+        tx.execute(
+            "INSERT OR REPLACE INTO message_limit (user_id, guild_id, daily_limit, imposed_by) \
+             VALUES (?1, ?2, ?3, ?4)",
+            params![user_id, guild_id, daily_limit, imposed_by],
+        )?;
+        tx.execute(
+            "INSERT OR REPLACE INTO message_count (user_id, guild_id, count, reset_date) \
+             VALUES (?1, ?2, 0, ?3)",
+            params![user_id, guild_id, date],
+        )?;
+        tx.commit()?;
+        Ok(())
+    })
+    .await
+}
 
-    Ok(new_count)
+/// Delete a user's limit in a guild, optionally only if it is self-imposed
+async fn delete_limit(user_id: UserId, guild_id: GuildId, only_self_imposed: bool) -> Result<()> {
+    let (user_id, guild_id) = (u64::from(user_id), u64::from(guild_id));
+    with_db(move |conn| {
+        conn.execute(
+            "DELETE FROM message_limit WHERE user_id = ?1 AND guild_id = ?2 \
+             AND (NOT ?3 OR imposed_by IS NULL)",
+            params![user_id, guild_id, only_self_imposed],
+        )?;
+        Ok(())
+    })
+    .await
 }
 
 /// Apply timeout and send DM notification to user
@@ -282,27 +302,7 @@ pub async fn impose(
     let moderator_id = ctx.author().id;
     let guild_id = ctx.guild_id().ok_or_eyre("Must be used in a guild")?;
 
-    // Create or update the message limit
-    DB.query(
-        "DELETE FROM message_limit WHERE user_id = $uid AND guild_id = $gid;
-             CREATE message_limit SET user_id = $uid, guild_id = $gid, daily_limit = $limit, imposed_by = $mod_id;",
-    )
-    .bind(("uid", u64::from(user_id)))
-    .bind(("gid", u64::from(guild_id)))
-    .bind(("limit", limit))
-    .bind(("mod_id", u64::from(moderator_id)))
-    .await?;
-
-    // Initialize message count for today
-    let mt_date = get_current_mt_date();
-    DB.query(
-        "DELETE FROM message_count WHERE user_id = $uid AND guild_id = $gid;
-             CREATE message_count SET user_id = $uid, guild_id = $gid, count = 0, reset_date = $date;",
-    )
-    .bind(("uid", u64::from(user_id)))
-    .bind(("gid", u64::from(guild_id)))
-    .bind(("date", mt_date))
-    .await?;
+    replace_limit(user_id, guild_id, limit, Some(moderator_id)).await?;
 
     let components = vec![CreateActionRow::Buttons(vec![
         CreateButton::new(format!("view_limit_{}", user_id))
@@ -348,26 +348,7 @@ pub async fn set(
         return Ok(());
     }
 
-    // Create or update the message limit
-    DB.query(
-        "DELETE FROM message_limit WHERE user_id = $uid AND guild_id = $gid;
-             CREATE message_limit SET user_id = $uid, guild_id = $gid, daily_limit = $limit;",
-    )
-    .bind(("uid", u64::from(user_id)))
-    .bind(("gid", u64::from(guild_id)))
-    .bind(("limit", limit))
-    .await?;
-
-    // Initialize message count for today
-    let mt_date = get_current_mt_date();
-    DB.query(
-        "DELETE FROM message_count WHERE user_id = $uid AND guild_id = $gid;
-             CREATE message_count SET user_id = $uid, guild_id = $gid, count = 0, reset_date = $date;",
-    )
-    .bind(("uid", u64::from(user_id)))
-    .bind(("gid", u64::from(guild_id)))
-    .bind(("date", mt_date))
-    .await?;
+    replace_limit(user_id, guild_id, limit, None).await?;
 
     let components = vec![CreateActionRow::Buttons(vec![
         CreateButton::new(format!("view_limit_{}", user_id))
@@ -444,13 +425,23 @@ pub async fn view(
         }
 
         let user_id = ctx.author().id;
-        let limits: Vec<GuildMessageLimit> = DB
-            .query(
-                "SELECT guild_id, daily_limit, imposed_by FROM message_limit WHERE user_id = $uid",
-            )
-            .bind(("uid", u64::from(user_id)))
-            .await?
-            .take(0)?;
+        let uid = u64::from(user_id);
+        let limits = with_db(move |conn| {
+            let limits = conn
+                .prepare(
+                    "SELECT guild_id, daily_limit, imposed_by FROM message_limit WHERE user_id = ?1",
+                )?
+                .query_map([uid], |row| {
+                    Ok(GuildMessageLimit {
+                        guild_id: row.get(0)?,
+                        daily_limit: row.get(1)?,
+                        imposed_by: row.get(2)?,
+                    })
+                })?
+                .collect::<rusqlite::Result<Vec<_>>>()?;
+            Ok(limits)
+        })
+        .await?;
 
         if limits.is_empty() {
             ctx.say("ℹ️ No message limits set. Use `/message_limit set` in a server to set one.")
@@ -507,12 +498,21 @@ pub async fn view(
 
 /// Query all guilds where a user has a self-imposed limit
 async fn query_self_imposed_guilds(user_id: UserId) -> Result<Vec<GuildLimitEntry>> {
-    let entries: Vec<GuildLimitEntry> = DB
-        .query("SELECT guild_id FROM message_limit WHERE user_id = $uid AND imposed_by = NONE")
-        .bind(("uid", u64::from(user_id)))
-        .await?
-        .take(0)?;
-    Ok(entries)
+    let user_id = u64::from(user_id);
+    with_db(move |conn| {
+        let entries = conn
+            .prepare(
+                "SELECT guild_id FROM message_limit WHERE user_id = ?1 AND imposed_by IS NULL",
+            )?
+            .query_map([user_id], |row| {
+                Ok(GuildLimitEntry {
+                    guild_id: row.get(0)?,
+                })
+            })?
+            .collect::<rusqlite::Result<_>>()?;
+        Ok(entries)
+    })
+    .await
 }
 
 /// Build buttons for selecting which guild to clear a limit from (used in DMs)
@@ -649,10 +649,7 @@ async fn handle_guild_buttons_with_timeout(
                 continue;
             }
 
-            DB.query("DELETE FROM message_limit WHERE user_id = $uid AND guild_id = $gid")
-                .bind(("uid", u64::from(target_user_id)))
-                .bind(("gid", u64::from(guild_id)))
-                .await?;
+            delete_limit(target_user_id, guild_id, false).await?;
 
             interaction
                 .create_response(
@@ -689,10 +686,7 @@ pub async fn clear(ctx: PoiseContext<'_>) -> Result<()> {
             return Ok(());
         }
 
-        DB.query("DELETE FROM message_limit WHERE user_id = $uid AND guild_id = $gid")
-            .bind(("uid", u64::from(user_id)))
-            .bind(("gid", u64::from(guild_id)))
-            .await?;
+        delete_limit(user_id, guild_id, false).await?;
 
         ctx.say("✅ Your message limit has been cleared.").await?;
     } else {
@@ -741,10 +735,7 @@ pub async fn clear(ctx: PoiseContext<'_>) -> Result<()> {
             let guild_id = GuildId::new(gid);
 
             // Delete the specific limit (only self-imposed)
-            DB.query("DELETE FROM message_limit WHERE user_id = $uid AND guild_id = $gid AND imposed_by = NONE")
-                .bind(("uid", u64::from(user_id)))
-                .bind(("gid", u64::from(guild_id)))
-                .await?;
+            delete_limit(user_id, guild_id, true).await?;
 
             let guild_name = guild_id
                 .to_partial_guild(ctx.serenity_context())
@@ -821,12 +812,20 @@ pub async fn remove(
     }
 
     // Delete both records
-    DB.query(
-        "DELETE FROM message_limit WHERE user_id = $uid AND guild_id = $gid;
-             DELETE FROM message_count WHERE user_id = $uid AND guild_id = $gid;",
-    )
-    .bind(("uid", u64::from(user_id)))
-    .bind(("gid", u64::from(guild_id)))
+    let (uid, gid) = (u64::from(user_id), u64::from(guild_id));
+    with_db(move |conn| {
+        let tx = conn.transaction()?;
+        tx.execute(
+            "DELETE FROM message_limit WHERE user_id = ?1 AND guild_id = ?2",
+            [uid, gid],
+        )?;
+        tx.execute(
+            "DELETE FROM message_count WHERE user_id = ?1 AND guild_id = ?2",
+            [uid, gid],
+        )?;
+        tx.commit()?;
+        Ok(())
+    })
     .await?;
 
     ctx.say(format!("✅ Removed message limit for {}.", user.name))
@@ -893,4 +892,59 @@ fn build_view_response(
     let components = vec![CreateActionRow::Buttons(buttons)];
 
     (content, components)
+}
+
+#[cfg(test)]
+#[tokio::test]
+async fn test_limit_persistence() {
+    crate::data::setup_db();
+
+    let user = UserId::new(92_001);
+    let moderator = UserId::new(92_002);
+    let guild = GuildId::new(92_003);
+    let other_guild = GuildId::new(92_004);
+
+    assert!(query_user_limit(user, guild).await.unwrap().is_none());
+    assert!(replace_limit(user, guild, 0, None).await.is_err());
+
+    replace_limit(user, guild, 5, None).await.unwrap();
+    replace_limit(user, other_guild, 7, Some(moderator))
+        .await
+        .unwrap();
+    let limit = query_user_limit(user, guild).await.unwrap().unwrap();
+    assert_eq!((limit.daily_limit, limit.imposed_by), (5, None));
+
+    let self_imposed = query_self_imposed_guilds(user).await.unwrap();
+    assert_eq!(self_imposed.len(), 1);
+    assert_eq!(self_imposed[0].guild_id, u64::from(guild));
+
+    let today = get_current_mt_date();
+    assert_eq!(query_user_count(user, guild, &today).await.unwrap(), 0);
+    for expected in 1..=3 {
+        assert_eq!(
+            increment_message_count(user, guild, today.clone())
+                .await
+                .unwrap(),
+            expected
+        );
+    }
+    assert_eq!(
+        query_user_count(user, guild, "2000-01-01").await.unwrap(),
+        0
+    );
+    assert_eq!(
+        increment_message_count(user, guild, "2999-01-01".to_owned())
+            .await
+            .unwrap(),
+        1,
+        "a new day restarts the count"
+    );
+
+    delete_limit(user, other_guild, true).await.unwrap();
+    assert!(
+        query_user_limit(user, other_guild).await.unwrap().is_some(),
+        "a self-imposed delete must keep a moderator's limit"
+    );
+    delete_limit(user, other_guild, false).await.unwrap();
+    assert!(query_user_limit(user, other_guild).await.unwrap().is_none());
 }

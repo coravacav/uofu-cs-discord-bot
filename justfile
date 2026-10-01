@@ -4,7 +4,7 @@
 
 compose := "docker compose -f docker-compose.yml"
 service := "bot"
-db_dir := "db/kingfisher-v3"
+db_file := "db/kingfisher.sqlite"
 
 # List commands
 default:
@@ -44,15 +44,16 @@ status:
     @{{compose}} ps -a
     @docker inspect -f 'restarts={{"{{"}}.RestartCount{{"}}"}} started={{"{{"}}.State.StartedAt{{"}}"}}' kingfisher-bot 2>/dev/null || true
 
-# Copy db/kingfisher-v3 to backups/ (stops the bot briefly for a consistent copy)
+# Snapshot db/kingfisher.sqlite to backups/ (online backup, the bot keeps running)
 backup-db:
     #!/usr/bin/env bash
-    set -u
+    set -euo pipefail
     mkdir -p backups
-    dest="backups/kingfisher-v3-$(date +%Y%m%d-%H%M%S)"
-    running=$({{compose}} ps -q --status running {{service}})
-    if [ -n "$running" ]; then echo "stopping bot for consistent backup..."; {{compose}} stop {{service}}; fi
-    cp -a {{db_dir}} "$dest" && echo "backed up to $dest"
-    status=$?
-    if [ -n "$running" ]; then {{compose}} start {{service}}; fi
-    exit $status
+    dest="backups/kingfisher-$(date +%Y%m%d-%H%M%S).sqlite"
+    if [ -n "$({{compose}} ps -q --status running {{service}})" ]; then
+        # Back up from inside the container: SQLite's file locks don't reach across the Docker VM.
+        {{compose}} exec -T {{service}} sqlite3 {{db_file}} ".backup '$dest'"
+    else
+        sqlite3 {{db_file}} ".backup '$dest'"
+    fi
+    echo "backed up to $dest"

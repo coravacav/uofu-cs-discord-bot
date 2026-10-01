@@ -1,58 +1,81 @@
 use crate::config::Config;
-use color_eyre::eyre::{Error, Result};
+use color_eyre::eyre::{Error, Result, bail};
+use parking_lot::Mutex;
+use rusqlite::Connection;
 use std::sync::LazyLock;
+use std::time::Duration;
 use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
-use surrealdb::Surreal;
-use surrealdb::engine::local::Db;
-use tokio::sync::{OnceCell, RwLock};
+use tokio::sync::RwLock;
 
-pub(crate) static DB: LazyLock<Surreal<Db>> = LazyLock::new(Surreal::init);
-static DB_SETUP: OnceCell<()> = OnceCell::const_new();
+/// Schema migrations, applied in order; `PRAGMA user_version` records how many
+/// have run. Never edit a migration that has been deployed, append a new one.
+/// tools/migrate-surrealdb-to-sqlite applies the same list.
+const MIGRATIONS: &[&str] = &[include_str!("../migrations/0001_initial.sql")];
 
 #[cfg(not(test))]
-const LEGACY_SURREALDB_PATH: &str = "db/kingfisher";
-#[cfg(not(test))]
-const DEFAULT_SURREALDB_PATH: &str = "db/kingfisher-v3";
+const DEFAULT_DB_PATH: &str = "db/kingfisher.sqlite";
 
-pub async fn setup_db() {
-    DB_SETUP
-        .get_or_init(|| async {
-            #[cfg(not(test))]
-            {
-                let path = std::env::var_os("KINGFISHER_SURREALDB_PATH")
-                    .map(PathBuf::from)
-                    .unwrap_or_else(|| PathBuf::from(DEFAULT_SURREALDB_PATH));
+static DB: LazyLock<Mutex<Connection>> =
+    LazyLock::new(|| Mutex::new(open_db().expect("Failed to open the SQLite database")));
 
-                assert_ne!(
-                    path,
-                    Path::new(LEGACY_SURREALDB_PATH),
-                    "refusing to open the legacy SurrealDB 2 directory with SurrealDB 3; migrate it to a new directory first"
-                );
+/// Opens and migrates the database now, so a bad path or schema fails at startup.
+pub fn setup_db() {
+    LazyLock::force(&DB);
+}
 
-                tracing::info!(path = %path.display(), "connecting to SurrealDB");
-                DB.connect::<surrealdb::engine::local::RocksDb>(path)
-                    .await
-                    .expect("Failed to create SurrealDB instance");
-            }
+fn open_db() -> Result<Connection> {
+    #[cfg(not(test))]
+    let mut conn = {
+        let path = std::env::var_os("KINGFISHER_DB_PATH")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from(DEFAULT_DB_PATH));
 
-            #[cfg(test)]
-            DB.connect::<surrealdb::engine::local::Mem>(())
-                .await
-                .expect("Failed to create SurrealDB instance");
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
 
-            DB.use_ns("main")
-                .use_db("main")
-                .await
-                .expect("Failed to select namespace and database");
+        tracing::info!(path = %path.display(), "opening SQLite database");
+        Connection::open(path)?
+    };
 
-            DB.query(include_str!("../../schema.surrealql"))
-                .await
-                .expect("Failed to execute schema query");
-        })
-        .await;
+    #[cfg(test)]
+    let mut conn = Connection::open_in_memory()?;
+
+    conn.pragma_update(None, "foreign_keys", true)?;
+    conn.busy_timeout(Duration::from_secs(5))?;
+    migrate(&mut conn)?;
+
+    Ok(conn)
+}
+
+fn migrate(conn: &mut Connection) -> Result<()> {
+    let tx = conn.transaction()?;
+    let version: usize = tx.pragma_query_value(None, "user_version", |row| row.get(0))?;
+
+    let Some(pending) = MIGRATIONS.get(version..) else {
+        bail!(
+            "database schema version {version} is newer than this build supports ({})",
+            MIGRATIONS.len()
+        );
+    };
+
+    for migration in pending {
+        tx.execute_batch(migration)?;
+    }
+    tx.pragma_update(None, "user_version", MIGRATIONS.len())?;
+    tx.commit()?;
+
+    Ok(())
+}
+
+/// Runs `f` with exclusive access to the database on the blocking thread pool.
+pub(crate) async fn with_db<T: Send + 'static>(
+    f: impl FnOnce(&mut Connection) -> Result<T> + Send + 'static,
+) -> Result<T> {
+    tokio::task::spawn_blocking(move || f(&mut DB.lock())).await?
 }
 
 /// The global state of the bot

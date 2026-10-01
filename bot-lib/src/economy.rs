@@ -1,100 +1,96 @@
-use crate::data::DB;
-use color_eyre::eyre::{Result, eyre};
+use crate::data::with_db;
+use color_eyre::eyre::{OptionExt, Result};
 use poise::serenity_prelude::UserId;
-use serde::Deserialize;
-use surrealdb::types::{RecordId, SurrealValue};
+use rusqlite::{Connection, OptionalExtension, params};
 
-#[derive(Clone, Debug, Deserialize, SurrealValue)]
+#[derive(Clone, Debug)]
 pub struct Change {
     pub amount: i64,
     pub reason: String,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, SurrealValue)]
+#[derive(Clone, Debug, Default)]
 pub struct BankAccount {
     pub balance: i64,
     pub changes: Vec<Change>,
 }
 
-#[derive(Debug, Deserialize, SurrealValue)]
-struct BankRanking {
-    user_id: i64,
-    balance: i64,
-}
+fn load_account(conn: &Connection, user_id: u64) -> Result<Option<BankAccount>> {
+    let Some(balance) = conn
+        .query_row(
+            "SELECT balance FROM bank_account WHERE user_id = ?1",
+            [user_id],
+            |row| row.get(0),
+        )
+        .optional()?
+    else {
+        return Ok(None);
+    };
 
-#[derive(Debug, Deserialize, SurrealValue)]
-struct YeetScore {
-    user_id: i64,
-    count: u64,
-}
+    let changes = conn
+        .prepare_cached("SELECT amount, reason FROM bank_change WHERE user_id = ?1 ORDER BY id")?
+        .query_map([user_id], |row| {
+            Ok(Change {
+                amount: row.get(0)?,
+                reason: row.get(1)?,
+            })
+        })?
+        .collect::<rusqlite::Result<_>>()?;
 
-fn record_id(table: &str, user_id: UserId) -> Result<RecordId> {
-    let user_id = i64::try_from(u64::from(user_id))
-        .map_err(|_| eyre!("Discord user ID does not fit in a SurrealDB numeric record ID"))?;
-    Ok(RecordId::new(table, user_id))
+    Ok(Some(BankAccount { balance, changes }))
 }
 
 pub struct Bank;
 
 impl Bank {
     pub async fn get(user_id: UserId) -> Result<BankAccount> {
-        let account = DB
-            .select::<Option<BankAccount>>(record_id("bank_account", user_id)?)
-            .await?;
-        Ok(account.unwrap_or_default())
+        let user_id = u64::from(user_id);
+        with_db(move |conn| Ok(load_account(conn, user_id)?.unwrap_or_default())).await
     }
 
     pub async fn change(user_id: UserId, amount: i64, reason: String) -> Result<BankAccount> {
-        let account = record_id("bank_account", user_id)?;
-        let mut response = DB
-            .query(
-                "UPSERT ONLY $account \
-                 SET balance += $amount, changes += { amount: $amount, reason: $reason } \
-                 RETURN AFTER",
-            )
-            .bind(("account", account))
-            .bind(("amount", amount))
-            .bind(("reason", reason))
-            .await?
-            .check()?;
-
-        response
-            .take::<Option<BankAccount>>(0)?
-            .ok_or_else(|| eyre!("bank account UPSERT returned no record"))
+        let user_id = u64::from(user_id);
+        with_db(move |conn| {
+            let tx = conn.transaction()?;
+            tx.execute(
+                "INSERT INTO bank_account (user_id, balance) VALUES (?1, ?2) \
+                 ON CONFLICT (user_id) DO UPDATE SET balance = balance + excluded.balance",
+                params![user_id, amount],
+            )?;
+            tx.execute(
+                "INSERT INTO bank_change (user_id, amount, reason) VALUES (?1, ?2, ?3)",
+                params![user_id, amount, reason],
+            )?;
+            let account =
+                load_account(&tx, user_id)?.ok_or_eyre("bank account upsert left no record")?;
+            tx.commit()?;
+            Ok(account)
+        })
+        .await
     }
 
     pub async fn get_history(user_id: UserId) -> Result<Option<Vec<Change>>> {
-        Ok(DB
-            .select::<Option<BankAccount>>(record_id("bank_account", user_id)?)
-            .await?
-            .map(|account| account.changes))
+        let user_id = u64::from(user_id);
+        with_db(move |conn| Ok(load_account(conn, user_id)?.map(|account| account.changes))).await
     }
 
     pub async fn global_rankings() -> Result<Vec<(UserId, BankAccount)>> {
-        let rankings: Vec<BankRanking> = DB
-            .query(
-                "SELECT record::id(id) AS user_id, balance \
-                 FROM bank_account ORDER BY balance DESC",
-            )
-            .await?
-            .check()?
-            .take(0)?;
-
-        rankings
-            .into_iter()
-            .map(|ranking| {
-                let user_id = u64::try_from(ranking.user_id)
-                    .map(UserId::new)
-                    .map_err(|_| eyre!("invalid bank account user ID {}", ranking.user_id))?;
-                Ok((
-                    user_id,
-                    BankAccount {
-                        balance: ranking.balance,
-                        changes: Vec::new(),
-                    },
-                ))
-            })
-            .collect()
+        with_db(|conn| {
+            let rankings = conn
+                .prepare("SELECT user_id, balance FROM bank_account ORDER BY balance DESC")?
+                .query_map([], |row| {
+                    Ok((
+                        UserId::new(row.get(0)?),
+                        BankAccount {
+                            balance: row.get(1)?,
+                            changes: Vec::new(),
+                        },
+                    ))
+                })?
+                .collect::<rusqlite::Result<_>>()?;
+            Ok(rankings)
+        })
+        .await
     }
 }
 
@@ -102,44 +98,29 @@ pub struct YeetLeaderboard;
 
 impl YeetLeaderboard {
     pub async fn increment(user_id: UserId) -> Result<u64> {
-        let score = record_id("yeet_score", user_id)?;
-        let mut response = DB
-            .query("UPSERT ONLY $score SET count += 1 RETURN AFTER")
-            .bind(("score", score))
-            .await?
-            .check()?;
-
-        response
-            .take::<Option<YeetScoreRecord>>(0)?
-            .map(|score| score.count)
-            .ok_or_else(|| eyre!("yeet score UPSERT returned no record"))
+        let user_id = u64::from(user_id);
+        with_db(move |conn| {
+            Ok(conn.query_row(
+                "INSERT INTO yeet_score (user_id, count) VALUES (?1, 1) \
+                 ON CONFLICT (user_id) DO UPDATE SET count = count + 1 \
+                 RETURNING count",
+                [user_id],
+                |row| row.get(0),
+            )?)
+        })
+        .await
     }
 
     pub async fn rankings() -> Result<Vec<(UserId, u64)>> {
-        let rankings: Vec<YeetScore> = DB
-            .query(
-                "SELECT record::id(id) AS user_id, count \
-                 FROM yeet_score ORDER BY count DESC",
-            )
-            .await?
-            .check()?
-            .take(0)?;
-
-        rankings
-            .into_iter()
-            .map(|score| {
-                let user_id = u64::try_from(score.user_id)
-                    .map(UserId::new)
-                    .map_err(|_| eyre!("invalid yeet score user ID {}", score.user_id))?;
-                Ok((user_id, score.count))
-            })
-            .collect()
+        with_db(|conn| {
+            let rankings = conn
+                .prepare("SELECT user_id, count FROM yeet_score ORDER BY count DESC")?
+                .query_map([], |row| Ok((UserId::new(row.get(0)?), row.get(1)?)))?
+                .collect::<rusqlite::Result<_>>()?;
+            Ok(rankings)
+        })
+        .await
     }
-}
-
-#[derive(Debug, Deserialize, SurrealValue)]
-struct YeetScoreRecord {
-    count: u64,
 }
 
 #[cfg(test)]

@@ -8,18 +8,14 @@ ARG RUST_VERSION=1.98
 ARG DEBIAN_RELEASE=trixie
 
 FROM rust:${RUST_VERSION}-slim-${DEBIAN_RELEASE} AS build
+# The image's gcc builds the bundled SQLite and ring; OpenSSL is for Serenity's native-tls.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        pkg-config libssl-dev clang libclang-dev g++ make cmake \
+    && apt-get install -y --no-install-recommends pkg-config libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
-# The Docker Desktop VM has ~8 GB RAM; compiling surrealdb-core with many
-# parallel rustc jobs gets OOM-killed, so cap parallelism.
-ARG CARGO_BUILD_JOBS=4
-ENV CARGO_BUILD_JOBS=${CARGO_BUILD_JOBS}
 COPY . .
 # Cache mounts keep the cargo registry and target dir between builds, so only
-# changed crates recompile (RocksDB etc. are built once).
+# changed crates recompile.
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
     --mount=type=cache,target=/src/target,sharing=locked \
@@ -28,7 +24,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
 
 FROM debian:${DEBIAN_RELEASE}-slim AS runtime
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates libssl3t64 tzdata \
+    && apt-get install -y --no-install-recommends ca-certificates libssl3t64 tzdata sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 ARG UID=1000
 ARG GID=1000

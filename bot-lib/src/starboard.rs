@@ -1,6 +1,6 @@
 use crate::{
     commands::is_stefan,
-    data::{DB, PoiseContext},
+    data::{PoiseContext, with_db},
     utils::SendReplyEphemeral,
 };
 use color_eyre::eyre::Result;
@@ -9,7 +9,6 @@ use poise::serenity_prelude::{
     Message, MessageId, MessageReference, MessageReferenceKind, Reaction, ReactionType,
 };
 use serde::Deserialize;
-use surrealdb::types::RecordId;
 use tokio::sync::Mutex;
 
 #[derive(Deserialize)]
@@ -58,42 +57,33 @@ impl Starboard {
             })
     }
 
+    /// Claims a message for the starboard. Fails if it was already claimed.
     pub async fn insert_recent_message(message_id: MessageId) -> Result<()> {
-        let message_id = i64::from(message_id);
-        DB.query("create $message")
-            .bind((
-                "message",
-                RecordId::new("starboard_recent_message", message_id),
-            ))
-            .await?
-            .check()?;
-        Ok(())
+        let message_id = u64::from(message_id);
+        with_db(move |conn| {
+            conn.execute(
+                "INSERT INTO starboard_recent_message (message_id) VALUES (?1)",
+                [message_id],
+            )?;
+            Ok(())
+        })
+        .await
     }
 
     pub async fn has_recent_message(message_id: MessageId) -> Result<bool> {
-        let message_id = i64::from(message_id);
-        Ok(DB
-            .query("$message.exists();")
-            .bind((
-                "message",
-                RecordId::new("starboard_recent_message", message_id),
-            ))
-            .await?
-            .check()?
-            .take::<Option<bool>>(0)?
-            .unwrap_or(false))
+        let message_id = u64::from(message_id);
+        with_db(move |conn| {
+            Ok(conn.query_row(
+                "SELECT EXISTS (SELECT 1 FROM starboard_recent_message WHERE message_id = ?1)",
+                [message_id],
+                |row| row.get(0),
+            )?)
+        })
+        .await
     }
 
     pub async fn ignore_message_permanently(message_id: MessageId) -> Result<()> {
-        let message_id = i64::from(message_id);
-        DB.query("create $message")
-            .bind((
-                "message",
-                RecordId::new("starboard_recent_message", message_id),
-            ))
-            .await?
-            .check()?;
-        Ok(())
+        Self::insert_recent_message(message_id).await
     }
 
     fn is_channel_allowed(&self, channel_id: u64) -> bool {
@@ -192,9 +182,32 @@ pub async fn debug_force_starboard(ctx: PoiseContext<'_>, message: Message) -> R
     prefix_command,
     check = is_stefan
 )]
-pub async fn debug_surrealdb(ctx: PoiseContext<'_>, query: Vec<String>) -> Result<()> {
-    let reply = DB.query(query.join(" ")).await?;
-    ctx.reply_ephemeral(format!("{:?}", reply)).await?;
+pub async fn debug_sql(ctx: PoiseContext<'_>, query: Vec<String>) -> Result<()> {
+    let sql = query.join(" ");
+    let reply = with_db(move |conn| {
+        let mut statement = conn.prepare(&sql)?;
+        let column_count = statement.column_count();
+        if column_count == 0 {
+            return Ok(format!("{} rows changed", statement.execute([])?));
+        }
+
+        let columns = statement.column_names().join(" | ");
+        let rows = statement
+            .query_map([], |row| {
+                (0..column_count)
+                    .map(|i| row.get::<_, rusqlite::types::Value>(i))
+                    .collect::<rusqlite::Result<Vec<_>>>()
+            })?
+            .map(|row| Ok(format!("{:?}", row?)))
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+
+        Ok(format!("{columns}\n{}", rows.join("\n")))
+    })
+    .await?;
+
+    // Discord rejects messages over 2000 characters.
+    let reply: String = reply.chars().take(1990).collect();
+    ctx.reply_ephemeral(format!("```\n{reply}\n```")).await?;
 
     Ok(())
 }
@@ -206,8 +219,7 @@ async fn test_db_setup() {
 
     use crate::{data::setup_db, starboard::Starboard};
 
-    setup_db().await;
-    assert!(DB.health().await.is_ok());
+    setup_db();
 
     Starboard::insert_recent_message(MessageId::from(1))
         .await
