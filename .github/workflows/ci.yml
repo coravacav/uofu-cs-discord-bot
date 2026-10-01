@@ -28,27 +28,15 @@ jobs:
           components: clippy, rustfmt
 
       - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: |
-            . -> target
-            tools/export-legacy-db -> tools/export-legacy-db/target
 
       - name: Check formatting
-        run: |
-          cargo fmt --all -- --check
-          cargo fmt --manifest-path tools/export-legacy-db/Cargo.toml -- --check
+        run: cargo fmt --all -- --check
 
       - name: Check workspace
         run: cargo check --workspace --all-targets --locked
 
-      - name: Check legacy exporter
-        run: cargo check --manifest-path tools/export-legacy-db/Cargo.toml --locked
-
       - name: Run Clippy
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
-
-      - name: Run Clippy on legacy exporter
-        run: cargo clippy --manifest-path tools/export-legacy-db/Cargo.toml --locked -- -D warnings
 
       - name: Run tests
         run: cargo test --workspace --all-targets --locked
@@ -72,9 +60,3 @@ jobs:
         uses: rustsec/audit-check@v2.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Audit legacy exporter dependencies
-        uses: rustsec/audit-check@v2.0.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          working-directory: tools/export-legacy-db

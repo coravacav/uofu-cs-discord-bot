@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = ["bot", "bot-lib", "bot-traits"]
-exclude = ["tools/export-legacy-db", "tools/migrate-surrealdb-to-sqlite"]
+exclude = ["tools/migrate-surrealdb-to-sqlite"]
 
 [profile.release]
 debug = 0

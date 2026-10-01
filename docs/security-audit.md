@@ -1,6 +1,6 @@
 # Dependency security audit
 
-CI audits both lockfiles with RustSec without exceptions.
+CI audits the lockfile with RustSec without exceptions.
 
 Serenity 0.12.5 is configured with its native-TLS backend because its Rustls
 backend is pinned to `rustls-webpki` 0.102.8, which has multiple fixed security

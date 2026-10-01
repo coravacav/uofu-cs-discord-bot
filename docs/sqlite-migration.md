@@ -27,9 +27,11 @@ is renamed into place.
 
 ## Cutover
 
+Done on 2026-09-30. The steps were:
+
 1. Build the new image while the old bot keeps running: `just build`.
 2. Stop the bot: `docker compose stop bot`.
-3. Back up the old database: `cp -a db/kingfisher-v3 backups/kingfisher-v3-before-sqlite`.
+3. Back up the old database: `cp -a db/kingfisher-v3 backups/kingfisher-v3-before-sqlite-<timestamp>`.
 4. Migrate:
 
    ```sh
@@ -39,8 +41,14 @@ is renamed into place.
 
 5. Start the new image: `just deploy`, then check `just logs`.
 
+Afterwards the old `db/kingfisher-v3`, `db/kingfisher` (SurrealDB 2) and
+`kingfisher.db` (sled) were removed from the checkout; their copies remain in
+`backups/` (`kingfisher-v3-before-sqlite-20260930-223507`,
+`surreal-v2-pristine-before-v3` and `legacy-sled-before-v3`).
+
 ## Rollback
 
-`db/kingfisher-v3` is left untouched. Stop the bot, check out the last
-SurrealDB commit and `just deploy`. Data written only to SQLite after the
-cutover must be reconciled separately.
+Stop the bot, copy `backups/kingfisher-v3-before-sqlite-20260930-223507` back
+to `db/kingfisher-v3`, check out the last SurrealDB commit (`1034eb3`) and
+`just deploy`. Data written only to SQLite after the cutover must be reconciled
+separately.

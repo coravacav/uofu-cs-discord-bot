@@ -9,7 +9,6 @@
 target
 **/target
 db
-kingfisher.db
 bot-db
 backups
 all_backups
