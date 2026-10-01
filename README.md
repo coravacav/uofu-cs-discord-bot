@@ -55,10 +55,12 @@ just restart    # restart the container
 just logs       # follow logs
 just status     # container state + restart count
 just shell      # shell inside the container
+just health     # healthcheck state and recent results
+just sql "..."  # query the live database (no argument: interactive sqlite3 shell)
+just db-check   # SQLite integrity and foreign key check
 just backup-db  # online SQLite backup to backups/kingfisher-<timestamp>.sqlite (no downtime)
 ```
 
 Never run `cargo run`/`target/release/bot` against `db/kingfisher.sqlite` while the container is up:
-SQLite's file locks do not protect across the Docker VM boundary. To query the live database, use
-`just shell` and then `sqlite3 db/kingfisher.sqlite`. The stack shows up in Portainer as an external stack
+SQLite's file locks do not protect across the Docker VM boundary; use `just sql` to query the live database. The stack shows up in Portainer as an external stack
 (`kingfisher`); since the image is built locally, update it with `just deploy`, not Portainer's redeploy.

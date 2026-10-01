@@ -23,6 +23,15 @@ services:
       - ./:/app
     working_dir: /app
     # No published ports: the bot only makes outbound connections.
+    # The bot writes a heartbeat every 30s while its gateway shards are
+    # connected and the database answers; this fails once it is over 90s old.
+    # Docker only reports the state (`just health`); it doesn't restart on it.
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/bot", "--healthcheck"]
+      interval: 30s
+      timeout: 10s
+      start_period: 2m
+      retries: 3
     logging:
       driver: json-file
       options:

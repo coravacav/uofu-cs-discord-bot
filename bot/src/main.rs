@@ -6,6 +6,7 @@ use bot_lib::{
     data::{RawAppState, State, setup_db},
     debug_force_starboard, debug_sql,
     event_handler::event_handler,
+    health,
 };
 use clap::Parser;
 use color_eyre::eyre::{Result, WrapErr, eyre};
@@ -28,12 +29,38 @@ pub struct Args {
     /// Path to the config file. If omitted, the bot searches parent dirs for config.toml.
     #[arg(short, long)]
     pub config: Option<PathBuf>,
+
+    /// Exit successfully if the running bot reported itself healthy recently.
+    /// Used as the container healthcheck.
+    #[arg(long)]
+    pub healthcheck: bool,
 }
 
 const DEFAULT_CONFIG_FILENAME: &str = "config.toml";
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let Args {
+        dry_run,
+        config,
+        healthcheck,
+    } = Args::parse();
+
+    if healthcheck {
+        match health::check_heartbeat() {
+            Ok(age) => {
+                println!("healthy: last heartbeat {}s ago", age.as_secs());
+                return Ok(());
+            }
+            Err(error) => {
+                println!("unhealthy: {error:#}");
+                std::process::exit(1);
+            }
+        }
+    }
+
+    health::reset();
+
     rustls::crypto::ring::default_provider()
         .install_default()
         .map_err(|_| eyre!("A rustls crypto provider was already installed"))?;
@@ -56,7 +83,6 @@ async fn main() -> Result<()> {
         .with(error_notification_layer)
         .init();
 
-    let Args { dry_run, config } = Args::parse();
     let config_path = resolve_config_path(config)?;
 
     let token =
@@ -105,6 +131,7 @@ async fn main() -> Result<()> {
                 sathya(),
                 search_catalog(),
                 send_feedback(),
+                health::status(),
                 timeout(),
                 yeet_leaderboard(),
                 yeet(),
@@ -146,6 +173,7 @@ async fn main() -> Result<()> {
         })
         .setup(move |ctx, _ready, framework| {
             tokio::spawn(async { update_interval().await });
+            tokio::spawn(health::run_heartbeat(Arc::clone(framework.shard_manager())));
             let http = Arc::clone(&ctx.http);
 
             Box::pin(async move {

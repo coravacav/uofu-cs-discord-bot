@@ -42,7 +42,19 @@ shell:
 # Show container status
 status:
     @{{compose}} ps -a
-    @docker inspect -f 'restarts={{"{{"}}.RestartCount{{"}}"}} started={{"{{"}}.State.StartedAt{{"}}"}}' kingfisher-bot 2>/dev/null || true
+    @docker inspect -f 'restarts={{"{{"}}.RestartCount{{"}}"}} started={{"{{"}}.State.StartedAt{{"}}"}} health={{"{{"}}if .State.Health{{"}}"}}{{"{{"}}.State.Health.Status{{"}}"}}{{"{{"}}else{{"}}"}}none{{"{{"}}end{{"}}"}}' kingfisher-bot 2>/dev/null || true
+
+# Show the healthcheck state and its last results
+health:
+    @docker inspect -f '{{"{{"}}.State.Health.Status{{"}}"}}{{"{{"}}range .State.Health.Log{{"}}"}}{{"{{"}}println{{"}}"}}{{"{{"}}.End.Format "15:04:05"{{"}}"}} exit={{"{{"}}.ExitCode{{"}}"}} {{"{{"}}.Output{{"}}"}}{{"{{"}}end{{"}}"}}' kingfisher-bot
+
+# Run a query against the live database, or open a sqlite3 shell with no query
+sql query="":
+    {{compose}} exec {{service}} sqlite3 -box {{db_file}} {{ if query == "" { "" } else { quote(query) } }}
+
+# Check the live database's integrity and foreign keys
+db-check:
+    {{compose}} exec -T {{service}} sqlite3 {{db_file}} 'PRAGMA integrity_check; PRAGMA foreign_key_check;'
 
 # Snapshot db/kingfisher.sqlite to backups/ (online backup, the bot keeps running)
 backup-db:

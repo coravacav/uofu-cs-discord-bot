@@ -18,6 +18,7 @@ pub mod data;
 pub(crate) mod economy;
 pub mod event_handler;
 mod handle_starboards;
+pub mod health;
 mod lang;
 mod starboard;
 mod text_detection;
