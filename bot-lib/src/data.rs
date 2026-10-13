@@ -12,7 +12,6 @@ use tokio::sync::RwLock;
 
 /// Schema migrations, applied in order; `PRAGMA user_version` records how many
 /// have run. Never edit a migration that has been deployed, append a new one.
-/// tools/migrate-surrealdb-to-sqlite applies the same list.
 const MIGRATIONS: &[&str] = &[include_str!("../migrations/0001_initial.sql")];
 
 #[cfg(not(test))]

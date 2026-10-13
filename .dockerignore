@@ -15,7 +15,6 @@ all_backups
 extracts
 llms
 assets
-tools
 .env
 *.env
 debug.json
