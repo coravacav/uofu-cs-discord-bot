@@ -1,15 +1,16 @@
 use std::{
     fs,
     io::Write,
-    path::Path,
+    path::{Path, PathBuf},
     pin::pin,
     sync::{Arc, atomic::AtomicUsize},
 };
 
 use bot_traits::ForwardRefToTracing;
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{Result, bail};
 use futures::StreamExt;
 use poise::serenity_prelude::{ChannelId, Context, CreateMessage, MessageSnapshot};
+use tokio::task::JoinSet;
 
 use crate::{
     commands::{get_all_class_general_channels, is_stefan},
@@ -55,6 +56,25 @@ pub async fn extract_current_channel(ctx: PoiseContext<'_>) -> Result<()> {
 }
 
 async fn read_chat(ctx: Context, channel_id: ChannelId) -> Result<()> {
+    let directory_name = channel_id.name(&ctx).await?;
+    backup_channel(&ctx, channel_id, &directory_name).await?;
+    Ok(())
+}
+
+pub(crate) struct ChannelBackup {
+    pub directory: PathBuf,
+    pub message_count: usize,
+    pub attachment_count: usize,
+    pub failed_attachment_count: usize,
+}
+
+/// Writes every message in the channel to `extracts/<directory_name>/messages.txt` and
+/// downloads all attachments next to it. Only returns once every download has finished.
+pub(crate) async fn backup_channel(
+    ctx: &Context,
+    channel_id: ChannelId,
+    directory_name: &str,
+) -> Result<ChannelBackup> {
     let start = std::time::Instant::now();
 
     let base_directory = Path::new("extracts");
@@ -62,8 +82,7 @@ async fn read_chat(ctx: Context, channel_id: ChannelId) -> Result<()> {
         fs::create_dir(base_directory)?;
     }
 
-    let directory_name = channel_id.name(&ctx).await?;
-    let directory = Arc::new(base_directory.join(&directory_name));
+    let directory = Arc::new(base_directory.join(directory_name));
     if !directory.exists() {
         fs::create_dir(directory.as_ref())?;
     }
@@ -73,9 +92,11 @@ async fn read_chat(ctx: Context, channel_id: ChannelId) -> Result<()> {
 
     let reqwest = reqwest::Client::new();
 
-    let mut messages = pin!(channel_id.messages_iter(&ctx));
+    let mut messages = pin!(channel_id.messages_iter(ctx));
 
     let mut attachments = String::new();
+    let mut downloads = JoinSet::new();
+    let mut message_count = 0;
 
     while let Some(message) = messages.next().await {
         let Ok(message) = message else {
@@ -83,6 +104,7 @@ async fn read_chat(ctx: Context, channel_id: ChannelId) -> Result<()> {
             continue;
         };
 
+        message_count += 1;
         let mut attachment_count = 0;
         attachments.clear();
 
@@ -103,11 +125,7 @@ async fn read_chat(ctx: Context, channel_id: ChannelId) -> Result<()> {
             let directory = Arc::clone(&directory);
             let url = attachment.url.clone();
             let reqwest = reqwest.clone();
-            tokio::spawn(async move {
-                download_file(reqwest, url, filename, &directory)
-                    .await
-                    .trace_err_ok();
-            });
+            downloads.spawn(async move { download_file(reqwest, url, filename, &directory).await });
         }
 
         write!(
@@ -140,20 +158,38 @@ async fn read_chat(ctx: Context, channel_id: ChannelId) -> Result<()> {
         writeln!(message_output_file, "{attachments}\n")?;
     }
 
+    let attachment_count = downloads.len();
+    let mut failed_attachment_count = 0;
+    while let Some(result) = downloads.join_next().await {
+        if result
+            .trace_err_ok()
+            .and_then(|r| r.trace_err_ok())
+            .is_none()
+        {
+            failed_attachment_count += 1;
+        }
+    }
+
     writeln!(
         message_output_file,
         "Elapsed time: {:?} seconds",
         start.elapsed()
     )?;
+    message_output_file.flush()?;
 
     ChannelId::new(1274560000102236282)
         .send_message(
-            &ctx,
+            ctx,
             CreateMessage::new().content(format!("Done archiving {directory_name}")),
         )
         .await?;
 
-    Ok(())
+    Ok(ChannelBackup {
+        directory: directory.as_ref().clone(),
+        message_count,
+        attachment_count,
+        failed_attachment_count,
+    })
 }
 
 async fn download_file(
@@ -169,22 +205,13 @@ async fn download_file(
 
     tracing::info!("Downloading attachment {:?}", url);
 
-    let Ok(bytes) = reqwest.get(&url).send().await else {
-        tracing::warn!("Failed to get attachment {:?}", url);
-        return Ok(());
-    };
+    let response = reqwest.get(&url).send().await?;
+    if !response.status().is_success() {
+        bail!("Failed to get attachment {url:?}: {}", response.status());
+    }
+    let bytes = response.bytes().await?;
 
-    let Ok(bytes) = bytes.bytes().await else {
-        tracing::warn!("Failed to get attachment bytes {:?}", url);
-        return Ok(());
-    };
-
-    let Ok(mut file) = fs::File::create(output_file) else {
-        tracing::warn!("Failed to create file {:?}", url);
-        return Ok(());
-    };
-
-    file.write_all(&bytes).ok();
+    fs::File::create(output_file)?.write_all(&bytes)?;
 
     Ok(())
 }

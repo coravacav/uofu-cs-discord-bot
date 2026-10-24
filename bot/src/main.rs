@@ -102,6 +102,7 @@ async fn main() -> Result<()> {
                 add_dog_role(),
                 anon_notify(),
                 aur_search(),
+                backup_and_nuke_channel(),
                 bank_admin(),
                 bank(),
                 catalog(),
