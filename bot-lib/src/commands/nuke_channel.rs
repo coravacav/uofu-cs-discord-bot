@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{fs, path::Path, time::Duration};
 
 use color_eyre::eyre::Result;
 use poise::{
@@ -10,7 +10,7 @@ use poise::{
 };
 
 use crate::{
-    commands::{backup_channel, is_stefan},
+    commands::{ChannelBackup, backup_channel, is_stefan},
     data::PoiseContext,
 };
 
@@ -26,15 +26,85 @@ pub async fn backup_and_nuke_channel(
         return Ok(());
     };
 
+    let Some(channel) = get_nukeable_channel(ctx, channel_id).await? else {
+        return Ok(());
+    };
+
+    ctx.defer_ephemeral().await?;
+    let backup = run_backup(ctx, &channel).await?;
+
+    confirm_and_nuke(
+        ctx,
+        &channel,
+        format!(
+            "{}\nNuke it? It will be replaced with an empty copy.",
+            backup_summary(&channel, &backup)
+        ),
+        "Cancelled, the backup was kept.",
+    )
+    .await
+}
+
+/// Back up the current channel (messages + attachments) without touching it
+#[poise::command(slash_command, ephemeral = true, guild_only, check = is_stefan)]
+pub async fn backup_current_channel(ctx: PoiseContext<'_>) -> Result<()> {
+    let Some(channel) = get_nukeable_channel(ctx, ctx.channel_id()).await? else {
+        return Ok(());
+    };
+
+    ctx.defer_ephemeral().await?;
+    let backup = run_backup(ctx, &channel).await?;
+
+    ctx.say(backup_summary(&channel, &backup)).await?;
+
+    Ok(())
+}
+
+/// Replace the current channel with an empty copy, without backing it up first
+#[poise::command(slash_command, ephemeral = true, guild_only, check = is_stefan)]
+pub async fn reset_current_channel(ctx: PoiseContext<'_>) -> Result<()> {
+    let Some(channel) = get_nukeable_channel(ctx, ctx.channel_id()).await? else {
+        return Ok(());
+    };
+
+    let directory = Path::new("extracts").join(backup_directory_name(&channel));
+    let backup_status = if is_complete_backup(&directory) {
+        format!("Found a complete backup at `{}`.", directory.display())
+    } else {
+        format!(
+            "⚠️ No complete backup at `{}`, everything in this channel will be lost. \
+             Run `/backup_current_channel` first if you need one.",
+            directory.display()
+        )
+    };
+
+    confirm_and_nuke(
+        ctx,
+        &channel,
+        format!(
+            "{backup_status}\nReset <#{}> (`{}`)? It will be replaced with an empty copy.",
+            channel.id, channel.name
+        ),
+        "Cancelled.",
+    )
+    .await
+}
+
+/// Fetches the channel, telling the user and returning `None` if it can't be backed up and
+/// recreated.
+async fn get_nukeable_channel(
+    ctx: PoiseContext<'_>,
+    channel_id: ChannelId,
+) -> Result<Option<GuildChannel>> {
     let Ok(channel) = channel_id.to_channel(&ctx).await else {
         ctx.say(format!("Couldn't find channel `{channel_id}`"))
             .await?;
-        return Ok(());
+        return Ok(None);
     };
 
     let Some(channel) = channel.guild() else {
         ctx.say("That channel is not in a guild").await?;
-        return Ok(());
+        return Ok(None);
     };
 
     if !matches!(
@@ -42,42 +112,71 @@ pub async fn backup_and_nuke_channel(
         ChannelType::Text | ChannelType::News | ChannelType::Voice | ChannelType::Stage
     ) {
         ctx.say(format!(
-            "Can't nuke `{}`, channels of type {:?} can't be backed up and recreated",
+            "Can't do that to `{}`, channels of type {:?} can't be backed up and recreated",
             channel.name, channel.kind
         ))
         .await?;
-        return Ok(());
+        return Ok(None);
     }
 
-    ctx.defer_ephemeral().await?;
+    Ok(Some(channel))
+}
 
-    // The ID suffix keeps a later nuke of the recreated channel (same name, new ID) from
-    // overwriting this backup.
-    let directory_name = format!("{}-{}", channel.name, channel.id);
-    let backup = backup_channel(ctx.serenity_context(), channel.id, &directory_name).await?;
+/// The ID suffix keeps a later backup of the recreated channel (same name, new ID) from
+/// overwriting this one.
+fn backup_directory_name(channel: &GuildChannel) -> String {
+    format!("{}-{}", channel.name, channel.id)
+}
 
-    let reply = ctx
-        .send(
-            CreateReply::default()
-                .content(format!(
-                    "Backed up {} messages and {}/{} attachments from <#{}> (`{}`) to `{}`.\n\
-                     Nuke it? It will be replaced with an empty copy.",
-                    backup.message_count,
-                    backup.attachment_count - backup.failed_attachment_count,
-                    backup.attachment_count,
-                    channel.id,
-                    channel.name,
-                    backup.directory.display(),
-                ))
-                .components(vec![CreateActionRow::Buttons(vec![
+/// `backup_channel` writes the elapsed time as the last line once everything is saved.
+fn is_complete_backup(directory: &Path) -> bool {
+    fs::read_to_string(directory.join("messages.txt")).is_ok_and(|messages| {
+        messages
+            .lines()
+            .last()
+            .is_some_and(|line| line.starts_with("Elapsed time:"))
+    })
+}
+
+async fn run_backup(ctx: PoiseContext<'_>, channel: &GuildChannel) -> Result<ChannelBackup> {
+    backup_channel(
+        ctx.serenity_context(),
+        channel.id,
+        &backup_directory_name(channel),
+    )
+    .await
+}
+
+fn backup_summary(channel: &GuildChannel, backup: &ChannelBackup) -> String {
+    format!(
+        "Backed up {} messages and {}/{} attachments from <#{}> (`{}`) to `{}`.",
+        backup.message_count,
+        backup.attachment_count - backup.failed_attachment_count,
+        backup.attachment_count,
+        channel.id,
+        channel.name,
+        backup.directory.display(),
+    )
+}
+
+/// Asks for confirmation with buttons, then replaces the channel with an empty copy.
+async fn confirm_and_nuke(
+    ctx: PoiseContext<'_>,
+    channel: &GuildChannel,
+    prompt: String,
+    cancelled_status: &str,
+) -> Result<()> {
+    let reply =
+        ctx.send(CreateReply::default().content(prompt).components(vec![
+            CreateActionRow::Buttons(vec![
                     CreateButton::new("nuke_channel_confirm")
                         .label("Nuke it")
                         .style(ButtonStyle::Danger),
                     CreateButton::new("nuke_channel_cancel")
                         .label("Cancel")
                         .style(ButtonStyle::Secondary),
-                ])]),
-        )
+                ]),
+        ]))
         .await?;
 
     let interaction = reply
@@ -95,7 +194,7 @@ pub async fn backup_and_nuke_channel(
     let status = if confirmed {
         "Nuking..."
     } else {
-        "Cancelled, the backup was kept."
+        cancelled_status
     };
     match &interaction {
         Some(interaction) => {
@@ -121,11 +220,18 @@ pub async fn backup_and_nuke_channel(
     }
 
     if !confirmed {
+        tracing::info!("Nuke of #{} ({}) cancelled", channel.name, channel.id);
         return Ok(());
     }
 
-    let new_channel = recreate_channel(&ctx, &channel).await?;
+    let new_channel = recreate_channel(&ctx, channel).await?;
     channel.id.delete(&ctx).await?;
+    tracing::info!(
+        "Nuked #{} ({}), replaced with {}",
+        channel.name,
+        channel.id,
+        new_channel.id
+    );
 
     // The reply is gone if the command was run inside the nuked channel.
     ctx.say(format!("Nuked! New channel: <#{}>", new_channel.id))
@@ -200,5 +306,27 @@ mod tests {
         );
         assert_eq!(parse_channel_id("0"), None);
         assert_eq!(parse_channel_id("general"), None);
+    }
+
+    #[test]
+    fn only_finished_backups_are_complete() {
+        let directory =
+            std::env::temp_dir().join(format!("nuke-channel-test-{}", std::process::id()));
+        fs::create_dir_all(&directory).unwrap();
+        let messages = directory.join("messages.txt");
+
+        assert!(!is_complete_backup(&directory));
+
+        fs::write(&messages, "someone (2024-09-23T22:57:27.817Z)\nhi\n\n").unwrap();
+        assert!(!is_complete_backup(&directory));
+
+        fs::write(
+            &messages,
+            "someone (2024-09-23T22:57:27.817Z)\nhi\n\nElapsed time: 1.5s seconds\n",
+        )
+        .unwrap();
+        assert!(is_complete_backup(&directory));
+
+        fs::remove_dir_all(&directory).unwrap();
     }
 }
