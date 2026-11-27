@@ -30,7 +30,7 @@ bot-traits = { path = 'bot-traits' }
 rand = "0.10"
 serde = { version = "1", default-features = false, features = ["derive", "rc"] }
 itertools = "0.15"
-notify = "8"
+notify = "9"
 rustc-hash = "2"
 
 [workspace.lints.rust]

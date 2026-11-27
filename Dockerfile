@@ -4,7 +4,7 @@
 # Runtime state (config.toml, .env, db/, debug.json, extracts/) is NOT baked in;
 # docker-compose.yml bind-mounts the repo checkout at /app, which is the bot's cwd.
 
-ARG RUST_VERSION=1.98
+ARG RUST_VERSION=1.100
 ARG DEBIAN_RELEASE=trixie
 
 FROM rust:${RUST_VERSION}-slim-${DEBIAN_RELEASE} AS build

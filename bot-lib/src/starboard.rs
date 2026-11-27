@@ -191,7 +191,7 @@ pub async fn debug_sql(ctx: PoiseContext<'_>, query: Vec<String>) -> Result<()> 
             return Ok(format!("{} rows changed", statement.execute([])?));
         }
 
-        let columns = statement.column_names().join(" | ");
+        let columns = statement.column_names().collect::<Vec<_>>().join(" | ");
         let rows = statement
             .query_map([], |row| {
                 (0..column_count)

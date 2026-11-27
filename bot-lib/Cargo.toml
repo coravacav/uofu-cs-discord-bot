@@ -23,14 +23,14 @@ nom = "8"
 serde = { workspace = true }
 serde_with = { version = "3.7", features = ["chrono"] }
 futures = "0.3"
-parking_lot = "0.12"
+parking_lot = "0.13"
 serde_json = "1"
 tokio-stream = "0.1"
 raur = { version = "8", default-features = false, features = ["rusttls-ring", "async"] }
 humantime = "2"
 human-repr = "1.1"
 reqwest = { version = "0.13", default-features = false, features = ["json", "rustls-no-provider"] }
-rusqlite = { version = "0.40", features = ["bundled", "fallible_uint"] }
+rusqlite = { version = "0.43", features = ["bundled", "fallible_uint"] }
 
 [lints]
 workspace = true
